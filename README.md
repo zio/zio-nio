@@ -40,3 +40,4 @@ Java NIO is unsafe, and can surprise you a lot with e.g. hiding actual error in 
   * [Towards a safe, sane I O library in Scala](https://www.youtube.com/watch?feature=player_embedded&v=uaYKkpqs6CE)
 * [Haskell NIO](https://wiki.haskell.org/NIO)
 * [Non Blocking IO](https://www.youtube.com/watch?v=uKc0Gx_lPsg)
+* [Blocking vs Non-blocking IO](http://tutorials.jenkov.com/java-nio/nio-vs-io.html)
