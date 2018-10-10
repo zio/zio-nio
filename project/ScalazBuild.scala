@@ -8,7 +8,7 @@ object Scalaz {
   val compileOnlyDeps = Seq("com.github.ghik" %% "silencer-lib" % "1.0"          % "provided")
   val compileAndTest  = Seq(
     "org.scalaz" %% "scalaz-core" % scalazVersion   % "compile, test",
-    "org.scalaz" %% "scalaz-zio"  % "0.1.0-SNAPSHOT"
+    "org.scalaz" %% "scalaz-zio"  % "0.2.11"
   )
 
   private val stdOptions = Seq(
