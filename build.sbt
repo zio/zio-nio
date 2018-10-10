@@ -27,8 +27,8 @@ addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck"
 lazy val root =
   (project in file("."))
     .settings(
-      stdSettings("nio"),
+      stdSettings("nio")
     )
 
 resolvers +=
-  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+  "Sonatype OSS Snapshots".at("https://oss.sonatype.org/content/repositories/snapshots")

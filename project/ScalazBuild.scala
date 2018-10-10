@@ -2,12 +2,13 @@ import sbt._
 import sbt.Keys._
 
 object Scalaz {
-  lazy val scalazVersion  = "7.2.20"
+  lazy val scalazVersion = "7.2.20"
 
-  val testDeps        = Seq("org.scalacheck"  %% "scalacheck"   % "1.14.0"       % "test")
-  val compileOnlyDeps = Seq("com.github.ghik" %% "silencer-lib" % "1.0"          % "provided")
-  val compileAndTest  = Seq(
-    "org.scalaz" %% "scalaz-core" % scalazVersion   % "compile, test",
+  val testDeps        = Seq("org.scalacheck"  %% "scalacheck"   % "1.14.0" % "test")
+  val compileOnlyDeps = Seq("com.github.ghik" %% "silencer-lib" % "1.0"    % "provided")
+
+  val compileAndTest = Seq(
+    "org.scalaz" %% "scalaz-core" % scalazVersion % "compile, test",
     "org.scalaz" %% "scalaz-zio"  % "0.2.11"
   )
 
