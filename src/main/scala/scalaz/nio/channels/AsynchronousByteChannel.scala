@@ -2,6 +2,8 @@ package scalaz.nio.channels
 
 import java.nio.channels.{ CompletionHandler => JCompletionHandler }
 import java.nio.channels.{ AsynchronousByteChannel => JAsynchronousByteChannel }
+import java.nio.channels.{ AsynchronousSocketChannel => JAsynchronousSocketChannel }
+import java.nio.channels.{ AsynchronousChannelGroup => JAsynchronousChannelGroup }
 import scalaz.nio.Buffer
 import scalaz.zio.{ Async, ExitResult, IO }
 
@@ -40,4 +42,46 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
     }
 
   final def write(b: Buffer[Byte]): IO[Exception, Int] = ???
+}
+
+class AsynchronousChannelGroup(val jChannelGroup: JAsynchronousChannelGroup) {}
+
+object AsynchronousChannelGroup {
+
+  def apply(): IO[Exception, AsynchronousChannelGroup] =
+    ??? // IO.syncException { throw new Exception() }
+}
+
+class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
+    extends AsynchronousByteChannel(channel) {}
+
+object AsynchronousSocketChannel {
+
+  // throws IOException
+  def apply(): IO[Exception, AsynchronousSocketChannel] =
+    IO.syncException(JAsynchronousSocketChannel.open()).map(new AsynchronousSocketChannel(_))
+
+  // throws ShutdownChannelGroupException or IOException
+  def apply(channelGroup: AsynchronousChannelGroup) =
+    IO.syncException(JAsynchronousSocketChannel.open(channelGroup.jChannelGroup))
+      .map(new AsynchronousSocketChannel(_))
+}
+
+/**
+ * Only use casses.
+ */
+object Program {
+  val buffer = Buffer.byte(0)
+
+  AsynchronousSocketChannel().flatMap { socketChannel =>
+    socketChannel.read(buffer)
+  }
+
+  // alternative
+
+  for {
+    channelGroup <- AsynchronousChannelGroup()
+    channel      <- AsynchronousSocketChannel(channelGroup)
+    n            <- channel.read(buffer)
+  } yield n
 }
