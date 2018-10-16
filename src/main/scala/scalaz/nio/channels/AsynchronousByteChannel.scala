@@ -10,10 +10,9 @@ import scalaz.zio.{ Async, ExitResult, IO }
 import java.nio.{ ByteBuffer => JByteBuffer }
 
 class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
-
   /**
-   *  Reads some data into the byte buffer, returning the number of bytes
-   *  actually read, or -1 if no bytes were read.
+   *  Reads data from this channel into buffer, returning the number of bytes
+   *  read, or -1 if no bytes were read.
    */
   final def read(b: Buffer[Byte]): IO[Exception, Int] =
     IO.async0[Exception, Int] { (k: ExitResult[Exception, Int] => Unit) =>
@@ -41,7 +40,35 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
       }
     }
 
-  final def write(b: Buffer[Byte]): IO[Exception, Int] = ???
+  /**
+   *  Writes data into this channel from buffer, returning the number of bytes written.
+   */
+  final def write(b: Buffer[Byte]): IO[Exception, Int] =
+    IO.async0[Exception, Int] { (k: ExitResult[Exception, Int] => Unit) =>
+      try {
+        val byteBuffer = b.buffer.asInstanceOf[JByteBuffer]
+        channel.write(
+          byteBuffer,
+          (),
+          new JCompletionHandler[Integer, Unit] {
+            def completed(result: Integer, u: Unit): Unit =
+              k(ExitResult.Completed(result))
+
+            def failed(t: Throwable, u: Unit): Unit =
+              t match {
+                case e: Exception => k(ExitResult.Failed(e))
+                case _            => k(ExitResult.Terminated(List(t)))
+              }
+          }
+        )
+
+        Async.later[Exception, Int]
+      } catch {
+        case e: Exception => Async.now(ExitResult.Failed(e))
+        case t: Throwable => Async.now(ExitResult.Terminated(List(t)))
+      }
+    }
+
 }
 
 class AsynchronousChannelGroup(val jChannelGroup: JAsynchronousChannelGroup) {}
@@ -71,17 +98,19 @@ object AsynchronousSocketChannel {
  * Only use casses.
  */
 object Program {
-  val buffer = Buffer.byte(0)
+  val src = Buffer.byte(0)
+  val sink = Buffer.byte(0)
 
-  AsynchronousSocketChannel().flatMap { socketChannel =>
-    socketChannel.read(buffer)
+  val program1: IO[Exception, (Int, Int)] = AsynchronousSocketChannel().flatMap { socketChannel =>
+    socketChannel.write(src).flatMap { nSrc =>
+      socketChannel.read(sink).map(nSink => (nSrc, nSink))
+    }
   }
 
-  // alternative
-
-  for {
+  val program2: IO[Exception, (Int, Int)] = for {
     channelGroup <- AsynchronousChannelGroup()
     channel      <- AsynchronousSocketChannel(channelGroup)
-    n            <- channel.read(buffer)
-  } yield n
+    nSrc         <- channel.write(src)
+    nSink        <- channel.read(sink)
+  } yield (nSrc, nSink)
 }
