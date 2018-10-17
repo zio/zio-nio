@@ -10,6 +10,7 @@ import scalaz.zio.{ Async, ExitResult, IO }
 import java.nio.{ ByteBuffer => JByteBuffer }
 
 class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
+
   /**
    *  Reads data from this channel into buffer, returning the number of bytes
    *  read, or -1 if no bytes were read.
@@ -98,7 +99,7 @@ object AsynchronousSocketChannel {
  * Only use casses.
  */
 object Program {
-  val src = Buffer.byte(0)
+  val src  = Buffer.byte(0)
   val sink = Buffer.byte(0)
 
   val program1: IO[Exception, (Int, Int)] = AsynchronousSocketChannel().flatMap { socketChannel =>
