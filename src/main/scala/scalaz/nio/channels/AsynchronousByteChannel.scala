@@ -99,19 +99,14 @@ object AsynchronousSocketChannel {
  * Only use casses.
  */
 object Program {
-  val src  = Buffer.byte(0)
-  val sink = Buffer.byte(0)
 
-  val program1: IO[Exception, (Int, Int)] = AsynchronousSocketChannel().flatMap { socketChannel =>
-    socketChannel.write(src).flatMap { nSrc =>
-      socketChannel.read(sink).map(nSink => (nSrc, nSink))
-    }
-  }
-
-  val program2: IO[Exception, (Int, Int)] = for {
+  val program: IO[Exception, (Int, Int)] = for {
+    src          <- Buffer.byte(0)
+    sink         <- Buffer.byte(0)
     channelGroup <- AsynchronousChannelGroup()
     channel      <- AsynchronousSocketChannel(channelGroup)
     nSrc         <- channel.write(src)
     nSink        <- channel.read(sink)
   } yield (nSrc, nSink)
+
 }
