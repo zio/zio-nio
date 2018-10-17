@@ -20,6 +20,21 @@ import scala.reflect.ClassTag
 abstract class Buffer[A: ClassTag] private (val buffer: JBuffer) {
   final def capacity: IO[Nothing, Int] = IO.now(buffer.capacity)
 
+  final def position: IO[Nothing, Int] = IO.now(buffer.position)
+
+  final def position(newPosition: Int): IO[Exception, Unit] =
+    IO.syncException {
+      buffer.position(newPosition)
+      ()
+    }
+
+  final def limit: IO[Nothing, Int] = IO.now(buffer.limit)
+
+  final def limit(newLimit: Int): IO[Exception, Unit] = IO.syncException {
+    buffer.limit(newLimit)
+    ()
+  }
+
   // should it return Unit?
   final def clear: IO[Nothing, Buffer[A]] = IO.sync(buffer.clear().asInstanceOf[Buffer[A]])
 
@@ -37,6 +52,7 @@ abstract class Buffer[A: ClassTag] private (val buffer: JBuffer) {
 
 object Buffer {
   def byte(capacity: Int) = ByteBuffer(capacity)
+
   def char(capacity: Int) = CharBuffer(capacity)
 
   private class ByteBuffer private (val byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
