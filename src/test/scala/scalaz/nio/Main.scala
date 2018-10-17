@@ -3,7 +3,7 @@ package scalaz.nio
 import testz._
 import runner.TestOutput
 
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import ExecutionContext.global
 import scala.concurrent.duration.Duration
 
@@ -25,11 +25,11 @@ object Main {
     // Evaluate tests before the runner expects,
     // for parallelism.
     val testOutputs: List[() => Future[TestOutput]] = List(
-      Future(unitTests)(ec),
+      Future(unitTests)(ec)
     ).map(s => () => s)
 
     val runSuites = runner(testOutputs, Console.print, global)
-    val result = Await.result(runSuites, Duration.Inf)
+    val result    = Await.result(runSuites, Duration.Inf)
 
     if (result.failed) throw new Exception("some tests failed")
   }
