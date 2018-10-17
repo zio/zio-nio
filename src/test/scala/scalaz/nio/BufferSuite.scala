@@ -19,7 +19,7 @@ object BufferSuite extends RTS {
           c2 <- IO.sync {
                  JByteBuffer.allocate(initialCapacity).capacity
                }
-        } yield c1 != c2
+        } yield c1 == c2
         assert(unsafeRun(testProgram))
       }
     )
