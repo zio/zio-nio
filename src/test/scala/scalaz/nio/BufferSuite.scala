@@ -17,7 +17,7 @@ object BufferSuite extends RTS {
           c2 <- IO.sync {
                  JByteBuffer.allocate(10).capacity
                }
-        } yield (c1 == 0)
+        } yield (c1 == c2)
         assert(unsafeRun(testProgram))
       }
     )
