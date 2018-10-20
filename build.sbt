@@ -29,6 +29,7 @@ lazy val root =
     .settings(
       stdSettings("nio")
     )
+    .enablePlugins(TutPlugin)
 
 resolvers +=
   "Sonatype OSS Snapshots".at("https://oss.sonatype.org/content/repositories/snapshots")
