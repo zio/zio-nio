@@ -7,5 +7,6 @@ jdk:
 before_install:
   - export PATH=${PATH}:./vendor/bundle
 script:
+  - sbt tut
   - sbt ++$TRAVIS_SCALA_VERSION scalafmtCheck test:scalafmtCheck scalafmtSbtCheck test:run
   - if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then sbt publish; fi
