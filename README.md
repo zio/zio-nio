@@ -42,3 +42,7 @@ Java NIO is unsafe, and can surprise you a lot with e.g. hiding actual error in 
 * [Haskell NIO](https://wiki.haskell.org/NIO)
 * [Non Blocking IO](https://www.youtube.com/watch?v=uKc0Gx_lPsg)
 * [Blocking vs Non-blocking IO](http://tutorials.jenkov.com/java-nio/nio-vs-io.html)
+
+## Client Server
+
+[Client Server](/src/main/tut/channel.md)
