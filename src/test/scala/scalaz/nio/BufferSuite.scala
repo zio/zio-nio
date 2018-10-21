@@ -75,7 +75,72 @@ object BufferSuite extends RTS {
 
           assert(unsafeRun(positionReset) == newLimit)
         }
-      )
+      ),
+      test("reset to marked position") { () =>
+        val markedPosition = for {
+          b           <- Buffer.byte(initialCapacity)
+          _           <- b.position(1)
+          _           <- b.mark
+          _           <- b.position(2)
+          _           <- b.reset
+          newPosition <- b.position
+        } yield newPosition
+
+        assert(unsafeRun(markedPosition) == 1)
+      }, {
+        def clear =
+          for {
+            b <- Buffer.byte(initialCapacity)
+            _ <- b.position(1)
+            _ <- b.mark
+            _ <- b.clear
+          } yield b
+
+        namedSection("clear")(
+          test("position is 0") { () =>
+            val position = unsafeRun(clear.flatMap(b => b.position))
+            assert(position == 0)
+          },
+          test("limit is capacity") { () =>
+            val limit = unsafeRun(clear.flatMap(b => b.limit))
+            assert(limit == initialCapacity)
+          }
+        )
+      }, {
+        def flip =
+          for {
+            b <- Buffer.byte(initialCapacity)
+            _ <- b.position(1)
+            _ <- b.flip
+          } yield b
+
+        namedSection("flip")(
+          test("limit is position") { () =>
+            val limit = unsafeRun(flip.flatMap(b => b.limit))
+            assert(limit == 1)
+          },
+          test("position is 0") { () =>
+            val position = unsafeRun(flip.flatMap(b => b.position))
+            assert(position == 0)
+          }
+        )
+      },
+      test("rewind sets position to 0") { () =>
+        val rewindedPosition = for {
+          b           <- Buffer.byte(initialCapacity)
+          _           <- b.position(1)
+          _           <- b.rewind
+          newPosition <- b.position
+        } yield newPosition
+        assert(unsafeRun(rewindedPosition) == 0)
+      },
+      test("heap buffers a backed by an array") { () =>
+        val hasArray = for {
+          b        <- Buffer.byte(initialCapacity)
+          hasArray <- b.hasArray
+        } yield hasArray
+        assert(unsafeRun(hasArray))
+      }
     )
   }
 
