@@ -27,11 +27,24 @@ abstract class Buffer[A: ClassTag] private (val buffer: JBuffer) {
 
   final def limit: IO[Nothing, Int] = IO.now(buffer.limit)
 
+  final def remaining: IO[Nothing, Int] = IO.now(buffer.remaining)
+
+  final def hasRemaining: IO[Nothing, Boolean] = IO.now(buffer.hasRemaining)
+
   final def limit(newLimit: Int): IO[Exception, Unit] =
     IO.syncException(buffer.limit(newLimit)).void
 
-  // should it return Unit?
-  final def clear: IO[Nothing, Buffer[A]] = IO.sync(buffer.clear().asInstanceOf[Buffer[A]])
+  final def mark: IO[Nothing, Unit] = IO.sync(buffer.mark()).void
+
+  final def reset: IO[Nothing, Unit] = IO.sync(buffer.reset()).void
+
+  final def clear: IO[Nothing, Unit] = IO.sync(buffer.clear()).void
+
+  final def flip: IO[Nothing, Unit] = IO.sync(buffer.flip()).void
+
+  final def rewind: IO[Nothing, Unit] = IO.sync(buffer.rewind()).void
+
+  final def isReadOnly: IO[Nothing, Boolean] = IO.now(buffer.isReadOnly)
 
   def get: A
 
@@ -42,6 +55,10 @@ abstract class Buffer[A: ClassTag] private (val buffer: JBuffer) {
 
       Maybe.fromNullable(a)
     }
+
+  final def hasArray: IO[Nothing, Boolean] = IO.now(buffer.hasArray)
+  final def arrayOffset: IO[Nothing, Int]  = IO.now(buffer.arrayOffset)
+  final def isDirect: IO[Nothing, Boolean] = IO.now(buffer.isDirect)
 
 }
 
@@ -66,7 +83,9 @@ object Buffer {
   }
 
   private object CharBuffer {
-    def apply(capacity: Int): Buffer[Char] = new CharBuffer(JByteBuffer.allocate(capacity))
+
+    def apply(capacity: Int): Buffer[Char] =
+      new CharBuffer(JByteBuffer.allocate(capacity))
   }
 
 }
