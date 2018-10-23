@@ -20,10 +20,9 @@ object ChannelSuite extends RTS {
           _       <- server.bind(address)
           client  <- AsynchronousSocketChannel()
           _       <- client.connect(address)
+          // in this senario accept should be called after client is connected
+          worker  <- server.accept
           nSrc    <- client.write(src)
-          // accept should be called after something is written int src channel
-          // how to consiniously accept writes?
-          worker <- server.accept
           nSink  <- worker.read(sink)
         } yield nSrc == nSink
 
