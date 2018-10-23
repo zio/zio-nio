@@ -84,34 +84,35 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    * Binds the channel's socket to a local address and configures the socket to listen for connections.
    */
   def bind(address: InetSocketAddress): IO[Exception, Unit] =
-    IO.syncException(channel.bind(address)) *> IO.unit
+    IO.syncException(channel.bind(address)).void
 
   /**
    * Accepts a connection.
    */
   def accept: IO[Exception, AsynchronousSocketChannel] =
-    IO.async0[Exception, AsynchronousSocketChannel] { k =>
-      try {
-        channel
-          .accept(
-            (),
-            new JCompletionHandler[JAsynchronousSocketChannel, Unit] {
-              override def completed(result: JAsynchronousSocketChannel, attachment: Unit): Unit =
-                k(ExitResult.Completed(AsynchronousSocketChannel(result)))
+    IO.async0[Exception, AsynchronousSocketChannel] {
+      (k: ExitResult[Exception, AsynchronousSocketChannel] => Unit) =>
+        try {
+          channel
+            .accept(
+              (),
+              new JCompletionHandler[JAsynchronousSocketChannel, Unit] {
+                override def completed(result: JAsynchronousSocketChannel, attachment: Unit): Unit =
+                  k(ExitResult.Completed(AsynchronousSocketChannel(result)))
 
-              override def failed(t: Throwable, attachment: Unit): Unit =
-                t match {
-                  case e: Exception => k(ExitResult.Failed(e))
-                  case _            => k(ExitResult.Terminated(List(t)))
-                }
-            }
-          )
+                override def failed(t: Throwable, attachment: Unit): Unit =
+                  t match {
+                    case e: Exception => k(ExitResult.Failed(e))
+                    case _            => k(ExitResult.Terminated(List(t)))
+                  }
+              }
+            )
 
-        Async.later[Exception, AsynchronousSocketChannel]
-      } catch {
-        case e: Exception => Async.now(ExitResult.Failed(e))
-        case t: Throwable => Async.now(ExitResult.Terminated(List(t)))
-      }
+          Async.later[Exception, AsynchronousSocketChannel]
+        } catch {
+          case e: Exception => Async.now(ExitResult.Failed(e))
+          case t: Throwable => Async.now(ExitResult.Terminated(List(t)))
+        }
     }
 
 }
@@ -185,20 +186,4 @@ object AsynchronousSocketChannel {
         JAsynchronousSocketChannel.open(channelGroup.jChannelGroup)
       )
       .map(new AsynchronousSocketChannel(_))
-}
-
-/**
- * Only use casses.
- */
-object Program {
-
-  val program: IO[Exception, (Int, Int)] = for {
-    src          <- Buffer.byte(0)
-    sink         <- Buffer.byte(0)
-    channelGroup <- AsynchronousChannelGroup()
-    channel      <- AsynchronousSocketChannel(channelGroup)
-    nSrc         <- channel.write(src)
-    nSink        <- channel.read(sink)
-  } yield (nSrc, nSink)
-
 }
