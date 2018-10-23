@@ -8,9 +8,8 @@ import java.nio.channels.{
   AsynchronousSocketChannel => JAsynchronousSocketChannel,
   CompletionHandler => JCompletionHandler
 }
-import java.nio.{ ByteBuffer => JByteBuffer }
 
-import scalaz.nio.Buffer
+import scalaz.nio.ByteBuffer
 import scalaz.zio.{ Async, ExitResult, IO }
 
 class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
@@ -19,10 +18,10 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
    *  Reads data from this channel into buffer, returning the number of bytes
    *  read, or -1 if no bytes were read.
    */
-  final def read(b: Buffer[Byte]): IO[Exception, Int] =
+  final def read(b: ByteBuffer): IO[Exception, Int] =
     IO.async0[Exception, Int] { k =>
       try {
-        val byteBuffer = b.buffer.asInstanceOf[JByteBuffer]
+        val byteBuffer = b.buffer
         channel.read(
           byteBuffer,
           (),
@@ -48,10 +47,10 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
   /**
    *  Writes data into this channel from buffer, returning the number of bytes written.
    */
-  final def write(b: Buffer[Byte]): IO[Exception, Int] =
+  final def write(b: ByteBuffer): IO[Exception, Int] =
     IO.async0[Exception, Int] { k =>
       try {
-        val byteBuffer = b.buffer.asInstanceOf[JByteBuffer]
+        val byteBuffer = b.buffer
         channel.write(
           byteBuffer,
           (),
