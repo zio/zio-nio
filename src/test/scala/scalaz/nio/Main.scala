@@ -19,7 +19,8 @@ object Main {
 
     def unitTests =
       TestOutput.combineAll1(
-        BufferSuite.tests(pureHarness)((), List("Buffer tests"))
+        BufferSuite.tests(pureHarness)((), List("Buffer tests")),
+        ChannelSuite.tests(pureHarness)((), List("Channel tests"))
       )
 
     // Evaluate tests before the runner expects,
