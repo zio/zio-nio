@@ -3,11 +3,11 @@ package scalaz.nio.channels
 import java.net.InetSocketAddress
 import java.nio.channels.{
   AsynchronousServerSocketChannel => JAsynchronousServerSocketChannel,
-  AsynchronousSocketChannel => JAsynchronousSocketChannel,
-  CompletionHandler => JCompletionHandler
+  AsynchronousSocketChannel => JAsynchronousSocketChannel
 }
 
-import scalaz.zio.{ Async, ExitResult, IO }
+import scalaz.nio.channels.IOAsyncUtil._
+import scalaz.zio.IO
 
 class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSocketChannel) {
 
@@ -21,29 +21,8 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    * Accepts a connection.
    */
   final def accept: IO[Exception, AsynchronousSocketChannel] =
-    IO.async0[Exception, AsynchronousSocketChannel] { k =>
-      try {
-        channel
-          .accept(
-            (),
-            new JCompletionHandler[JAsynchronousSocketChannel, Unit] {
-              override def completed(result: JAsynchronousSocketChannel, attachment: Unit): Unit =
-                k(ExitResult.Completed(AsynchronousSocketChannel(result)))
-
-              override def failed(t: Throwable, attachment: Unit): Unit =
-                t match {
-                  case e: Exception => k(ExitResult.Failed(e))
-                  case _            => k(ExitResult.Terminated(List(t)))
-                }
-            }
-          )
-
-        Async.later[Exception, AsynchronousSocketChannel]
-      } catch {
-        case e: Exception => Async.now(ExitResult.Failed(e))
-        case t: Throwable => Async.now(ExitResult.Terminated(List(t)))
-      }
-    }
+    wrap[JAsynchronousSocketChannel](h => channel.accept((), h))
+      .map(AsynchronousSocketChannel(_))
 
 }
 

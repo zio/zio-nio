@@ -1,41 +1,17 @@
 package scalaz.nio.channels
 
 import java.net.InetSocketAddress
-import java.nio.channels.{
-  AsynchronousSocketChannel => JAsynchronousSocketChannel,
-  CompletionHandler => JCompletionHandler
-}
+import java.nio.channels.{ AsynchronousSocketChannel => JAsynchronousSocketChannel }
 
-import scalaz.zio.{ Async, ExitResult, IO }
+import scalaz.nio.channels.IOAsyncUtil._
+import scalaz.zio.IO
 
 class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     extends AsynchronousByteChannel(channel) {
 
   final def connect(socketAddress: InetSocketAddress): IO[Exception, Unit] =
-    IO.async0[Exception, Unit] { k =>
-      try {
-        channel
-          .connect(
-            socketAddress,
-            (),
-            new JCompletionHandler[Void, Unit] {
-              override def completed(result: Void, attachment: Unit): Unit =
-                k(ExitResult.Completed(()))
+    wrap[Void](h => channel.connect(socketAddress, (), h)).void
 
-              override def failed(t: Throwable, attachment: Unit): Unit =
-                t match {
-                  case e: Exception => k(ExitResult.Failed(e))
-                  case _            => k(ExitResult.Terminated(List(t)))
-                }
-            }
-          )
-
-        Async.later[Exception, Unit]
-      } catch {
-        case e: Exception => Async.now(ExitResult.Failed(e))
-        case t: Throwable => Async.now(ExitResult.Terminated(List(t)))
-      }
-    }
 }
 
 object AsynchronousSocketChannel {
