@@ -44,7 +44,7 @@ object T {
         arr        <- bufferDest.array
 
         _ <- log(
-              "Read: " + n.toString + " Bytes. Content: " + arr.toOption.get.mkString
+              "Read: " + n.toString + " Bytes. Content: " + arr.mkString
             )
       } yield ()
     }
@@ -61,9 +61,9 @@ object T {
         // TODO is this the right way of reading from the buffer?
         bufferSrc <- Buffer.byte(8)
         arr       <- bufferSrc.array
-        _         = arr.toOption.get.update(0, 1)
+        _         = arr.update(0, 1)
 
-        _ <- log("Gonna write: " + arr.toOption.get.mkString)
+        _ <- log("Gonna write: " + arr.mkString)
         _ <- client.write(bufferSrc)
       } yield ()
     }
