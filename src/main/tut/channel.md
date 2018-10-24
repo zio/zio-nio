@@ -4,8 +4,6 @@
 object T {
   import scalaz.nio._
   import java.io.IOException
-  import java.net.InetSocketAddress
-
   import scalaz.nio.channels.{ AsynchronousServerSocketChannel, AsynchronousSocketChannel }
   import scalaz.zio.console._
   import scalaz.zio.{ App, IO }
@@ -20,7 +18,7 @@ object T {
         .map(_.fold(e => { e.printStackTrace(); 1 }, _ => 0))
         .map(ExitStatus.ExitNow(_))
 
-    val address = new InetSocketAddress(1337)
+    val socketAddress = InetAddress.localHost.flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 1337))
 
     def myAppLogic: IO[Exception, Unit] =
       for {
@@ -33,6 +31,7 @@ object T {
     def server: IO[Exception, Unit] = {
       def log(str: String): IO[IOException, Unit] = putStrLn("[Server] " + str)
       for {
+        address <- socketAddress
         server <- AsynchronousServerSocketChannel()
         _      <- log(s"Listening on $address")
         _      <- server.bind(address)
@@ -54,6 +53,7 @@ object T {
       def log(str: String): IO[IOException, Unit] = putStrLn("[Client] " + str)
 
       for {
+        address <- socketAddress
         _      <- IO.sleep(1.second)
         client <- AsynchronousSocketChannel()
         _      <- client.connect(address)
