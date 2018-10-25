@@ -35,4 +35,10 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
   final def write[A](b: ByteBuffer, attachment: A): IO[Exception, Int] =
     wrap[A, JInteger](h => channel.write(b.buffer, attachment, h)).map(_.toInt)
 
+  /**
+   * Closes this channel.
+   */
+  final def close: IO[Exception, Unit] =
+    IO.syncException(channel.close())
+
 }

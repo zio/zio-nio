@@ -46,6 +46,7 @@ object T {
         _ <- log(
               "Read: " + n.toString + " Bytes. Content: " + arr.mkString
             )
+        _ <- server.close
       } yield ()
     }
 
@@ -65,6 +66,7 @@ object T {
 
         _ <- log("Gonna write: " + arr.mkString)
         _ <- client.write(bufferSrc)
+        _ <- client.close
       } yield ()
     }
 

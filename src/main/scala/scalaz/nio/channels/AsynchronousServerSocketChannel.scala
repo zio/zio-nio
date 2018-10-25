@@ -54,6 +54,12 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
   final def localAddress: IO[Exception, Maybe[SocketAddress]] =
     IO.syncException(Maybe.fromNullable(channel.getLocalAddress))
 
+  /**
+   * Closes this channel.
+   */
+  final def close: IO[Exception, Unit] =
+    IO.syncException(channel.close())
+
 }
 
 object AsynchronousServerSocketChannel {

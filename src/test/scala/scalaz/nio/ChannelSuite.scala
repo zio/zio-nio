@@ -22,6 +22,9 @@ object ChannelSuite extends RTS {
           _      <- worker.read(sink)
           _      <- sink.flip
           _      <- worker.write(sink)
+          _      <- worker.shutdownInput
+          _      <- worker.shutdownOutput
+          _      <- server.close
         } yield ()
 
       def echoClient: IO[Exception, Boolean] =
@@ -35,6 +38,7 @@ object ChannelSuite extends RTS {
           _        <- src.flip
           _        <- client.read(src)
           received <- src.array
+          _        <- client.close
         } yield sent.sameElements(received)
 
       val testProgram: IO[Exception, Boolean] = for {
