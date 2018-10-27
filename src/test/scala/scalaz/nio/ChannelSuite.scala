@@ -22,8 +22,7 @@ object ChannelSuite extends RTS {
           _      <- worker.read(sink)
           _      <- sink.flip
           _      <- worker.write(sink)
-          _      <- worker.shutdownInput
-          _      <- worker.shutdownOutput
+          _      <- worker.close
           _      <- server.close
         } yield ()
 
