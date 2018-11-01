@@ -18,20 +18,20 @@ object T {
         .map(_.fold(e => { e.printStackTrace(); 1 }, _ => 0))
         .map(ExitStatus.ExitNow(_))
 
-    val socketAddress = InetAddress.localHost.flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 1337))
 
     def myAppLogic: IO[Exception, Unit] =
       for {
-        serverFiber <- server.fork
-        clientFiber <- client.fork
+        localhost <- InetAddress.localHost
+        address <- SocketAddress.inetSocketAddress(localhost, 1337)
+        serverFiber <- server(address).fork
+        clientFiber <- client(address).fork
         _ <- serverFiber.join
         _ <- clientFiber.join
       } yield ()
 
-    def server: IO[Exception, Unit] = {
+    def server(address: SocketAddress): IO[Exception, Unit] = {
       def log(str: String): IO[IOException, Unit] = putStrLn("[Server] " + str)
       for {
-        address <- socketAddress
         server <- AsynchronousServerSocketChannel()
         _      <- log(s"Listening on $address")
         _      <- server.bind(address)
@@ -49,11 +49,10 @@ object T {
       } yield ()
     }
 
-    def client: IO[Exception, Unit] = {
+    def client(address: SocketAddress): IO[Exception, Unit] = {
       def log(str: String): IO[IOException, Unit] = putStrLn("[Client] " + str)
 
       for {
-        address <- socketAddress
         _      <- IO.sleep(1.second)
         client <- AsynchronousSocketChannel()
         _      <- client.connect(address)

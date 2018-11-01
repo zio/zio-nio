@@ -11,7 +11,7 @@ class InetSocketAddress private[nio] (private val jInetSocketAddress: JInetSocke
 
   def port: Int = jInetSocketAddress.getPort
 
-  def hostName: String = jInetSocketAddress.getHostName
+  def hostName: IO[Exception, String] = IO.syncException(jInetSocketAddress.getHostName)
 
   def hostString: String = jInetSocketAddress.getHostString
 
