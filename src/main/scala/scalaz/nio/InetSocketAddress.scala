@@ -4,7 +4,7 @@ import java.net.{ InetSocketAddress => JInetSocketAddress, SocketAddress => JSoc
 
 import scalaz.zio.IO
 
-abstract class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocketAddress)
+class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocketAddress)
 
 class InetSocketAddress private[nio] (private val jInetSocketAddress: JInetSocketAddress)
     extends SocketAddress(jInetSocketAddress) {
