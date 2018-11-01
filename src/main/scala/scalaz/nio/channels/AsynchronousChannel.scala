@@ -1,7 +1,6 @@
 package scalaz.nio.channels
 
 import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
-import java.net.SocketOption
 import java.nio.channels.{
   AsynchronousByteChannel => JAsynchronousByteChannel,
   AsynchronousChannelGroup => JAsynchronousChannelGroup,
@@ -10,7 +9,7 @@ import java.nio.channels.{
   CompletionHandler => JCompletionHandler
 }
 
-import scalaz.nio.{ ByteBuffer, SocketAddress }
+import scalaz.nio.{ ByteBuffer, SocketAddress, SocketOption }
 import scalaz.nio.channels.AsynchronousChannel._
 import scalaz.zio.{ Async, ExitResult, IO }
 import scalaz.{ IList, Maybe }
@@ -69,9 +68,8 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
   final def bind(address: SocketAddress, backlog: Int): IO[Exception, Unit] =
     IO.syncException(channel.bind(address.jSocketAddress, backlog)).void
 
-  // TODO wrap `SocketOption[T]?`
   final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.syncException(channel.setOption(name, value)).void
+    IO.syncException(channel.setOption(name.jSocketOption, value)).void
 
   /**
    * Accepts a connection.
@@ -129,9 +127,8 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
   final def bind(address: SocketAddress): IO[Exception, Unit] =
     IO.syncException(channel.bind(address.jSocketAddress)).void
 
-  // TODO wrap `SocketOption[T]?`
   final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.syncException(channel.setOption(name, value)).void
+    IO.syncException(channel.setOption(name.jSocketOption, value)).void
 
   final def shutdownInput: IO[Exception, Unit] =
     IO.syncException(channel.shutdownInput()).void
