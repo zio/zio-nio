@@ -1,7 +1,5 @@
 package scalaz.nio
 
-import java.net.InetSocketAddress
-
 import scalaz.nio.channels.{ AsynchronousServerSocketChannel, AsynchronousSocketChannel }
 import scalaz.zio.{ IO, RTS }
 import testz.{ Harness, assert }
@@ -11,23 +9,26 @@ object ChannelSuite extends RTS {
   def tests[T](harness: Harness[T]): T = {
     import harness._
     section(test("read/write") { () =>
-      val address = new InetSocketAddress(1337)
+      val inetAddress = InetAddress.localHost
+        .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 1337))
 
       def echoServer: IO[Exception, Unit] =
         for {
-          sink   <- Buffer.byte(3)
-          server <- AsynchronousServerSocketChannel()
-          _      <- server.bind(address)
-          worker <- server.accept
-          _      <- worker.read(sink)
-          _      <- sink.flip
-          _      <- worker.write(sink)
-          _      <- worker.close
-          _      <- server.close
+          address <- inetAddress
+          sink    <- Buffer.byte(3)
+          server  <- AsynchronousServerSocketChannel()
+          _       <- server.bind(address)
+          worker  <- server.accept
+          _       <- worker.read(sink)
+          _       <- sink.flip
+          _       <- worker.write(sink)
+          _       <- worker.close
+          _       <- server.close
         } yield ()
 
       def echoClient: IO[Exception, Boolean] =
         for {
+          address  <- inetAddress
           src      <- Buffer.byte(3)
           client   <- AsynchronousSocketChannel()
           _        <- client.connect(address)

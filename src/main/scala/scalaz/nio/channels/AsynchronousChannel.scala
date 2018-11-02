@@ -1,7 +1,6 @@
 package scalaz.nio.channels
 
 import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
-import java.net.{ SocketAddress, SocketOption }
 import java.nio.channels.{
   AsynchronousByteChannel => JAsynchronousByteChannel,
   AsynchronousChannelGroup => JAsynchronousChannelGroup,
@@ -10,7 +9,7 @@ import java.nio.channels.{
   CompletionHandler => JCompletionHandler
 }
 
-import scalaz.nio.ByteBuffer
+import scalaz.nio.{ ByteBuffer, SocketAddress, SocketOption }
 import scalaz.nio.channels.AsynchronousChannel._
 import scalaz.zio.{ Async, ExitResult, IO }
 import scalaz.{ IList, Maybe }
@@ -60,19 +59,17 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    * to listen for connections.
    */
   final def bind(address: SocketAddress): IO[Exception, Unit] =
-    IO.syncException(channel.bind(address)).void
+    IO.syncException(channel.bind(address.jSocketAddress)).void
 
   /**
    * Binds the channel's socket to a local address and configures the socket
    * to listen for connections, up to backlog pending connection.
    */
-  // TODO wrap `SocketAddress`
   final def bind(address: SocketAddress, backlog: Int): IO[Exception, Unit] =
-    IO.syncException(channel.bind(address, backlog)).void
+    IO.syncException(channel.bind(address.jSocketAddress, backlog)).void
 
-  // TODO wrap `SocketOption[T]?`
   final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.syncException(channel.setOption(name, value)).void
+    IO.syncException(channel.setOption(name.jSocketOption, value)).void
 
   /**
    * Accepts a connection.
@@ -95,7 +92,11 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    * channel's socket is not bound.
    */
   final def localAddress: IO[Exception, Maybe[SocketAddress]] =
-    IO.syncException(Maybe.fromNullable(channel.getLocalAddress))
+    IO.syncException(
+      Maybe
+        .fromNullable(channel.getLocalAddress)
+        .map(new SocketAddress(_))
+    )
 
   /**
    * Closes this channel.
@@ -124,11 +125,10 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     extends AsynchronousByteChannel(channel) {
 
   final def bind(address: SocketAddress): IO[Exception, Unit] =
-    IO.syncException(channel.bind(address)).void
+    IO.syncException(channel.bind(address.jSocketAddress)).void
 
-  // TODO wrap `SocketOption[T]?`
   final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.syncException(channel.setOption(name, value)).void
+    IO.syncException(channel.setOption(name.jSocketOption, value)).void
 
   final def shutdownInput: IO[Exception, Unit] =
     IO.syncException(channel.shutdownInput()).void
@@ -136,17 +136,25 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
   final def shutdownOutput: IO[Exception, Unit] =
     IO.syncException(channel.shutdownOutput()).void
 
-  final def remoteAddress: IO[Exception, SocketAddress] =
-    IO.syncException(channel.getRemoteAddress)
+  final def remoteAddress: IO[Exception, Maybe[SocketAddress]] =
+    IO.syncException(
+      Maybe
+        .fromNullable(channel.getRemoteAddress)
+        .map(new SocketAddress(_))
+    )
 
-  final def localAddress: IO[Exception, SocketAddress] =
-    IO.syncException(channel.getLocalAddress)
+  final def localAddress: IO[Exception, Maybe[SocketAddress]] =
+    IO.syncException(
+      Maybe
+        .fromNullable(channel.getLocalAddress)
+        .map(new SocketAddress(_))
+    )
 
   final def connect[A](attachment: A, socketAddress: SocketAddress): IO[Exception, Unit] =
-    wrap[A, JVoid](h => channel.connect(socketAddress, attachment, h)).void
+    wrap[A, JVoid](h => channel.connect(socketAddress.jSocketAddress, attachment, h)).void
 
   final def connect(socketAddress: SocketAddress): IO[Exception, Unit] =
-    wrap[Unit, JVoid](h => channel.connect(socketAddress, (), h)).void
+    wrap[Unit, JVoid](h => channel.connect(socketAddress.jSocketAddress, (), h)).void
 
   def read[A](dst: ByteBuffer, timeout: Duration, attachment: A): IO[Exception, Int] =
     wrap[A, JInteger] { h =>
