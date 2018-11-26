@@ -2,6 +2,9 @@ package scalaz.nio
 
 import java.nio.{ ByteBuffer => JByteBuffer }
 
+import org.scalacheck.Prop.forAll
+import org.scalacheck.Test.Passed
+import org.scalacheck._
 import scalaz.zio.{ IO, RTS }
 import testz.{ Harness, assert }
 
@@ -140,6 +143,35 @@ object BufferSuite extends RTS {
           hasArray <- b.hasArray
         } yield hasArray
         assert(unsafeRun(hasArray))
+      }, {
+        namedSection("invariant")(
+          test("0 <= mark <= position <= limit <= capacity") {
+            () =>
+              implicit val arbitraryInt: Arbitrary[Int] = Arbitrary {
+                Gen.choose(-1, 10)
+              }
+
+              val prop = forAll {
+                (markedPosition: Int, position: Int, limit: Int, capacity: Int) =>
+                  val isInvariantPreserved = for {
+                    b    <- Buffer.byte(capacity)
+                    _    <- b.limit(limit)
+                    _    <- b.position(markedPosition)
+                    _    <- b.mark
+                    _    <- b.position(position)
+                    _    <- b.reset
+                    mark <- b.position
+                  } yield 0 <= mark && mark <= position && position <= limit && limit <= capacity
+
+                  // either invariant holds or exception was caught
+                  unsafeRun(isInvariantPreserved.catchSome {
+                    case _: IllegalArgumentException | _: IllegalStateException => IO.sync(true)
+                  })
+              }
+
+              assert(Test.check(Test.Parameters.default, prop).status == Passed)
+          }
+        )
       }
     )
   }
