@@ -9,9 +9,9 @@ import java.nio.channels.{
   CompletionHandler => JCompletionHandler
 }
 
-import scalaz.nio.{ ByteBuffer, SocketAddress, SocketOption }
 import scalaz.nio.channels.AsynchronousChannel._
-import scalaz.zio.{ Async, ExitResult, IO }
+import scalaz.nio.{ ByteBuffer, SocketAddress, SocketOption }
+import scalaz.zio.{ Async, IO }
 import scalaz.{ IList, Maybe }
 
 import scala.concurrent.duration.Duration
@@ -211,21 +211,21 @@ object AsynchronousChannel {
     IO.async0[Exception, T] { k =>
       val handler = new JCompletionHandler[T, A] {
         def completed(result: T, u: A): Unit =
-          k(ExitResult.Completed(result))
+          k(IO.point(result))
 
         def failed(t: Throwable, u: A): Unit =
           t match {
-            case e: Exception => k(ExitResult.Failed(e))
-            case _            => k(ExitResult.Terminated(List(t)))
+            case e: Exception => k(IO.fail(e))
+            case _            => k(IO.terminate(t))
           }
       }
 
       try {
         op(handler)
-        Async.later[Exception, T]
+        Async.later
       } catch {
-        case e: Exception => Async.now(ExitResult.Failed(e))
-        case t: Throwable => Async.now(ExitResult.Terminated(List(t)))
+        case e: Exception => Async.now(IO.fail(e))
+        case t: Throwable => Async.now(IO.terminate(t))
       }
     }
 }
