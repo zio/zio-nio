@@ -8,6 +8,7 @@ import java.nio.channels.{
   AsynchronousSocketChannel => JAsynchronousSocketChannel,
   CompletionHandler => JCompletionHandler
 }
+import java.util.concurrent.TimeUnit
 
 import scalaz.nio.channels.AsynchronousChannel._
 import scalaz.nio.{ ByteBuffer, SocketAddress, SocketOption }
@@ -157,7 +158,13 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
 
   def read[A](dst: ByteBuffer, timeout: Duration, attachment: A): IO[Exception, Int] =
     wrap[A, JInteger] { h =>
-      channel.read(dst.buffer, timeout.asScala.length, timeout.asScala.unit, attachment, h)
+      channel.read(
+        dst.buffer,
+        timeout.fold(Long.MaxValue, _.nanos),
+        TimeUnit.NANOSECONDS,
+        attachment,
+        h
+      )
     }.map(_.toInt)
 
   def read[A](
@@ -173,8 +180,8 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
           dsts.map(_.buffer).toList.toArray,
           offset,
           length,
-          timeout.asScala.length,
-          timeout.asScala.unit,
+          timeout.fold(Long.MaxValue, _.nanos),
+          TimeUnit.NANOSECONDS,
           attachment,
           h
         )
