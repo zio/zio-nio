@@ -6,9 +6,8 @@ object T {
   import java.io.IOException
   import scalaz.nio.channels.{ AsynchronousServerSocketChannel, AsynchronousSocketChannel }
   import scalaz.zio.console._
+  import scalaz.zio.duration._
   import scalaz.zio.{ App, IO }
-
-  import scala.concurrent.duration._
 
   object ClientServer extends App {
     override def run(args: List[String]): IO[Nothing, ExitStatus] =

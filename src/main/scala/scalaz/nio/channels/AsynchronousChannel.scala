@@ -8,13 +8,13 @@ import java.nio.channels.{
   AsynchronousSocketChannel => JAsynchronousSocketChannel,
   CompletionHandler => JCompletionHandler
 }
+import java.util.concurrent.TimeUnit
 
-import scalaz.nio.{ ByteBuffer, SocketAddress, SocketOption }
 import scalaz.nio.channels.AsynchronousChannel._
-import scalaz.zio.{ Async, ExitResult, IO }
+import scalaz.nio.{ ByteBuffer, SocketAddress, SocketOption }
+import scalaz.zio.duration._
+import scalaz.zio.{ Async, IO }
 import scalaz.{ IList, Maybe }
-
-import scala.concurrent.duration.Duration
 
 class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
 
@@ -158,7 +158,13 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
 
   def read[A](dst: ByteBuffer, timeout: Duration, attachment: A): IO[Exception, Int] =
     wrap[A, JInteger] { h =>
-      channel.read(dst.buffer, timeout.length, timeout.unit, attachment, h)
+      channel.read(
+        dst.buffer,
+        timeout.fold(Long.MaxValue, _.nanos),
+        TimeUnit.NANOSECONDS,
+        attachment,
+        h
+      )
     }.map(_.toInt)
 
   def read[A](
@@ -174,8 +180,8 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
           dsts.map(_.buffer).toList.toArray,
           offset,
           length,
-          timeout.length,
-          timeout.unit,
+          timeout.fold(Long.MaxValue, _.nanos),
+          TimeUnit.NANOSECONDS,
           attachment,
           h
         )
@@ -211,21 +217,21 @@ object AsynchronousChannel {
     IO.async0[Exception, T] { k =>
       val handler = new JCompletionHandler[T, A] {
         def completed(result: T, u: A): Unit =
-          k(ExitResult.Completed(result))
+          k(IO.point(result))
 
         def failed(t: Throwable, u: A): Unit =
           t match {
-            case e: Exception => k(ExitResult.Failed(e))
-            case _            => k(ExitResult.Terminated(List(t)))
+            case e: Exception => k(IO.fail(e))
+            case _            => k(IO.terminate(t))
           }
       }
 
       try {
         op(handler)
-        Async.later[Exception, T]
+        Async.later
       } catch {
-        case e: Exception => Async.now(ExitResult.Failed(e))
-        case t: Throwable => Async.now(ExitResult.Terminated(List(t)))
+        case e: Exception => Async.now(IO.fail(e))
+        case t: Throwable => Async.now(IO.terminate(t))
       }
     }
 }
