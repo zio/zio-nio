@@ -24,8 +24,17 @@ credentials in ThisBuild ++= sonataCredentials.toSeq
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 
-lazy val root =
-  (project in file("."))
+lazy val root = (project in file(".")).aggregate(macros, library)
+
+lazy val macros = 
+  (project in file("macros"))
+    .settings(
+      macroSettings()
+    )
+
+lazy val library = 
+  (project in file("library"))
+    .dependsOn(macros)
     .settings(
       stdSettings("nio")
     )
@@ -33,3 +42,5 @@ lazy val root =
 
 resolvers +=
   "Sonatype OSS Snapshots".at("https://oss.sonatype.org/content/repositories/snapshots")
+
+onLoad in Global := (onLoad in Global).value andThen {s: State => "project library" :: s}

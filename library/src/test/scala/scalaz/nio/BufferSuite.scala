@@ -13,6 +13,29 @@ object BufferSuite extends RTS {
     val initialCapacity = 10
     val newLimit        = 3
     section(
+      namedSection("instantiate")(
+        test("byte") { () =>
+          assert(unsafeRun(Buffer.byte(0).map(_ => true)))
+        },
+        test("char") { () =>
+          assert(unsafeRun(Buffer.char(0).map(_ => true)))
+        },
+        test("double") { () =>
+          assert(unsafeRun(Buffer.double(0).map(_ => true)))
+        },
+        test("float") { () =>
+          assert(unsafeRun(Buffer.float(0).map(_ => true)))
+        },
+        test("int") { () =>
+          assert(unsafeRun(Buffer.int(0).map(_ => true)))
+        },
+        test("long") { () =>
+          assert(unsafeRun(Buffer.long(0).map(_ => true)))
+        },
+        test("short") { () =>
+          assert(unsafeRun(Buffer.short(0).map(_ => true)))
+        }
+      ),
       test("capacity") { () =>
         val testProgram: IO[Exception, Boolean] = for {
           bb <- Buffer.byte(initialCapacity)
@@ -143,5 +166,4 @@ object BufferSuite extends RTS {
       }
     )
   }
-
 }
