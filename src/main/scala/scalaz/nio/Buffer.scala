@@ -34,7 +34,8 @@ abstract class Buffer[A: ClassTag, B <: JBuffer] private[nio] (private[nio] val 
 
   final def mark: IO[Nothing, Unit] = IO.sync(buffer.mark()).void
 
-  final def reset: IO[Nothing, Unit] = IO.sync(buffer.reset()).void
+  final def reset: IO[Exception, Unit] =
+    IO.syncException(buffer.reset()).void
 
   final def clear: IO[Nothing, Unit] = IO.sync(buffer.clear()).void
 
