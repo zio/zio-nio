@@ -62,6 +62,9 @@ object ByteBuffer {
 
   def apply(capacity: Int): IO[Exception, ByteBuffer] =
     IO.syncException(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_))
+
+  def apply(bytes: Seq[Byte]): IO[Exception, ByteBuffer] =
+    IO.syncException(JByteBuffer.wrap(bytes.toArray)).map(new ByteBuffer(_))
 }
 
 object Buffer {
