@@ -19,18 +19,18 @@ object AsynchronousChannelGroup {
     IO.syncException(new AsynchronousChannelGroup(JAsynchronousChannelGroup.withThreadPool(executor)))
 }
 
-class AsynchronousChannelGroup(private val channel: JAsynchronousChannelGroup) {
+class AsynchronousChannelGroup(private val channelGroup: JAsynchronousChannelGroup) {
 
   def awaitTermination(timeout: Duration): IO[Exception, Boolean] =
-    IO.syncException(channel.awaitTermination(timeout.asJava.toMillis, TimeUnit.MILLISECONDS))
+    IO.syncException(channelGroup.awaitTermination(timeout.asJava.toMillis, TimeUnit.MILLISECONDS))
 
-  def isShutdown(): Boolean = channel.isShutdown
+  def isShutdown(): Boolean = channelGroup.isShutdown
 
-  def isTerminated(): Boolean = channel.isTerminated
+  def isTerminated(): Boolean = channelGroup.isTerminated
 
-  def provider(): JAsynchronousChannelProvider = channel.provider()
+  def provider(): JAsynchronousChannelProvider = channelGroup.provider()
 
-  def shutdown(): Unit = channel.shutdown()
+  def shutdown(): Unit = channelGroup.shutdown()
 
-  def shutdownNow(): IO[Exception, Unit] = IO.syncException(channel.shutdownNow())
+  def shutdownNow(): IO[Exception, Unit] = IO.syncException(channelGroup.shutdownNow())
 }
