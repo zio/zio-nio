@@ -217,12 +217,12 @@ object AsynchronousChannel {
     IO.async0[Exception, T] { k =>
       val handler = new JCompletionHandler[T, A] {
         def completed(result: T, u: A): Unit =
-          k(IO.point(result))
+          k(IO.succeedLazy(result))
 
         def failed(t: Throwable, u: A): Unit =
           t match {
             case e: Exception => k(IO.fail(e))
-            case _            => k(IO.terminate(t))
+            case _            => k(IO.die(t))
           }
       }
 
@@ -231,7 +231,7 @@ object AsynchronousChannel {
         Async.later
       } catch {
         case e: Exception => Async.now(IO.fail(e))
-        case t: Throwable => Async.now(IO.terminate(t))
+        case t: Throwable => Async.now(IO.die(t))
       }
     }
 }
