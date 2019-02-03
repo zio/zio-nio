@@ -15,7 +15,7 @@ object Scalaz {
 
   val compileAndTest = Seq(
     "org.scalaz" %% "scalaz-core" % scalazVersion % "compile, test",
-    "org.scalaz" %% "scalaz-zio"  % "0.5.3"
+    "org.scalaz" %% "scalaz-zio"  % "0.6.0"
   )
 
   private val stdOptions = Seq(

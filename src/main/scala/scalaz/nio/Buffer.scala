@@ -16,18 +16,18 @@ import scala.reflect.ClassTag
 
 @specialized // See if Specialized will work on return values, e.g. `get`
 abstract class Buffer[A: ClassTag, B <: JBuffer] private[nio] (private[nio] val buffer: B) {
-  final def capacity: IO[Nothing, Int] = IO.now(buffer.capacity)
+  final def capacity: IO[Nothing, Int] = IO.succeed(buffer.capacity)
 
-  final def position: IO[Nothing, Int] = IO.now(buffer.position)
+  final def position: IO[Nothing, Int] = IO.succeed(buffer.position)
 
   final def position(newPosition: Int): IO[Exception, Unit] =
     IO.syncException(buffer.position(newPosition)).void
 
-  final def limit: IO[Nothing, Int] = IO.now(buffer.limit)
+  final def limit: IO[Nothing, Int] = IO.succeed(buffer.limit)
 
-  final def remaining: IO[Nothing, Int] = IO.now(buffer.remaining)
+  final def remaining: IO[Nothing, Int] = IO.succeed(buffer.remaining)
 
-  final def hasRemaining: IO[Nothing, Boolean] = IO.now(buffer.hasRemaining)
+  final def hasRemaining: IO[Nothing, Boolean] = IO.succeed(buffer.hasRemaining)
 
   final def limit(newLimit: Int): IO[Exception, Unit] =
     IO.syncException(buffer.limit(newLimit)).void
@@ -43,13 +43,13 @@ abstract class Buffer[A: ClassTag, B <: JBuffer] private[nio] (private[nio] val 
 
   final def rewind: IO[Nothing, Unit] = IO.sync(buffer.rewind()).void
 
-  final def isReadOnly: IO[Nothing, Boolean] = IO.now(buffer.isReadOnly)
+  final def isReadOnly: IO[Nothing, Boolean] = IO.succeed(buffer.isReadOnly)
 
   def array: IO[Exception, Array[A]]
 
-  final def hasArray: IO[Nothing, Boolean] = IO.now(buffer.hasArray)
-  final def arrayOffset: IO[Nothing, Int]  = IO.now(buffer.arrayOffset)
-  final def isDirect: IO[Nothing, Boolean] = IO.now(buffer.isDirect)
+  final def hasArray: IO[Nothing, Boolean] = IO.succeed(buffer.hasArray)
+  final def arrayOffset: IO[Nothing, Int]  = IO.succeed(buffer.arrayOffset)
+  final def isDirect: IO[Nothing, Boolean] = IO.succeed(buffer.isDirect)
 
 }
 
