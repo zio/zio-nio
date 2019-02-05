@@ -10,7 +10,7 @@ object Scalaz {
     "org.scalaz"     %% "testz-stdlib" % "0.0.5"  % "test",
     "org.scalaz"     %% "testz-runner" % "0.0.5"  % "test",
     "org.scalaz"     %% "testz-scalaz" % "0.0.5"  % "test",
-    "org.scalamock"  %% "scalamock" % "4.1.0" % "test"
+    "org.scalaz"     %% "testz-specs2" % "0.0.5"  % "test"
   )
   val compileOnlyDeps = Seq("com.github.ghik" %% "silencer-lib" % "1.3.1" % "provided")
 
