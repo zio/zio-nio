@@ -12,11 +12,9 @@ object T {
   object ClientServer extends App {
     override def run(args: List[String]): IO[Nothing, ExitStatus] =
       myAppLogic
-        .leftMap(new IOException(_))
         .attempt
         .map(_.fold(e => { e.printStackTrace(); 1 }, _ => 0))
         .map(ExitStatus.ExitNow(_))
-
 
     def myAppLogic: IO[Exception, Unit] =
       for {
