@@ -1,9 +1,9 @@
 package scalaz.nio
 
-import scalaz.zio.IO
+import scalaz.zio.{ IO }
 //import scalaz.Scalaz._
 
-import java.nio.{ Buffer => JBuffer, ByteBuffer => JByteBuffer }
+import java.nio.{ Buffer => JBuffer, ByteBuffer => JByteBuffer, CharBuffer => JCharBuffer }
 
 import scala.reflect.ClassTag
 //import scala.{Array => SArray}
@@ -55,7 +55,15 @@ abstract class Buffer[A: ClassTag, B <: JBuffer] private[nio] (private[nio] val 
 
 class ByteBuffer private (val byteBuffer: JByteBuffer)
     extends Buffer[Byte, JByteBuffer](byteBuffer) {
+
   def array: IO[Exception, Array[Byte]] = IO.syncException(byteBuffer.array())
+}
+
+class CharBuffer private (private val charBuffer: JCharBuffer)
+    extends Buffer[Char, JCharBuffer](charBuffer) {
+
+  def array: IO[Exception, Array[Char]] =
+    IO.syncException(charBuffer.array())
 }
 
 object ByteBuffer {
@@ -67,22 +75,15 @@ object ByteBuffer {
     IO.syncException(JByteBuffer.wrap(bytes.toArray)).map(new ByteBuffer(_))
 }
 
+object CharBuffer {
+
+  def apply(capacity: Int): Buffer[Char, JCharBuffer] =
+    new CharBuffer(JCharBuffer.allocate(capacity))
+}
+
 object Buffer {
+
   def byte(capacity: Int) = ByteBuffer(capacity)
 
   def char(capacity: Int) = CharBuffer(capacity)
-
-  private class CharBuffer private (private val charBuffer: JByteBuffer)
-      extends Buffer[Char, JByteBuffer](charBuffer) {
-
-    def array: IO[Exception, Array[Char]] =
-      IO.syncException(charBuffer.array().asInstanceOf[Array[Char]])
-  }
-
-  private object CharBuffer {
-
-    def apply(capacity: Int): Buffer[Char, JByteBuffer] =
-      new CharBuffer(JByteBuffer.allocate(capacity))
-  }
-
 }
