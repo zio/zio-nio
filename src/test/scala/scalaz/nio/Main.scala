@@ -21,6 +21,7 @@ object Main {
       TestOutput.combineAll1(
         BufferSuite.tests(pureHarness)((), List("Buffer tests")),
         ChannelSuite.tests(pureHarness)((), List("Channel tests")),
+        FileChannelSuite.tests(pureHarness)((), List("FileChannel tests")),
         ScatterGatherChannelSuite
           .tests(pureHarness)((), List("Scattering and Gathering Channel tests"))
       )
