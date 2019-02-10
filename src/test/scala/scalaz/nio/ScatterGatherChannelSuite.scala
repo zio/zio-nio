@@ -15,7 +15,7 @@ object ScatterGatherChannelSuite extends RTS {
 
     section(
       test("scattering read") { () =>
-        val raf         = new RandomAccessFile("src/test/resources/scatter_hello_world.txt", "r")
+        val raf         = new RandomAccessFile("src/test/resources/scattering_read_test.txt", "r")
         val fileChannel = raf.getChannel()
 
         val readLine: ByteBuffer => IO[Exception, String] = buffer =>
@@ -38,7 +38,7 @@ object ScatterGatherChannelSuite extends RTS {
         assert(t2 == "World")
       },
       test("gathering write") { () =>
-        val file        = new File("src/test/resources/gather_hello_world.txt")
+        val file        = new File("src/test/resources/gathering_write_test.txt")
         val raf         = new RandomAccessFile(file, "rw")
         val fileChannel = raf.getChannel()
 
