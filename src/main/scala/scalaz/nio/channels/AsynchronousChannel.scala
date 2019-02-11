@@ -12,7 +12,6 @@ import java.nio.channels.{
 
 import java.util.concurrent.TimeUnit
 
-
 import scalaz._
 import Scalaz._
 
@@ -223,20 +222,20 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     ): IO[Exception, Long] =
       wrap[A, JLong](
         h =>
-        channel.read(
-          dsts.map(_.buffer.asInstanceOf[JByteBuffer]).toList.toArray,
-          offset,
-          length,
-          timeout.fold(Long.MaxValue, _.nanos),
-          TimeUnit.NANOSECONDS,
-          attachment,
-          h
-        )
+          channel.read(
+            dsts.map(_.buffer.asInstanceOf[JByteBuffer]).toList.toArray,
+            offset,
+            length,
+            timeout.fold(Long.MaxValue, _.nanos),
+            TimeUnit.NANOSECONDS,
+            attachment,
+            h
+          )
       ).map(_.toLong)
 
     for {
       bs <- dsts.map(Buffer.byte(_)).sequence
-      r <- read(bs, offset, length, timeout, attachment)
+      r  <- read(bs, offset, length, timeout, attachment)
     } yield r
   }
 }
