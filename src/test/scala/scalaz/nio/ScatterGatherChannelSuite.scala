@@ -18,7 +18,7 @@ object ScatterGatherChannelSuite extends RTS {
         val raf         = new RandomAccessFile("src/test/resources/scattering_read_test.txt", "r")
         val fileChannel = raf.getChannel()
 
-        val readLine: ByteBuffer => IO[Exception, String] = buffer =>
+        val readLine: Buffer[Byte] => IO[Exception, String] = buffer =>
           for {
             _     <- buffer.flip
             array <- buffer.array
@@ -26,7 +26,7 @@ object ScatterGatherChannelSuite extends RTS {
           } yield text
 
         val testProgram = for {
-          buffs   <- IO.collectAll(Seq(ByteBuffer(5), ByteBuffer(5)))
+          buffs   <- IO.collectAll(Seq(Buffer.byte(5), Buffer.byte(5)))
           channel = new ScatteringByteChannel(fileChannel)
           _       <- channel.read(buffs)
           list    <- IO.collectAll(buffs.map(readLine))
@@ -43,7 +43,7 @@ object ScatterGatherChannelSuite extends RTS {
         val fileChannel = raf.getChannel()
 
         val testProgram = for {
-          buffs   <- IO.collectAll(Seq(ByteBuffer("Hello".getBytes), ByteBuffer("World".getBytes)))
+          buffs   <- IO.collectAll(Seq(Buffer.byte("Hello".getBytes), Buffer.byte("World".getBytes)))
           channel = new GatheringByteChannel(fileChannel)
           _       <- channel.write(buffs)
           _       <- channel.close

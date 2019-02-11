@@ -1,6 +1,7 @@
 package scalaz.nio.channels
 
 import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
+import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{
   AsynchronousByteChannel => JAsynchronousByteChannel,
   AsynchronousChannelGroup => JAsynchronousChannelGroup,
@@ -11,7 +12,7 @@ import java.nio.channels.{
 import java.util.concurrent.TimeUnit
 
 import scalaz.nio.channels.AsynchronousChannel._
-import scalaz.nio.{ ByteBuffer, SocketAddress, SocketOption }
+import scalaz.nio.{ Buffer, SocketAddress, SocketOption }
 import scalaz.zio.duration._
 import scalaz.zio.{ Async, IO }
 import scalaz.{ IList, Maybe }
@@ -22,27 +23,29 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
    *  Reads data from this channel into buffer, returning the number of bytes
    *  read, or -1 if no bytes were read.
    */
-  final def read(b: ByteBuffer): IO[Exception, Int] =
-    wrap[Unit, JInteger](h => channel.read(b.buffer, (), h)).map(_.toInt)
+  final def read(b: Buffer[Byte]): IO[Exception, Int] =
+    wrap[Unit, JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], (), h)).map(_.toInt)
+
+//  final def read(b: Chunk[)
 
   /**
    *  Reads data from this channel into buffer, returning the number of bytes
    *  read, or -1 if no bytes were read.
    */
-  final def read[A](b: ByteBuffer, attachment: A): IO[Exception, Int] =
-    wrap[A, JInteger](h => channel.read(b.buffer, attachment, h)).map(_.toInt)
+  final def read[A](b: Buffer[Byte], attachment: A): IO[Exception, Int] =
+    wrap[A, JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], attachment, h)).map(_.toInt)
 
   /**
    *  Writes data into this channel from buffer, returning the number of bytes written.
    */
-  final def write(b: ByteBuffer): IO[Exception, Int] =
-    wrap[Unit, JInteger](h => channel.write(b.buffer, (), h)).map(_.toInt)
+  final def write(b: Buffer[Byte]): IO[Exception, Int] =
+    wrap[Unit, JInteger](h => channel.write(b.buffer.asInstanceOf[JByteBuffer], (), h)).map(_.toInt)
 
   /**
    *  Writes data into this channel from buffer, returning the number of bytes written.
    */
-  final def write[A](b: ByteBuffer, attachment: A): IO[Exception, Int] =
-    wrap[A, JInteger](h => channel.write(b.buffer, attachment, h)).map(_.toInt)
+  final def write[A](b: Buffer[Byte], attachment: A): IO[Exception, Int] =
+    wrap[A, JInteger](h => channel.write(b.buffer.asInstanceOf[JByteBuffer], attachment, h)).map(_.toInt)
 
   /**
    * Closes this channel.
@@ -150,16 +153,17 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
         .map(new SocketAddress(_))
     )
 
-  final def connect[A](attachment: A, socketAddress: SocketAddress): IO[Exception, Unit] =
-    wrap[A, JVoid](h => channel.connect(socketAddress.jSocketAddress, attachment, h)).void
-
   final def connect(socketAddress: SocketAddress): IO[Exception, Unit] =
     wrap[Unit, JVoid](h => channel.connect(socketAddress.jSocketAddress, (), h)).void
 
-  def read[A](dst: ByteBuffer, timeout: Duration, attachment: A): IO[Exception, Int] =
+  final def connect[A](socketAddress: SocketAddress, attachment: A): IO[Exception, Unit] =
+    wrap[A, JVoid](h => channel.connect(socketAddress.jSocketAddress, attachment, h)).void
+
+
+  def read[A](dst: Buffer[Byte], timeout: Duration, attachment: A): IO[Exception, Int] =
     wrap[A, JInteger] { h =>
       channel.read(
-        dst.buffer,
+        dst.buffer.asInstanceOf[JByteBuffer],
         timeout.fold(Long.MaxValue, _.nanos),
         TimeUnit.NANOSECONDS,
         attachment,
@@ -168,7 +172,7 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     }.map(_.toInt)
 
   def read[A](
-    dsts: IList[ByteBuffer],
+    dsts: IList[Buffer[Byte]],
     offset: Int,
     length: Int,
     timeout: Duration,
@@ -177,7 +181,7 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     wrap[A, JLong](
       h =>
         channel.read(
-          dsts.map(_.buffer).toList.toArray,
+          dsts.map(_.buffer.asInstanceOf[JByteBuffer]).toList.toArray,
           offset,
           length,
           timeout.fold(Long.MaxValue, _.nanos),

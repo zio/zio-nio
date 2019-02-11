@@ -15,7 +15,7 @@ import scala.reflect.ClassTag
 //}
 
 @specialized // See if Specialized will work on return values, e.g. `get`
-abstract class Buffer[A: ClassTag, B <: JBuffer] private[nio] (private[nio] val buffer: B) {
+abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffer) {
   final val capacity: IO[Nothing, Int] = IO.succeed(buffer.capacity)
 
   final def position: IO[Nothing, Int] = IO.sync(buffer.position)
@@ -53,37 +53,22 @@ abstract class Buffer[A: ClassTag, B <: JBuffer] private[nio] (private[nio] val 
 
 }
 
-class ByteBuffer private (val byteBuffer: JByteBuffer)
-    extends Buffer[Byte, JByteBuffer](byteBuffer) {
-
-  def array: IO[Exception, Array[Byte]] = IO.syncException(byteBuffer.array())
-}
-
-class CharBuffer private (private val charBuffer: JCharBuffer)
-    extends Buffer[Char, JCharBuffer](charBuffer) {
-
-  def array: IO[Exception, Array[Char]] =
-    IO.syncException(charBuffer.array())
-}
-
-object ByteBuffer {
-
-  def apply(capacity: Int): IO[Exception, ByteBuffer] =
-    IO.syncException(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_))
-
-  def apply(bytes: Seq[Byte]): IO[Exception, ByteBuffer] =
-    IO.syncException(JByteBuffer.wrap(bytes.toArray)).map(new ByteBuffer(_))
-}
-
-object CharBuffer {
-
-  def apply(capacity: Int): Buffer[Char, JCharBuffer] =
-    new CharBuffer(JCharBuffer.allocate(capacity))
-}
-
 object Buffer {
+  private[this] class ByteBuffer (val byteBuffer: JByteBuffer)
+      extends Buffer[Byte](byteBuffer) {
 
-  def byte(capacity: Int) = ByteBuffer(capacity)
+    def array: IO[Exception, Array[Byte]] = IO.syncException(byteBuffer.array())
+  }
 
-  def char(capacity: Int) = CharBuffer(capacity)
+  private[this] class CharBuffer (val charBuffer: JCharBuffer)
+      extends Buffer[Char](charBuffer) {
+
+    def array: IO[Exception, Array[Char]] =
+      IO.syncException(charBuffer.array())
+  }
+
+  def byte(capacity: Int): IO[Exception, Buffer[Byte]] = IO.syncException(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_))
+  def byte(bytes: Seq[Byte]): IO[Exception, Buffer[Byte]] = IO.syncException(JByteBuffer.wrap(bytes.toArray)).map(new ByteBuffer(_))
+
+  def char(capacity: Int): IO[Exception, Buffer[Char]] = IO.syncException(JCharBuffer.allocate(capacity)).map(new CharBuffer(_))
 }
