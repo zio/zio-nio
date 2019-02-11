@@ -9,14 +9,19 @@ import java.nio.channels.{
   AsynchronousSocketChannel => JAsynchronousSocketChannel,
   CompletionHandler => JCompletionHandler
 }
-import scalaz.zio.Chunk
+
 import java.util.concurrent.TimeUnit
+
+
+import scalaz._
+import Scalaz._
 
 import scalaz.nio.channels.AsynchronousChannel._
 import scalaz.nio.{ Buffer, SocketAddress, SocketOption }
-import scalaz.zio.duration._
+import scalaz.zio.Chunk
 import scalaz.zio.{ Async, IO }
-import scalaz.{ IList, Maybe }
+import scalaz.zio.duration._
+import scalaz.zio.interop.scalaz72._
 
 class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
 
@@ -184,26 +189,40 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
   final def connect[A](socketAddress: SocketAddress, attachment: A): IO[Exception, Unit] =
     wrap[A, JVoid](h => channel.connect(socketAddress.jSocketAddress, attachment, h)).void
 
-  def read[A](dst: Buffer[Byte], timeout: Duration, attachment: A): IO[Exception, Int] =
-    wrap[A, JInteger] { h =>
-      channel.read(
-        dst.buffer.asInstanceOf[JByteBuffer],
-        timeout.fold(Long.MaxValue, _.nanos),
-        TimeUnit.NANOSECONDS,
-        attachment,
-        h
-      )
-    }.map(_.toInt)
+  def read[A](dst: Chunk[Byte], timeout: Duration, attachment: A): IO[Exception, Int] = {
+    def read[A](dst: Buffer[Byte], timeout: Duration, attachment: A): IO[Exception, Int] =
+      wrap[A, JInteger] { h =>
+        channel.read(
+          dst.buffer.asInstanceOf[JByteBuffer],
+          timeout.fold(Long.MaxValue, _.nanos),
+          TimeUnit.NANOSECONDS,
+          attachment,
+          h
+        )
+      }.map(_.toInt)
+
+    for {
+      b <- Buffer.byte(dst)
+      r <- read(b, timeout, attachment)
+    } yield r
+  }
 
   def read[A](
-    dsts: IList[Buffer[Byte]],
+    dsts: IList[Chunk[Byte]],
     offset: Int,
     length: Int,
     timeout: Duration,
     attachment: A
-  ): IO[Exception, Long] =
-    wrap[A, JLong](
-      h =>
+  ): IO[Exception, Long] = {
+    def read[A](
+      dsts: IList[Buffer[Byte]],
+      offset: Int,
+      length: Int,
+      timeout: Duration,
+      attachment: A
+    ): IO[Exception, Long] =
+      wrap[A, JLong](
+        h =>
         channel.read(
           dsts.map(_.buffer.asInstanceOf[JByteBuffer]).toList.toArray,
           offset,
@@ -213,7 +232,13 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
           attachment,
           h
         )
-    ).map(_.toLong)
+      ).map(_.toLong)
+
+    for {
+      bs <- dsts.map(Buffer.byte(_)).sequence
+      r <- read(bs, offset, length, timeout, attachment)
+    } yield r
+  }
 }
 
 object AsynchronousSocketChannel {
