@@ -26,10 +26,10 @@ object ScatterGatherChannelSuite extends RTS {
           } yield text
 
         val testProgram = for {
-          buffs   <- IO.sequence(Seq(ByteBuffer(5), ByteBuffer(5)))
+          buffs   <- IO.collectAll(Seq(ByteBuffer(5), ByteBuffer(5)))
           channel = new ScatteringByteChannel(fileChannel)
           _       <- channel.read(buffs)
-          list    <- IO.sequence(buffs.map(readLine))
+          list    <- IO.collectAll(buffs.map(readLine))
         } yield list
 
         val t1 :: t2 :: Nil = unsafeRun(testProgram)
@@ -43,7 +43,7 @@ object ScatterGatherChannelSuite extends RTS {
         val fileChannel = raf.getChannel()
 
         val testProgram = for {
-          buffs   <- IO.sequence(Seq(ByteBuffer("Hello".getBytes), ByteBuffer("World".getBytes)))
+          buffs   <- IO.collectAll(Seq(ByteBuffer("Hello".getBytes), ByteBuffer("World".getBytes)))
           channel = new GatheringByteChannel(fileChannel)
           _       <- channel.write(buffs)
           _       <- channel.close
