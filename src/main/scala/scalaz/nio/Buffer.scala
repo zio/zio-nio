@@ -54,21 +54,23 @@ abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffe
 }
 
 object Buffer {
-  private[this] class ByteBuffer (val byteBuffer: JByteBuffer)
-      extends Buffer[Byte](byteBuffer) {
+  private[this] class ByteBuffer(val byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
 
     def array: IO[Exception, Array[Byte]] = IO.syncException(byteBuffer.array())
   }
 
-  private[this] class CharBuffer (val charBuffer: JCharBuffer)
-      extends Buffer[Char](charBuffer) {
+  private[this] class CharBuffer(val charBuffer: JCharBuffer) extends Buffer[Char](charBuffer) {
 
     def array: IO[Exception, Array[Char]] =
       IO.syncException(charBuffer.array())
   }
 
-  def byte(capacity: Int): IO[Exception, Buffer[Byte]] = IO.syncException(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_))
-  def byte(bytes: Seq[Byte]): IO[Exception, Buffer[Byte]] = IO.syncException(JByteBuffer.wrap(bytes.toArray)).map(new ByteBuffer(_))
+  def byte(capacity: Int): IO[Exception, Buffer[Byte]] =
+    IO.syncException(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_))
 
-  def char(capacity: Int): IO[Exception, Buffer[Char]] = IO.syncException(JCharBuffer.allocate(capacity)).map(new CharBuffer(_))
+  def byte(bytes: Seq[Byte]): IO[Exception, Buffer[Byte]] =
+    IO.syncException(JByteBuffer.wrap(bytes.toArray)).map(new ByteBuffer(_))
+
+  def char(capacity: Int): IO[Exception, Buffer[Char]] =
+    IO.syncException(JCharBuffer.allocate(capacity)).map(new CharBuffer(_))
 }

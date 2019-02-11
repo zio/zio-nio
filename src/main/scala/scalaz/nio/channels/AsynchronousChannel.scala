@@ -33,7 +33,8 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
    *  read, or -1 if no bytes were read.
    */
   final def read[A](b: Buffer[Byte], attachment: A): IO[Exception, Int] =
-    wrap[A, JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], attachment, h)).map(_.toInt)
+    wrap[A, JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], attachment, h))
+      .map(_.toInt)
 
   /**
    *  Writes data into this channel from buffer, returning the number of bytes written.
@@ -45,7 +46,8 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
    *  Writes data into this channel from buffer, returning the number of bytes written.
    */
   final def write[A](b: Buffer[Byte], attachment: A): IO[Exception, Int] =
-    wrap[A, JInteger](h => channel.write(b.buffer.asInstanceOf[JByteBuffer], attachment, h)).map(_.toInt)
+    wrap[A, JInteger](h => channel.write(b.buffer.asInstanceOf[JByteBuffer], attachment, h))
+      .map(_.toInt)
 
   /**
    * Closes this channel.
@@ -158,7 +160,6 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
 
   final def connect[A](socketAddress: SocketAddress, attachment: A): IO[Exception, Unit] =
     wrap[A, JVoid](h => channel.connect(socketAddress.jSocketAddress, attachment, h)).void
-
 
   def read[A](dst: Buffer[Byte], timeout: Duration, attachment: A): IO[Exception, Int] =
     wrap[A, JInteger] { h =>

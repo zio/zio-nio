@@ -16,5 +16,6 @@ class GatheringByteChannel(private val channel: JGatheringByteChannel) {
   def close(): IO[Exception, Unit] =
     IO.syncException(channel.close())
 
-  private def unwrap(srcs: Seq[Buffer[Byte]]) = srcs.map(d => d.buffer.asInstanceOf[ByteBuffer]).toArray
+  private def unwrap(srcs: Seq[Buffer[Byte]]) =
+    srcs.map(d => d.buffer.asInstanceOf[ByteBuffer]).toArray
 }
