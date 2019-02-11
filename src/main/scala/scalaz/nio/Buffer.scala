@@ -1,6 +1,6 @@
 package scalaz.nio
 
-import scalaz.zio.{ IO }
+import scalaz.zio.{ Chunk, IO }
 //import scalaz.Scalaz._
 
 import java.nio.{ Buffer => JBuffer, ByteBuffer => JByteBuffer, CharBuffer => JCharBuffer }
@@ -68,8 +68,8 @@ object Buffer {
   def byte(capacity: Int): IO[Exception, Buffer[Byte]] =
     IO.syncException(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_))
 
-  def byte(bytes: Seq[Byte]): IO[Exception, Buffer[Byte]] =
-    IO.syncException(JByteBuffer.wrap(bytes.toArray)).map(new ByteBuffer(_))
+  def byte(chunk: Chunk[Byte]): IO[Exception, Buffer[Byte]] =
+    IO.syncException(JByteBuffer.wrap(chunk.toArray)).map(new ByteBuffer(_))
 
   def char(capacity: Int): IO[Exception, Buffer[Char]] =
     IO.syncException(JCharBuffer.allocate(capacity)).map(new CharBuffer(_))

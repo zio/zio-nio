@@ -9,6 +9,7 @@ import java.nio.channels.{
   AsynchronousSocketChannel => JAsynchronousSocketChannel,
   CompletionHandler => JCompletionHandler
 }
+import scalaz.zio.Chunk
 import java.util.concurrent.TimeUnit
 
 import scalaz.nio.channels.AsynchronousChannel._
@@ -23,31 +24,53 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
    *  Reads data from this channel into buffer, returning the number of bytes
    *  read, or -1 if no bytes were read.
    */
-  final def read(b: Buffer[Byte]): IO[Exception, Int] =
+  final private[nio] def read(b: Buffer[Byte]): IO[Exception, Int] =
     wrap[Unit, JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], (), h)).map(_.toInt)
 
-//  final def read(b: Chunk[)
+  final def read(chunk: Chunk[Byte]): IO[Exception, Int] =
+    for {
+      b <- Buffer.byte(chunk)
+      r <- read(b)
+    } yield r
 
   /**
    *  Reads data from this channel into buffer, returning the number of bytes
    *  read, or -1 if no bytes were read.
    */
-  final def read[A](b: Buffer[Byte], attachment: A): IO[Exception, Int] =
+  final private[nio] def read[A](b: Buffer[Byte], attachment: A): IO[Exception, Int] =
     wrap[A, JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], attachment, h))
       .map(_.toInt)
 
-  /**
-   *  Writes data into this channel from buffer, returning the number of bytes written.
-   */
-  final def write(b: Buffer[Byte]): IO[Exception, Int] =
-    wrap[Unit, JInteger](h => channel.write(b.buffer.asInstanceOf[JByteBuffer], (), h)).map(_.toInt)
+  final def read[A](chunk: Chunk[Byte], attachment: A): IO[Exception, Int] =
+    for {
+      b <- Buffer.byte(chunk)
+      r <- read(b, attachment)
+    } yield r
 
   /**
    *  Writes data into this channel from buffer, returning the number of bytes written.
    */
-  final def write[A](b: Buffer[Byte], attachment: A): IO[Exception, Int] =
+  final private[nio] def write(b: Buffer[Byte]): IO[Exception, Int] =
+    wrap[Unit, JInteger](h => channel.write(b.buffer.asInstanceOf[JByteBuffer], (), h)).map(_.toInt)
+
+  final def write(chunk: Chunk[Byte]): IO[Exception, Int] =
+    for {
+      b <- Buffer.byte(chunk)
+      r <- write(b)
+    } yield r
+
+  /**
+   *  Writes data into this channel from buffer, returning the number of bytes written.
+   */
+  final private[nio] def write[A](b: Buffer[Byte], attachment: A): IO[Exception, Int] =
     wrap[A, JInteger](h => channel.write(b.buffer.asInstanceOf[JByteBuffer], attachment, h))
       .map(_.toInt)
+
+  final def write[A](chunk: Chunk[Byte], attachment: A): IO[Exception, Int] =
+    for {
+      b <- Buffer.byte(chunk)
+      r <- write(b, attachment)
+    } yield r
 
   /**
    * Closes this channel.

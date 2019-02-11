@@ -3,7 +3,7 @@ package scalaz.nio
 import java.io.{ File, RandomAccessFile }
 
 import scalaz.nio.channels.{ GatheringByteChannel, ScatteringByteChannel }
-import scalaz.zio.{ IO, RTS }
+import scalaz.zio.{ Chunk, IO, RTS }
 import testz.{ Harness, assert }
 
 import scala.io.Source
@@ -43,7 +43,12 @@ object ScatterGatherChannelSuite extends RTS {
         val fileChannel = raf.getChannel()
 
         val testProgram = for {
-          buffs   <- IO.collectAll(Seq(Buffer.byte("Hello".getBytes), Buffer.byte("World".getBytes)))
+          buffs <- IO.collectAll(
+                    Seq(
+                      Buffer.byte(Chunk.fromArray("Hello".getBytes)),
+                      Buffer.byte(Chunk.fromArray("World".getBytes))
+                    )
+                  )
           channel = new GatheringByteChannel(fileChannel)
           _       <- channel.write(buffs)
           _       <- channel.close
