@@ -9,19 +9,19 @@ class ByteBuffer private (private[nio] val javaBuffer: JByteBuffer)
 
   type Self = ByteBuffer
 
-  def array: IO[Exception, Array[Byte]] = 
+  def array: IO[Exception, Array[Byte]] =
     IO.syncException(javaBuffer.array())
 
-  def order: IO[Nothing, ByteOrder] = 
+  def order: IO[Nothing, ByteOrder] =
     IO.now(javaBuffer.order())
 
-  def slice: IO[Exception, ByteBuffer] = 
+  def slice: IO[Exception, ByteBuffer] =
     IO.syncException(javaBuffer.slice()).map(new ByteBuffer(_))
 
-  def get: IO[Exception, Byte] = 
+  def get: IO[Exception, Byte] =
     IO.syncException(javaBuffer.get())
 
-  def get(i: Int): IO[Exception, Byte] = 
+  def get(i: Int): IO[Exception, Byte] =
     IO.syncException(javaBuffer.get(i))
 
   def put(element: Byte): IO[Exception, ByteBuffer] =
@@ -42,7 +42,7 @@ class ByteBuffer private (private[nio] val javaBuffer: JByteBuffer)
   def asFloatBuffer: IO[Exception, FloatBuffer] =
     IO.syncException(FloatBuffer(javaBuffer.asFloatBuffer()))
 
-  def asIntBuffer: IO[Exception, IntBuffer] = 
+  def asIntBuffer: IO[Exception, IntBuffer] =
     IO.syncException(IntBuffer(javaBuffer.asIntBuffer()))
 
   def asLongBuffer: IO[Exception, LongBuffer] =
@@ -86,6 +86,42 @@ class ByteBuffer private (private[nio] val javaBuffer: JByteBuffer)
 
   def putShort(index: Int, value: Short): IO[Exception, ByteBuffer] =
     IO.syncException(javaBuffer.putShort(index, value)).map(new ByteBuffer(_))
+
+  def getChar(): IO[Exception, Char] =
+    IO.syncException(javaBuffer.getChar())
+
+  def getChar(index: Int): IO[Exception, Char] =
+    IO.syncException(javaBuffer.getChar(index))
+
+  def getDouble(): IO[Exception, Double] =
+    IO.syncException(javaBuffer.getDouble())
+
+  def getDouble(index: Int): IO[Exception, Double] =
+    IO.syncException(javaBuffer.getDouble(index))
+
+  def getFloat(): IO[Exception, Float] =
+    IO.syncException(javaBuffer.getFloat())
+
+  def getFloat(index: Int): IO[Exception, Float] =
+    IO.syncException(javaBuffer.getFloat(index))
+
+  def getInt(): IO[Exception, Int] =
+    IO.syncException(javaBuffer.getInt())
+
+  def getInt(index: Int): IO[Exception, Int] =
+    IO.syncException(javaBuffer.getInt(index))
+
+  def getLong(): IO[Exception, Long] =
+    IO.syncException(javaBuffer.getLong())
+
+  def getLong(index: Int): IO[Exception, Long] =
+    IO.syncException(javaBuffer.getLong(index))
+
+  def getShort(): IO[Exception, Short] =
+    IO.syncException(javaBuffer.getShort())
+
+  def getShort(index: Int): IO[Exception, Short] =
+    IO.syncException(javaBuffer.getShort(index))
 }
 
 object ByteBuffer extends BufferOps[Byte, JByteBuffer, ByteBuffer] {
