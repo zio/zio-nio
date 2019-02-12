@@ -1,6 +1,6 @@
 package scalaz.nio.channels
 
-import java.nio.ByteBuffer
+import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{ GatheringByteChannel => JGatheringByteChannel }
 
 import scalaz._
@@ -36,6 +36,9 @@ class GatheringByteChannel(private val channel: JGatheringByteChannel) {
   final def close(): IO[Exception, Unit] =
     IO.syncException(channel.close())
 
-  private def unwrap(srcs: IList[Buffer[Byte]]) =
-    srcs.map(d => d.buffer.asInstanceOf[ByteBuffer]).toList.toArray
+  final def isOpen(): IO[Exception, Boolean] =
+    IO.syncException(channel.isOpen)
+
+  private def unwrap(srcs: IList[Buffer[Byte]]): Array[JByteBuffer] =
+    srcs.map(d => d.buffer.asInstanceOf[JByteBuffer]).toList.toArray
 }
