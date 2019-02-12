@@ -1,15 +1,17 @@
 package scalaz.nio.channels
 
+import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{
   AsynchronousFileChannel => JAsynchronousFileChannel,
   CompletionHandler,
   FileLock
 }
+import scalaz.zio.Chunk
+import scalaz.nio.Buffer
 import java.nio.file.{ OpenOption, Path }
 import java.nio.file.attribute.FileAttribute
 import java.util.concurrent.ExecutorService
 
-import scalaz.nio.ByteBuffer
 import scalaz.zio.interop.javaconcurrent._
 import scalaz.zio.IO
 
@@ -41,16 +43,35 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
   ): IO[Exception, Unit] =
     IO.syncException(channel.lock(position, size, shared, attachment, handler))
 
-  final def read(dst: ByteBuffer, position: Long): IO[Throwable, Integer] =
-    IO.fromFutureJava(() => channel.read(dst.byteBuffer, position))
+  final private[nio] def readBuffer(dst: Buffer[Byte], position: Long): IO[Throwable, Integer] =
+    IO.fromFutureJava(() => channel.read(dst.buffer.asInstanceOf[JByteBuffer], position))
 
-  final def read[A](
-    dst: ByteBuffer,
+  final def read(dst: Chunk[Byte], position: Long): IO[Throwable, Integer] =
+    for {
+      b <- Buffer.byte(dst)
+      r <- readBuffer(b, position)
+    } yield r
+
+  final private[nio] def readBuffer[A](
+    dst: Buffer[Byte],
     position: Long,
     attachment: A,
     handler: CompletionHandler[Integer, A]
   ): IO[Exception, Unit] =
-    IO.syncException(channel.read(dst.byteBuffer, position, attachment, handler))
+    IO.syncException(
+      channel.read(dst.buffer.asInstanceOf[JByteBuffer], position, attachment, handler)
+    )
+
+  final def read[A](
+    dst: Chunk[Byte],
+    position: Long,
+    attachment: A,
+    handler: CompletionHandler[Integer, A]
+  ): IO[Exception, Unit] =
+    for {
+      b <- Buffer.byte(dst)
+      _ <- readBuffer(b, position, attachment, handler)
+    } yield ()
 
   final val size: IO[Exception, Long] =
     IO.syncException(channel.size())
@@ -64,17 +85,35 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
   final def tryLock(position: Long, size: Long, shared: Boolean): IO[Exception, FileLock] =
     IO.syncException(channel.tryLock(position, size, shared))
 
-  final def write(src: ByteBuffer, position: Long): IO[Throwable, Integer] =
-    IO.fromFutureJava(() => channel.write(src.byteBuffer, position))
+  final private[nio] def writeBuffer(src: Buffer[Byte], position: Long): IO[Throwable, Integer] =
+    IO.fromFutureJava(() => channel.write(src.buffer.asInstanceOf[JByteBuffer], position))
 
-  final def write[A](
-    src: ByteBuffer,
+  final def write(src: Chunk[Byte], position: Long): IO[Throwable, Integer] =
+    for {
+      b <- Buffer.byte(src)
+      r <- writeBuffer(b, position)
+    } yield r
+
+  final private[nio] def writeBuffer[A](
+    src: Buffer[Byte],
     position: Long,
     attachment: A,
     handler: CompletionHandler[Integer, A]
   ): IO[Exception, Unit] =
-    IO.syncException(channel.write(src.byteBuffer, position, attachment, handler))
+    IO.syncException(
+      channel.write(src.buffer.asInstanceOf[JByteBuffer], position, attachment, handler)
+    )
 
+  final def write[A](
+    src: Chunk[Byte],
+    position: Long,
+    attachment: A,
+    handler: CompletionHandler[Integer, A]
+  ): IO[Exception, Unit] =
+    for {
+      b <- Buffer.byte(src)
+      _ <- writeBuffer(b, position, attachment, handler)
+    } yield ()
 }
 
 object AsynchronousFileChannel {

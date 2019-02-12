@@ -3,7 +3,7 @@ package scalaz.nio
 import java.nio.file.{ Files, Paths, StandardOpenOption }
 
 import scalaz.nio.channels.AsynchronousFileChannel
-import scalaz.zio.RTS
+import scalaz.zio.{ Chunk, RTS }
 import testz.{ Harness, assert }
 
 import scala.io.Source
@@ -19,8 +19,8 @@ object FileChannelSuite extends RTS {
 
         val testProgram = for {
           channel <- AsynchronousFileChannel.open(path, Set(StandardOpenOption.READ))
-          buffer  <- ByteBuffer(16)
-          _       <- channel.read(buffer, 0)
+          buffer  <- Buffer.byte(16)
+          _       <- channel.readBuffer(buffer, 0)
           _       <- buffer.flip
           array   <- buffer.array
           text    = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
@@ -37,8 +37,8 @@ object FileChannelSuite extends RTS {
 
         val testProgram = for {
           channel <- AsynchronousFileChannel.open(path, options)
-          buffer  <- ByteBuffer("Hello World".getBytes)
-          _       <- channel.write(buffer, 0)
+          buffer  <- Buffer.byte(Chunk.fromArray("Hello World".getBytes))
+          _       <- channel.writeBuffer(buffer, 0)
           _       <- channel.close
         } yield ()
 
