@@ -1,18 +1,9 @@
 package scalaz.nio
 
-import scalaz.zio.{ Chunk, IO }
-//import scalaz.Scalaz._
-
 import java.nio.{ Buffer => JBuffer, ByteBuffer => JByteBuffer, CharBuffer => JCharBuffer }
+import scalaz.zio.{ Chunk, IO }
 
 import scala.reflect.ClassTag
-//import scala.{Array => SArray}
-
-//case class Array[A: ClassTag](private val array: SArray[A]) {
-//  final def length = array.length
-
-// Expose all methods in IO
-//}
 
 @specialized // See if Specialized will work on return values, e.g. `get`
 abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffer) {

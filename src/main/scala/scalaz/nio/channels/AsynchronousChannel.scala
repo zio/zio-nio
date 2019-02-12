@@ -27,39 +27,39 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
    *  Reads data from this channel into buffer, returning the number of bytes
    *  read, or -1 if no bytes were read.
    */
-  final private[nio] def read(b: Buffer[Byte]): IO[Exception, Int] =
+  final private[nio] def readBuffer(b: Buffer[Byte]): IO[Exception, Int] =
     wrap[Unit, JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], (), h)).map(_.toInt)
 
   final def read(chunk: Chunk[Byte]): IO[Exception, Int] =
     for {
       b <- Buffer.byte(chunk)
-      r <- read(b)
+      r <- readBuffer(b)
     } yield r
 
   /**
    *  Reads data from this channel into buffer, returning the number of bytes
    *  read, or -1 if no bytes were read.
    */
-  final private[nio] def read[A](b: Buffer[Byte], attachment: A): IO[Exception, Int] =
+  final private[nio] def readBuffer[A](b: Buffer[Byte], attachment: A): IO[Exception, Int] =
     wrap[A, JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], attachment, h))
       .map(_.toInt)
 
   final def read[A](chunk: Chunk[Byte], attachment: A): IO[Exception, Int] =
     for {
       b <- Buffer.byte(chunk)
-      r <- read(b, attachment)
+      r <- readBuffer(b, attachment)
     } yield r
 
   /**
    *  Writes data into this channel from buffer, returning the number of bytes written.
    */
-  final private[nio] def write(b: Buffer[Byte]): IO[Exception, Int] =
+  final private[nio] def writeBuffer(b: Buffer[Byte]): IO[Exception, Int] =
     wrap[Unit, JInteger](h => channel.write(b.buffer.asInstanceOf[JByteBuffer], (), h)).map(_.toInt)
 
   final def write(chunk: Chunk[Byte]): IO[Exception, Int] =
     for {
       b <- Buffer.byte(chunk)
-      r <- write(b)
+      r <- writeBuffer(b)
     } yield r
 
   /**
@@ -187,56 +187,59 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
   final def connect[A](socketAddress: SocketAddress, attachment: A): IO[Exception, Unit] =
     wrap[A, JVoid](h => channel.connect(socketAddress.jSocketAddress, attachment, h)).void
 
-  def read[A](dst: Chunk[Byte], timeout: Duration, attachment: A): IO[Exception, Int] = {
-    def read[A](dst: Buffer[Byte], timeout: Duration, attachment: A): IO[Exception, Int] =
-      wrap[A, JInteger] { h =>
+  final private[nio] def readBuffer[A](
+    dst: Buffer[Byte],
+    timeout: Duration,
+    attachment: A
+  ): IO[Exception, Int] =
+    wrap[A, JInteger] { h =>
+      channel.read(
+        dst.buffer.asInstanceOf[JByteBuffer],
+        timeout.fold(Long.MaxValue, _.nanos),
+        TimeUnit.NANOSECONDS,
+        attachment,
+        h
+      )
+    }.map(_.toInt)
+
+  final def read[A](dst: Chunk[Byte], timeout: Duration, attachment: A): IO[Exception, Int] =
+    for {
+      b <- Buffer.byte(dst)
+      r <- readBuffer(b, timeout, attachment)
+    } yield r
+
+  final private[nio] def readBuffer[A](
+    dsts: IList[Buffer[Byte]],
+    offset: Int,
+    length: Int,
+    timeout: Duration,
+    attachment: A
+  ): IO[Exception, Long] =
+    wrap[A, JLong](
+      h =>
         channel.read(
-          dst.buffer.asInstanceOf[JByteBuffer],
+          dsts.map(_.buffer.asInstanceOf[JByteBuffer]).toList.toArray,
+          offset,
+          length,
           timeout.fold(Long.MaxValue, _.nanos),
           TimeUnit.NANOSECONDS,
           attachment,
           h
         )
-      }.map(_.toInt)
+    ).map(_.toLong)
 
-    for {
-      b <- Buffer.byte(dst)
-      r <- read(b, timeout, attachment)
-    } yield r
-  }
-
-  def read[A](
+  final def read[A](
     dsts: IList[Chunk[Byte]],
     offset: Int,
     length: Int,
     timeout: Duration,
     attachment: A
-  ): IO[Exception, Long] = {
-    def read[A](
-      dsts: IList[Buffer[Byte]],
-      offset: Int,
-      length: Int,
-      timeout: Duration,
-      attachment: A
-    ): IO[Exception, Long] =
-      wrap[A, JLong](
-        h =>
-          channel.read(
-            dsts.map(_.buffer.asInstanceOf[JByteBuffer]).toList.toArray,
-            offset,
-            length,
-            timeout.fold(Long.MaxValue, _.nanos),
-            TimeUnit.NANOSECONDS,
-            attachment,
-            h
-          )
-      ).map(_.toLong)
-
+  ): IO[Exception, Long] =
     for {
       bs <- dsts.map(Buffer.byte(_)).sequence
-      r  <- read(bs, offset, length, timeout, attachment)
+      r  <- readBuffer(bs, offset, length, timeout, attachment)
     } yield r
-  }
+
 }
 
 object AsynchronousSocketChannel {
