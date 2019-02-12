@@ -13,32 +13,9 @@ object BufferSuite extends RTS {
     val initialCapacity = 10
     val newLimit        = 3
     section(
-      namedSection("instantiate")(
-        test("byte") { () =>
-          assert(unsafeRun(Buffer.byte(0).map(_ => true)))
-        },
-        test("char") { () =>
-          assert(unsafeRun(Buffer.char(0).map(_ => true)))
-        },
-        test("double") { () =>
-          assert(unsafeRun(Buffer.double(0).map(_ => true)))
-        },
-        test("float") { () =>
-          assert(unsafeRun(Buffer.float(0).map(_ => true)))
-        },
-        test("int") { () =>
-          assert(unsafeRun(Buffer.int(0).map(_ => true)))
-        },
-        test("long") { () =>
-          assert(unsafeRun(Buffer.long(0).map(_ => true)))
-        },
-        test("short") { () =>
-          assert(unsafeRun(Buffer.short(0).map(_ => true)))
-        }
-      ),
       test("capacity") { () =>
         val testProgram: IO[Exception, Boolean] = for {
-          bb <- Buffer.byte(initialCapacity)
+          bb <- ByteBuffer.allocate(initialCapacity)
           c1 <- bb.capacity
           c2 <- IO.sync {
                  JByteBuffer.allocate(initialCapacity).capacity
@@ -47,7 +24,7 @@ object BufferSuite extends RTS {
         assert(unsafeRun(testProgram))
       }, {
 
-        def allocate = Buffer.byte(initialCapacity)
+        def allocate = ByteBuffer.allocate(initialCapacity)
 
         namedSection("allocate")(
           test("capacity initialized") { () =>
@@ -69,7 +46,7 @@ object BufferSuite extends RTS {
 
         def position =
           for {
-            b <- Buffer.byte(initialCapacity)
+            b <- ByteBuffer.allocate(initialCapacity)
             _ <- b.position(newPosition)
           } yield b
 
@@ -81,7 +58,7 @@ object BufferSuite extends RTS {
       namedSection("limit")(
         test("limit set") { () =>
           val limit = for {
-            b        <- Buffer.byte(initialCapacity)
+            b        <- ByteBuffer.allocate(initialCapacity)
             _        <- b.limit(newLimit)
             newLimit <- b.limit
           } yield newLimit
@@ -90,7 +67,7 @@ object BufferSuite extends RTS {
         },
         test("position reset") { () =>
           val positionReset = for {
-            b        <- Buffer.byte(initialCapacity)
+            b        <- ByteBuffer.allocate(initialCapacity)
             _        <- b.position(newLimit + 1)
             _        <- b.limit(newLimit)
             position <- b.position
@@ -101,7 +78,7 @@ object BufferSuite extends RTS {
       ),
       test("reset to marked position") { () =>
         val markedPosition = for {
-          b           <- Buffer.byte(initialCapacity)
+          b           <- ByteBuffer.allocate(initialCapacity)
           _           <- b.position(1)
           _           <- b.mark
           _           <- b.position(2)
@@ -113,7 +90,7 @@ object BufferSuite extends RTS {
       }, {
         def clear =
           for {
-            b <- Buffer.byte(initialCapacity)
+            b <- ByteBuffer.allocate(initialCapacity)
             _ <- b.position(1)
             _ <- b.mark
             _ <- b.clear
@@ -132,7 +109,7 @@ object BufferSuite extends RTS {
       }, {
         def flip =
           for {
-            b <- Buffer.byte(initialCapacity)
+            b <- ByteBuffer.allocate(initialCapacity)
             _ <- b.position(1)
             _ <- b.flip
           } yield b
@@ -150,7 +127,7 @@ object BufferSuite extends RTS {
       },
       test("rewind sets position to 0") { () =>
         val rewindedPosition = for {
-          b           <- Buffer.byte(initialCapacity)
+          b           <- ByteBuffer.allocate(initialCapacity)
           _           <- b.position(1)
           _           <- b.rewind
           newPosition <- b.position
@@ -159,7 +136,7 @@ object BufferSuite extends RTS {
       },
       test("heap buffers a backed by an array") { () =>
         val hasArray = for {
-          b        <- Buffer.byte(initialCapacity)
+          b        <- ByteBuffer.allocate(initialCapacity)
           hasArray <- b.hasArray
         } yield hasArray
         assert(unsafeRun(hasArray))
