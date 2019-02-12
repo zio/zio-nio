@@ -17,8 +17,7 @@ import Scalaz._
 
 import scalaz.nio.channels.AsynchronousChannel._
 import scalaz.nio.{ Buffer, SocketAddress, SocketOption }
-import scalaz.zio.Chunk
-import scalaz.zio.{ Async, IO }
+import scalaz.zio.{ Async, Chunk, IO }
 import scalaz.zio.duration._
 import scalaz.zio.interop.scalaz72._
 

@@ -2,6 +2,8 @@ package scalaz.nio
 
 import java.io.{ File, RandomAccessFile }
 
+import scalaz._
+
 import scalaz.nio.channels.{ GatheringByteChannel, ScatteringByteChannel }
 import scalaz.zio.{ Chunk, IO, RTS }
 import testz.{ Harness, assert }
@@ -50,7 +52,7 @@ object ScatterGatherChannelSuite extends RTS {
                     )
                   )
           channel = new GatheringByteChannel(fileChannel)
-          _       <- channel.write(buffs)
+          _       <- channel.writeBuffer(IList.fromList(buffs))
           _       <- channel.close
         } yield ()
 
