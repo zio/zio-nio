@@ -35,12 +35,11 @@ object T {
         worker <- server.accept
 
         // TODO is this the right way of writing to the buffer?
-        chunkDest  <- IO.succeed(Chunk.fromArray(Array[Byte](8)))
-        n          <- worker.read(chunkDest)
+        chunkDest <- worker.read(8)
         arr        = chunkDest.toArray
 
         _ <- log(
-              "Read: " + n.toString + " Bytes. Content: " + arr.mkString
+              "Content: " + arr.mkString
             )
         _ <- server.close
       } yield ()
