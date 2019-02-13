@@ -46,10 +46,12 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
   final private[nio] def readBuffer(dst: Buffer[Byte], position: Long): IO[Throwable, Integer] =
     IO.fromFutureJava(() => channel.read(dst.buffer.asInstanceOf[JByteBuffer], position))
 
-  final def read(dst: Chunk[Byte], position: Long): IO[Throwable, Integer] =
+  final def read(capacity: Int, position: Long): IO[Throwable, Chunk[Byte]] =
     for {
-      b <- Buffer.byte(dst)
-      r <- readBuffer(b, position)
+      b <- Buffer.byte(capacity)
+      _ <- readBuffer(b, position)
+      a <- b.array
+      r = Chunk.fromArray(a)
     } yield r
 
   final private[nio] def readBuffer[A](
@@ -63,15 +65,17 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
     )
 
   final def read[A](
-    dst: Chunk[Byte],
+    capacity: Int,
     position: Long,
     attachment: A,
     handler: CompletionHandler[Integer, A]
-  ): IO[Exception, Unit] =
+  ): IO[Exception, Chunk[Byte]] =
     for {
-      b <- Buffer.byte(dst)
+      b <- Buffer.byte(capacity)
       _ <- readBuffer(b, position, attachment, handler)
-    } yield ()
+      a <- b.array
+      r = Chunk.fromArray(a)
+    } yield r
 
   final val size: IO[Exception, Long] =
     IO.syncException(channel.size())

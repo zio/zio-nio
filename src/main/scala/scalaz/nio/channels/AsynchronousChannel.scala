@@ -30,10 +30,12 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
   final private[nio] def readBuffer(b: Buffer[Byte]): IO[Exception, Int] =
     wrap[Unit, JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], (), h)).map(_.toInt)
 
-  final def read(chunk: Chunk[Byte]): IO[Exception, Int] =
+  final def read(capacity: Int): IO[Exception, Chunk[Byte]] =
     for {
-      b <- Buffer.byte(chunk)
-      r <- readBuffer(b)
+      b <- Buffer.byte(capacity)
+      _ <- readBuffer(b)
+      a <- b.array
+      r = Chunk.fromArray(a)
     } yield r
 
   /**
@@ -44,10 +46,12 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
     wrap[A, JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], attachment, h))
       .map(_.toInt)
 
-  final def read[A](chunk: Chunk[Byte], attachment: A): IO[Exception, Int] =
+  final def read[A](capacity: Int, attachment: A): IO[Exception, Chunk[Byte]] =
     for {
-      b <- Buffer.byte(chunk)
-      r <- readBuffer(b, attachment)
+      b <- Buffer.byte(capacity)
+      _ <- readBuffer(b, attachment)
+      a <- b.array
+      r = Chunk.fromArray(a)
     } yield r
 
   /**
@@ -202,10 +206,12 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
       )
     }.map(_.toInt)
 
-  final def read[A](dst: Chunk[Byte], timeout: Duration, attachment: A): IO[Exception, Int] =
+  final def read[A](capacity: Int, timeout: Duration, attachment: A): IO[Exception, Chunk[Byte]] =
     for {
-      b <- Buffer.byte(dst)
-      r <- readBuffer(b, timeout, attachment)
+      b <- Buffer.byte(capacity)
+      _ <- readBuffer(b, timeout, attachment)
+      a <- b.array
+      r = Chunk.fromArray(a)
     } yield r
 
   final private[nio] def readBuffer[A](
@@ -229,16 +235,18 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     ).map(_.toLong)
 
   final def read[A](
-    dsts: IList[Chunk[Byte]],
+    capacities: IList[Int],
     offset: Int,
     length: Int,
     timeout: Duration,
     attachment: A
-  ): IO[Exception, Long] =
+  ): IO[Exception, IList[Chunk[Byte]]] =
     for {
-      bs <- dsts.map(Buffer.byte(_)).sequence
-      r  <- readBuffer(bs, offset, length, timeout, attachment)
-    } yield r
+      bs <- capacities.map(Buffer.byte(_)).sequence
+      _  <- readBuffer(bs, offset, length, timeout, attachment)
+      as <- bs.map(_.array).sequence
+      ds = as.map(Chunk.fromArray(_))
+    } yield ds
 
 }
 
