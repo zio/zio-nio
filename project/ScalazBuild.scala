@@ -2,8 +2,9 @@ import sbt._
 import sbt.Keys._
 
 object Scalaz {
+
   lazy val scalazVersion    = "7.2.27"
-  lazy val scalazZioVersion = "0.6.1"
+  lazy val scalazZioVersion = "0.6.3"
 
   val testDeps = Seq(
     "org.scalacheck" %% "scalacheck"   % "1.14.0" % "test",
