@@ -55,11 +55,9 @@ object T {
         _      <- log("Connected.")
 
         // TODO is this the right way of reading from the buffer?
-        chunkSrc  <- IO.succeed(Chunk.fromArray(Array[Byte](8)))
-        arr       = chunkSrc.toArray
-        _         = arr.update(0, 1)
+        chunkSrc  <- IO.succeed(Chunk.fromArray(Array[Byte](1)))
 
-        _ <- log("Gonna write: " + arr.mkString)
+        _ <- log("Gonna write: " + chunkSrc.mkString)
         _ <- client.write(chunkSrc)
         _ <- client.close
       } yield ()
