@@ -2,8 +2,10 @@ package scalaz.nio
 
 import java.io.{ File, RandomAccessFile }
 
+import scalaz._
+
 import scalaz.nio.channels.{ GatheringByteChannel, ScatteringByteChannel }
-import scalaz.zio.{ IO, RTS }
+import scalaz.zio.{ Chunk, IO, RTS }
 import testz.{ Harness, assert }
 
 import scala.io.Source
@@ -18,7 +20,7 @@ object ScatterGatherChannelSuite extends RTS {
         val raf         = new RandomAccessFile("src/test/resources/scattering_read_test.txt", "r")
         val fileChannel = raf.getChannel()
 
-        val readLine: ByteBuffer => IO[Exception, String] = buffer =>
+        val readLine: Buffer[Byte] => IO[Exception, String] = buffer =>
           for {
             _     <- buffer.flip
             array <- buffer.array
@@ -26,10 +28,11 @@ object ScatterGatherChannelSuite extends RTS {
           } yield text
 
         val testProgram = for {
-          buffs   <- IO.collectAll(Seq(ByteBuffer(5), ByteBuffer(5)))
+          buffs   <- IO.collectAll(Seq(Buffer.byte(5), Buffer.byte(5)))
           channel = new ScatteringByteChannel(fileChannel)
-          _       <- channel.read(buffs)
+          _       <- channel.readBuffer(IList.fromList(buffs))
           list    <- IO.collectAll(buffs.map(readLine))
+          _       <- channel.close
         } yield list
 
         val t1 :: t2 :: Nil = unsafeRun(testProgram)
@@ -43,9 +46,14 @@ object ScatterGatherChannelSuite extends RTS {
         val fileChannel = raf.getChannel()
 
         val testProgram = for {
-          buffs   <- IO.collectAll(Seq(ByteBuffer("Hello".getBytes), ByteBuffer("World".getBytes)))
+          buffs <- IO.collectAll(
+                    Seq(
+                      Buffer.byte(Chunk.fromArray("Hello".getBytes)),
+                      Buffer.byte(Chunk.fromArray("World".getBytes))
+                    )
+                  )
           channel = new GatheringByteChannel(fileChannel)
-          _       <- channel.write(buffs)
+          _       <- channel.writeBuffer(IList.fromList(buffs))
           _       <- channel.close
         } yield ()
 

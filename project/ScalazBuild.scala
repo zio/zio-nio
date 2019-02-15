@@ -2,8 +2,9 @@ import sbt._
 import sbt.Keys._
 
 object Scalaz {
-  lazy val scalazVersion = "7.2.27"
-  lazy val zioVersion    = "0.6.3"
+
+  lazy val scalazVersion    = "7.2.27"
+  lazy val scalazZioVersion = "0.6.3"
 
   val testDeps = Seq(
     "org.scalacheck" %% "scalacheck"   % "1.14.0" % "test",
@@ -15,9 +16,10 @@ object Scalaz {
   val compileOnlyDeps = Seq("com.github.ghik" %% "silencer-lib" % "1.3.1" % "provided")
 
   val compileAndTest = Seq(
-    "org.scalaz" %% "scalaz-core"             % scalazVersion % "compile, test",
-    "org.scalaz" %% "scalaz-zio"              % zioVersion,
-    "org.scalaz" %% "scalaz-zio-interop-java" % zioVersion
+    "org.scalaz" %% "scalaz-core"                 % scalazVersion % "compile, test",
+    "org.scalaz" %% "scalaz-zio"                  % scalazZioVersion,
+    "org.scalaz" %% "scalaz-zio-interop-java"     % scalazZioVersion,
+    "org.scalaz" %% "scalaz-zio-interop-scalaz7x" % scalazZioVersion
   )
 
   private val stdOptions = Seq(
