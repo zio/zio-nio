@@ -1,21 +1,12 @@
 package scalaz.nio
 
-import scalaz.zio.IO
-//import scalaz.Scalaz._
-
-import java.nio.{ Buffer => JBuffer, ByteBuffer => JByteBuffer }
+import java.nio.{ Buffer => JBuffer, ByteBuffer => JByteBuffer, CharBuffer => JCharBuffer }
+import scalaz.zio.{ Chunk, IO }
 
 import scala.reflect.ClassTag
-//import scala.{Array => SArray}
-
-//case class Array[A: ClassTag](private val array: SArray[A]) {
-//  final def length = array.length
-
-// Expose all methods in IO
-//}
 
 @specialized // See if Specialized will work on return values, e.g. `get`
-abstract class Buffer[A: ClassTag, B <: JBuffer] private[nio] (private[nio] val buffer: B) {
+abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffer) {
   final val capacity: IO[Nothing, Int] = IO.succeed(buffer.capacity)
 
   final def position: IO[Nothing, Int] = IO.sync(buffer.position)
@@ -53,36 +44,24 @@ abstract class Buffer[A: ClassTag, B <: JBuffer] private[nio] (private[nio] val 
 
 }
 
-class ByteBuffer private (val byteBuffer: JByteBuffer)
-    extends Buffer[Byte, JByteBuffer](byteBuffer) {
-  def array: IO[Exception, Array[Byte]] = IO.syncException(byteBuffer.array())
-}
-
-object ByteBuffer {
-
-  def apply(capacity: Int): IO[Exception, ByteBuffer] =
-    IO.syncException(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_))
-
-  def apply(bytes: Seq[Byte]): IO[Exception, ByteBuffer] =
-    IO.syncException(JByteBuffer.wrap(bytes.toArray)).map(new ByteBuffer(_))
-}
-
 object Buffer {
-  def byte(capacity: Int) = ByteBuffer(capacity)
+  private[this] class ByteBuffer(val byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
 
-  def char(capacity: Int) = CharBuffer(capacity)
+    def array: IO[Exception, Array[Byte]] = IO.syncException(byteBuffer.array())
+  }
 
-  private class CharBuffer private (private val charBuffer: JByteBuffer)
-      extends Buffer[Char, JByteBuffer](charBuffer) {
+  private[this] class CharBuffer(val charBuffer: JCharBuffer) extends Buffer[Char](charBuffer) {
 
     def array: IO[Exception, Array[Char]] =
-      IO.syncException(charBuffer.array().asInstanceOf[Array[Char]])
+      IO.syncException(charBuffer.array())
   }
 
-  private object CharBuffer {
+  def byte(capacity: Int): IO[Exception, Buffer[Byte]] =
+    IO.syncException(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_))
 
-    def apply(capacity: Int): Buffer[Char, JByteBuffer] =
-      new CharBuffer(JByteBuffer.allocate(capacity))
-  }
+  def byte(chunk: Chunk[Byte]): IO[Exception, Buffer[Byte]] =
+    IO.syncException(JByteBuffer.wrap(chunk.toArray)).map(new ByteBuffer(_))
 
+  def char(capacity: Int): IO[Exception, Buffer[Char]] =
+    IO.syncException(JCharBuffer.allocate(capacity)).map(new CharBuffer(_))
 }
