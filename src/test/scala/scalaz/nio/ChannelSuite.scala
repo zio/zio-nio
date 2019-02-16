@@ -10,12 +10,12 @@ object ChannelSuite extends RTS {
     import harness._
     section(test("read/write") { () =>
       val inetAddress = InetAddress.localHost
-        .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 1337))
+        .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13370))
 
       def echoServer: IO[Exception, Unit] =
         for {
           address <- inetAddress
-          sink    <- Buffer.byte(3)
+          sink    <- ByteBuffer.allocate(3)
           server  <- AsynchronousServerSocketChannel()
           _       <- server.bind(address)
           worker  <- server.accept
@@ -29,7 +29,7 @@ object ChannelSuite extends RTS {
       def echoClient: IO[Exception, Boolean] =
         for {
           address  <- inetAddress
-          src      <- Buffer.byte(3)
+          src      <- ByteBuffer.allocate(3)
           client   <- AsynchronousSocketChannel()
           _        <- client.connect(address)
           sent     <- src.array

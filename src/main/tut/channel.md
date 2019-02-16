@@ -37,7 +37,7 @@ object T {
         worker <- server.accept
 
         // TODO is this the right way of writing to the buffer?
-        bufferDest <- Buffer.byte(8)
+        bufferDest <- ByteBuffer.allocate(8)
         n          <- worker.read(bufferDest)
         arr        <- bufferDest.array
 
@@ -58,7 +58,7 @@ object T {
         _      <- log("Connected.")
 
         // TODO is this the right way of reading from the buffer?
-        bufferSrc <- Buffer.byte(8)
+        bufferSrc <- ByteBuffer.allocate(8)
         arr       <- bufferSrc.array
         _         = arr.update(0, 1)
 
