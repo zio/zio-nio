@@ -7,16 +7,14 @@ object T {
   import scalaz.nio.channels.{ AsynchronousServerSocketChannel, AsynchronousSocketChannel }
   import scalaz.zio.console._
   import scalaz.zio.duration._
-  import scalaz.zio.{ App, IO }
+  import scalaz.zio.{ App, Chunk, IO }
 
   object ClientServer extends App {
     override def run(args: List[String]): IO[Nothing, ExitStatus] =
       myAppLogic
-        .leftMap(new IOException(_))
         .attempt
         .map(_.fold(e => { e.printStackTrace(); 1 }, _ => 0))
         .map(ExitStatus.ExitNow(_))
-
 
     def myAppLogic: IO[Exception, Unit] =
       for {
@@ -37,12 +35,11 @@ object T {
         worker <- server.accept
 
         // TODO is this the right way of writing to the buffer?
-        bufferDest <- Buffer.byte(8)
-        n          <- worker.read(bufferDest)
-        arr        <- bufferDest.array
+        chunkDest <- worker.read(8)
+        arr        = chunkDest.toArray
 
         _ <- log(
-              "Read: " + n.toString + " Bytes. Content: " + arr.mkString
+              "Content: " + arr.mkString
             )
         _ <- server.close
       } yield ()
@@ -58,18 +55,18 @@ object T {
         _      <- log("Connected.")
 
         // TODO is this the right way of reading from the buffer?
-        bufferSrc <- Buffer.byte(8)
-        arr       <- bufferSrc.array
-        _         = arr.update(0, 1)
+        chunkSrc  <- IO.succeed(Chunk.fromArray(Array[Byte](1)))
 
-        _ <- log("Gonna write: " + arr.mkString)
-        _ <- client.write(bufferSrc)
+        _ <- log("Gonna write: " + chunkSrc.mkString)
+        _ <- client.write(chunkSrc)
         _ <- client.close
       } yield ()
     }
 
   }
 
+  ClientServer.run(List())
 }
+
 
 ```

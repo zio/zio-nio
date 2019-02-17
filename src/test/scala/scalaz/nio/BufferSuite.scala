@@ -45,37 +45,44 @@ object BufferSuite extends RTS {
         )
       },
       namedSection("position") {
-        val newPosition = 3
-
-        def position =
-          for {
-            b <- Buffer.byte(initialCapacity)
-            _ <- b.position(newPosition)
-          } yield b
-
         test("position set") { () =>
-          val actual = unsafeRun(position.flatMap(b => b.position))
-          assert(actual == newPosition)
+          val position = unsafeRun(
+            Buffer
+              .byte(initialCapacity)
+              .flatMap { b =>
+                val readPosition: IO[Nothing, Int] = b.position
+                for {
+                  _  <- b.position(3)
+                  p1 <- readPosition
+                } yield p1
+              }
+          )
+          assert(position == 3)
         }
       },
       namedSection("limit")(
         test("limit set") { () =>
-          val limit = for {
-            b        <- Buffer.byte(initialCapacity)
-            _        <- b.limit(newLimit)
-            newLimit <- b.limit
-          } yield newLimit
-
+          val limit = Buffer
+            .byte(initialCapacity)
+            .flatMap { b =>
+              val readLimit: IO[Nothing, Int] = b.limit
+              for {
+                _        <- b.limit(newLimit)
+                newLimit <- readLimit
+              } yield newLimit
+            }
           assert(unsafeRun(limit) == newLimit)
         },
         test("position reset") { () =>
-          val positionReset = for {
-            b        <- Buffer.byte(initialCapacity)
-            _        <- b.position(newLimit + 1)
-            _        <- b.limit(newLimit)
-            position <- b.position
-          } yield position
-
+          val positionReset =
+            Buffer.byte(initialCapacity).flatMap { b =>
+              val readPosition: IO[Nothing, Int] = b.position
+              for {
+                _        <- b.position(newLimit + 1)
+                _        <- b.limit(newLimit)
+                position <- readPosition
+              } yield position
+            }
           assert(unsafeRun(positionReset) == newLimit)
         }
       ),
