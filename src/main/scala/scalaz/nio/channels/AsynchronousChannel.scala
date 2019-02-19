@@ -4,7 +4,6 @@ import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
 import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{
   AsynchronousByteChannel => JAsynchronousByteChannel,
-  AsynchronousChannelGroup => JAsynchronousChannelGroup,
   AsynchronousServerSocketChannel => JAsynchronousServerSocketChannel,
   AsynchronousSocketChannel => JAsynchronousSocketChannel,
   CompletionHandler => JCompletionHandler
@@ -151,7 +150,7 @@ object AsynchronousServerSocketChannel {
     channelGroup: AsynchronousChannelGroup
   ): IO[Exception, AsynchronousServerSocketChannel] =
     IO.syncException(
-        JAsynchronousServerSocketChannel.open(channelGroup.jChannelGroup)
+        JAsynchronousServerSocketChannel.open(channelGroup.channelGroup)
       )
       .map(new AsynchronousServerSocketChannel(_))
 }
@@ -258,20 +257,12 @@ object AsynchronousSocketChannel {
 
   def apply(channelGroup: AsynchronousChannelGroup): IO[Exception, AsynchronousSocketChannel] =
     IO.syncException(
-        JAsynchronousSocketChannel.open(channelGroup.jChannelGroup)
+        JAsynchronousSocketChannel.open(channelGroup.channelGroup)
       )
       .map(new AsynchronousSocketChannel(_))
 
   def apply(asyncSocketChannel: JAsynchronousSocketChannel): AsynchronousSocketChannel =
     new AsynchronousSocketChannel(asyncSocketChannel)
-}
-
-class AsynchronousChannelGroup(val jChannelGroup: JAsynchronousChannelGroup) {}
-
-object AsynchronousChannelGroup {
-
-  def apply(): IO[Exception, AsynchronousChannelGroup] =
-    ??? // IO.syncException { throw new Exception() }
 }
 
 object AsynchronousChannel {
