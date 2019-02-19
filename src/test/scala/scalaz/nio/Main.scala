@@ -28,12 +28,15 @@ object Main {
           .tests(pureHarness)((), List("Scattering and Gathering Channel tests"))
       )
 
+    def asyncChannelGroupSuite =
+      AsynchronousChannelGroupSuite
+        .tests(effectHarness)((), List("Asynchronous Channel Group tests"))
+
     // Evaluate tests before the runner expects,
     // for parallelism.
     val testOutputs: List[() => Future[TestOutput]] = List(
       Future(unitTests)(ec),
-      AsynchronousChannelGroupSuite
-        .tests(effectHarness)((), List("Asynchronous Channel Group tests"))
+      asyncChannelGroupSuite
     ).map(s => () => s)
 
     val runSuites = runner(testOutputs, Console.print, global)
