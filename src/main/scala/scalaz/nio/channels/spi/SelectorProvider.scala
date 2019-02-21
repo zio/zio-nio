@@ -1,44 +1,45 @@
 package scalaz.nio.channels.spi
 
+import java.io.IOException
 import java.net.ProtocolFamily
-import java.nio.channels.{
-  Channel => JChannel,
-  DatagramChannel => JDatagramChannel,
-  ServerSocketChannel => JServerSocketChannel,
-  SocketChannel => JSocketChannel
-}
-import java.nio.channels.spi.{SelectorProvider => JSelectorProvider}
+import java.nio.channels.{ Channel => JChannel, DatagramChannel => JDatagramChannel }
+import java.nio.channels.spi.{ SelectorProvider => JSelectorProvider }
 
-import scalaz.nio.channels.{Pipe, Selector}
+import scalaz.nio.channels.{ Pipe, Selector, ServerSocketChannel, SocketChannel }
+import scalaz.nio.io._
 import scalaz.zio.IO
 
 class SelectorProvider(private val selectorProvider: JSelectorProvider) {
 
-  def openDatagramChannel: IO[Exception, JDatagramChannel] = // TODO: wrapper for DatagramChannel
-    IO.syncException(selectorProvider.openDatagramChannel())
+  final val openDatagramChannel
+    : IO[IOException, JDatagramChannel] = // TODO: wrapper for DatagramChannel
+    IO.syncIOException(selectorProvider.openDatagramChannel())
 
-  def openDatagramChannel(family: ProtocolFamily): IO[Exception, JDatagramChannel] = // TODO: wrapper for DatagramChannel
-    IO.syncException(selectorProvider.openDatagramChannel(family))
+  // this can throw UnsupportedOperationException - doesn't seem like a recoverable exception
+  final def openDatagramChannel(
+    family: ProtocolFamily
+  ): IO[IOException, JDatagramChannel] = // TODO: wrapper for DatagramChannel
+    IO.syncIOException(selectorProvider.openDatagramChannel(family))
 
-  def openPipe(): IO[Exception, Pipe] =
-    IO.syncException(selectorProvider.openPipe()).map(new Pipe(_))
+  final val openPipe: IO[IOException, Pipe] =
+    IO.syncIOException(selectorProvider.openPipe()).map(new Pipe(_))
 
-  def openSelector(): IO[Exception, Selector] =
-    IO.syncException(selectorProvider.openSelector()).map(new Selector(_))
+  final val openSelector: IO[IOException, Selector] =
+    IO.syncIOException(selectorProvider.openSelector()).map(new Selector(_))
 
-  def openServerSocketChannel(): IO[Exception, JServerSocketChannel] = // TODO: wrapper for ServerSocketChannel
-    IO.syncException(selectorProvider.openServerSocketChannel())
+  final val openServerSocketChannel: IO[IOException, ServerSocketChannel] =
+    IO.syncIOException(selectorProvider.openServerSocketChannel()).map(new ServerSocketChannel(_))
 
-  def openSocketChannel(): IO[Exception, JSocketChannel] = // TODO: wrapper for SocketChannel
-    IO.syncException(selectorProvider.openSocketChannel())
+  final val openSocketChannel: IO[IOException, SocketChannel] =
+    IO.syncIOException(selectorProvider.openSocketChannel()).map(new SocketChannel(_))
 
-  def inheritedChannel(): IO[Exception, Option[JChannel]] = // TODO: wrapper for Channel
-    IO.syncException(selectorProvider.inheritedChannel()).map(Option(_))
+  final val inheritedChannel: IO[IOException, Option[JChannel]] = // TODO: wrapper for Channel
+    IO.syncIOException(selectorProvider.inheritedChannel()).map(Option(_))
 }
 
 object SelectorProvider {
 
-  def apply(): IO[Nothing, SelectorProvider] =
+  final val make: IO[Nothing, SelectorProvider] =
     IO.sync(JSelectorProvider.provider()).map(new SelectorProvider(_))
 
 }

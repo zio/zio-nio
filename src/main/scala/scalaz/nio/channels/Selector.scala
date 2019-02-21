@@ -1,49 +1,54 @@
 package scalaz.nio.channels
 
-import java.nio.channels.{Selector => JSelector}
+import java.io.IOException
+import java.nio.channels.{ Selector => JSelector }
 
 import scalaz.nio.channels.spi.SelectorProvider
+import scalaz.nio.io._
 import scalaz.zio.IO
+import scalaz.zio.duration.Duration
 
 import scala.collection.JavaConverters
 
-class Selector(private val selector: JSelector) {
+class Selector(private[nio] val selector: JSelector) {
 
-  def isOpen: IO[Nothing, Boolean] = IO.now(selector.isOpen)
+  final val isOpen: IO[Nothing, Boolean] = IO.sync(selector.isOpen)
 
-  def provider(): IO[Exception, SelectorProvider] =
-    IO.syncException(selector.provider()).map(new SelectorProvider(_))
+  final val provider: IO[Nothing, SelectorProvider] =
+    IO.sync(selector.provider()).map(new SelectorProvider(_))
 
-  def keys: IO[Exception, Set[SelectionKey]] =
-    IO.syncException(selector.keys()).map { keys =>
+  final val keys: IO[Nothing, Set[SelectionKey]] =
+    IO.sync(selector.keys()).map { keys =>
       JavaConverters.asScalaSet(keys).toSet.map(new SelectionKey(_))
     }
 
-  def selectedKeys: IO[Exception, Set[SelectionKey]] =
-    IO.syncException(selector.selectedKeys()).map { keys =>
+  final val selectedKeys: IO[Nothing, Set[SelectionKey]] =
+    IO.sync(selector.selectedKeys()).map { keys =>
       JavaConverters.asScalaSet(keys).toSet.map(new SelectionKey(_))
     }
 
-  def selectNow(): IO[Exception, Int] =
-    IO.syncException(selector.selectNow())
+  final def removeKey(key: SelectionKey): IO[Nothing, Unit] =
+    IO.sync(selector.selectedKeys().remove(key.selectionKey)).void
 
-  def select(timeout: Long): IO[Exception, Int] =
-    IO.syncException(selector.select(timeout))
+  final val selectNow: IO[IOException, Int] =
+    IO.syncIOException(selector.selectNow())
 
-  def select(): IO[Exception, Int] =
-    IO.syncException(selector.select())
+  final def select(timeout: Duration.Finite): IO[IOException, Int] =
+    IO.syncIOException(selector.select(timeout.toMillis))
 
-  def wakeup(): IO[Exception, Selector] =
-    IO.syncException(selector.wakeup()).map(new Selector(_))
+  final val select: IO[IOException, Int] =
+    IO.syncIOException(selector.select())
 
-  def close(): IO[Exception, Unit] =
-    IO.syncException(selector.close()).void
+  final val wakeup: IO[Nothing, Selector] =
+    IO.sync(selector.wakeup()).map(new Selector(_))
+
+  final val close: IO[IOException, Unit] =
+    IO.syncIOException(selector.close()).void
 }
 
 object Selector {
 
-  def apply(): IO[Exception, Selector] =
-    IO.syncException(JSelector.open())
-      .map(new Selector(_))
+  final val make: IO[IOException, Selector] =
+    IO.syncIOException(JSelector.open()).map(new Selector(_))
 
 }

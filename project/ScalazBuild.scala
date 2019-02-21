@@ -15,7 +15,7 @@ object Scalaz {
 
   val compileAndTest = Seq(
     "org.scalaz" %% "scalaz-core" % scalazVersion % "compile, test",
-    "org.scalaz" %% "scalaz-zio"  % "0.6.1"
+    "org.scalaz" %% "scalaz-zio"  % "0.6.2"
   )
 
   private val stdOptions = Seq(
@@ -33,7 +33,7 @@ object Scalaz {
     "-Yno-adapted-args",
     "-Xlint:_,-type-parameter-shadow",
     "-Xsource:2.13",
-    "-Ywarn-dead-code",
+    //"-Ywarn-dead-code",
     "-Ywarn-inaccessible",
     "-Ywarn-infer-any",
     "-Ywarn-nullary-override",

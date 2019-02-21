@@ -1,26 +1,23 @@
 package scalaz.nio.channels
 
-import java.nio.channels.spi.{AbstractSelectableChannel => JAbstractSelectableChannel}
-import java.nio.channels.{
-  GatheringByteChannel => JGatheringByteChannel,
-  ScatteringByteChannel => JScatteringByteChannel,
-  Pipe => JPipe
-}
+import java.io.IOException
+import java.nio.channels.{ Pipe => JPipe }
 
+import scalaz.nio.io._
 import scalaz.zio.IO
 
 class Pipe(private val pipe: JPipe) {
 
-  def source(): IO[Nothing, JAbstractSelectableChannel with JScatteringByteChannel] = // TODO: wrapper for AbstractSelectableChannel and ScatteringByteChannel
-    IO.sync(pipe.source())
+  final val source: IO[Nothing, ScatteringByteChannel] =
+    IO.sync(new ScatteringByteChannel(pipe.source()))
 
-  def sink(): IO[Nothing, JAbstractSelectableChannel with JGatheringByteChannel] = // TODO: wrapper for AbstractSelectableChannel and GatheringByteChannel
-    IO.sync(pipe.sink())
+  final val sink: IO[Nothing, GatheringByteChannel] =
+    IO.sync(new GatheringByteChannel(pipe.sink()))
 }
 
 object Pipe {
 
-  def open(): IO[Exception, Pipe] =
-    IO.syncException(JPipe.open()).map(new Pipe(_))
+  final val open: IO[IOException, Pipe] =
+    IO.syncIOException(JPipe.open()).map(new Pipe(_))
 
 }

@@ -22,7 +22,8 @@ object Main {
         BufferSuite.tests(pureHarness)((), List("Buffer tests")),
         ChannelSuite.tests(pureHarness)((), List("Channel tests")),
         ScatterGatherChannelSuite
-          .tests(pureHarness)((), List("Scattering and Gathering Channel tests"))
+          .tests(pureHarness)((), List("Scattering and Gathering Channel tests")),
+        SelectorSuite.tests(pureHarness)((), List("Selector tests"))
       )
 
     // Evaluate tests before the runner expects,
