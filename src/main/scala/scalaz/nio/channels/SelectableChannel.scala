@@ -2,6 +2,7 @@ package scalaz.nio.channels
 
 import java.io.IOException
 import java.net.{ Socket => JSocket, ServerSocket => JServerSocket }
+import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{
   SelectableChannel => JSelectableChannel,
   ServerSocketChannel => JServerSocketChannel,
@@ -10,7 +11,7 @@ import java.nio.channels.{
 
 import scalaz.nio.channels.spi.SelectorProvider
 import scalaz.nio.io._
-import scalaz.nio.{ ByteBuffer, SocketAddress, SocketOption }
+import scalaz.nio.{ Buffer, SocketAddress, SocketOption }
 import scalaz.zio.IO
 
 class SelectableChannel(private val channel: JSelectableChannel) {
@@ -82,11 +83,11 @@ class SocketChannel(private val channel: JSocketChannel) extends SelectableChann
   final val remoteAddress: IO[IOException, SocketAddress] =
     IO.syncIOException(new SocketAddress(channel.getRemoteAddress()))
 
-  final def read(b: ByteBuffer): IO[IOException, Int] =
-    IO.syncIOException(channel.read(b.buffer))
+  final def read(b: Buffer[Byte]): IO[IOException, Int] =
+    IO.syncIOException(channel.read(b.buffer.asInstanceOf[JByteBuffer]))
 
-  final def write(b: ByteBuffer): IO[Exception, Int] =
-    IO.syncIOException(channel.write(b.buffer))
+  final def write(b: Buffer[Byte]): IO[Exception, Int] =
+    IO.syncIOException(channel.write(b.buffer.asInstanceOf[JByteBuffer]))
 
   final val localAddress: IO[IOException, Option[SocketAddress]] =
     IO.syncIOException(Option(channel.getLocalAddress()).map(new SocketAddress(_)))
