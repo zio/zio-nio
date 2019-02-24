@@ -33,7 +33,7 @@ class Selector(private[nio] val selector: JSelector) {
   final val selectNow: IO[IOException, Int] =
     IO.syncIOException(selector.selectNow())
 
-  final def select(timeout: Duration.Finite): IO[IOException, Int] =
+  final def select(timeout: Duration): IO[IOException, Int] =
     IO.syncIOException(selector.select(timeout.toMillis))
 
   final val select: IO[IOException, Int] =

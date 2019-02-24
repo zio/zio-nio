@@ -7,7 +7,7 @@ import java.nio.channels.{
 
 import scalaz.nio.channels.{ Selector, ServerSocketChannel, SocketChannel }
 import scalaz.zio.duration._
-import scalaz.zio.{ IO, RTS }
+import scalaz.zio.{ IO, RTS, Schedule }
 import testz.{ Harness, assert }
 
 import scala.language.postfixOps
@@ -18,58 +18,77 @@ object SelectorSuite extends RTS {
     import harness._
     section(test("read/write") { () =>
 
-      def server: IO[Exception, String] = {  
+      def byteArrayToString(array: Array[Byte]): String =
+        array.takeWhile(_ != 10).map(_.toChar).mkString.trim
+
+      val addressIo = SocketAddress.inetSocketAddress("0.0.0.0", 1111)
+
+      def serverLoop(selector: Selector, channel: ServerSocketChannel, buffer: ByteBuffer): IO[Exception, Unit] =
         for {
-          address  <- SocketAddress.inetSocketAddress("0.0.0.0", 1111)
+          readyChannels <- selector.select(10 millis)
+          selectedKeys  <- selector.selectedKeys
+          _             <- IO.foreach(selectedKeys) { key =>
+            IO.when(key.isAcceptable) {
+              for {
+                clientOpt <- channel.accept
+                client    <- IO.fromEither(clientOpt.toRight(new RuntimeException("option empty")))
+                _         <- client.configureBlocking(false)
+                _         <- client.register(selector, JSelectionKey.OP_READ)
+              } yield ()
+            } *>
+            IO.when(key.isReadable) {
+              for {
+                sClient <- key.channel
+                client  =  new SocketChannel(sClient.asInstanceOf[JSocketChannel])
+                _       <- client.read(buffer)
+                array   <- buffer.array
+                text    =  array.takeWhile(_ != 10).map(_.toChar).mkString.trim
+                _       <- buffer.flip
+                _       <- client.write(buffer)
+                _       <- buffer.clear
+                _       <- client.close      
+              } yield ()
+            } *>
+            selector.removeKey(key)
+          }
+        } yield ()
+
+      def server: IO[Exception, Unit] = {  
+        for {
+          address  <- addressIo
           selector <- Selector.make
           channel  <- ServerSocketChannel.open
           _        <- channel.bind(address)
           _        <- channel.configureBlocking(false)
           ops      <- channel.validOps
           key      <- channel.register(selector, ops, None)
+          buffer   <- ByteBuffer(256)
     
-          readyChannels <- selector.select
-          selectedKeys  <- selector.selectedKeys
-          key           =  selectedKeys.head
-          clientOpt     <- channel.accept
-          client        <- IO.fromEither(clientOpt.toRight(new RuntimeException("option empty")))
-          _             <- client.configureBlocking(false)
-          _             <- client.register(selector, JSelectionKey.OP_READ)
-          addressOpt    <- client.localAddress
-          _             <- selector.removeKey(key)
-    
-          readyChannels <- selector.select
-          selectedKeys  <- selector.selectedKeys
-          key           =  selectedKeys.head
-          sClient       <- key.channel
-          client        =  new SocketChannel(sClient.asInstanceOf[JSocketChannel])
-          buffer        <- ByteBuffer(256)
-          _             <- client.read(buffer)
-          array         <- buffer.array
-          text          =  array.takeWhile(_ != 10).map(_.toChar).mkString.trim
-          _             <- client.close
-          _             <- selector.removeKey(key)
+          _ <- serverLoop(selector, channel, buffer).repeat(Schedule.recurs(2))
     
           _ <- channel.close
-        } yield text
+        } yield ()
       }
 
-      def client: IO[Exception, Unit] =
+      def client: IO[Exception, String] =
         for {
-          address <- SocketAddress.inetSocketAddress("0.0.0.0", 1111)
+          address <- addressIo
           client  <- SocketChannel.open(address)
           bytes   = "Hello".getBytes
           buffer  <- ByteBuffer(bytes)
           _       <- client.write(buffer)
           _       <- buffer.clear
-          _       <- client.close
-        } yield ()
+          _       <- client.read(buffer)
+          array   <- buffer.array
+          text    = byteArrayToString(array) 
+          _       <- buffer.clear
+        } yield text
 
       val testProgram: IO[Exception, Boolean] = for {
         serverFiber <- server.fork
         clientFiber <- client.delay(10 millis).fork
-        message     <- serverFiber.join
-         _           <- clientFiber.join
+        _           <- serverFiber.join
+        message     <- clientFiber.join
       } yield message == "Hello"
 
       assert(unsafeRun(testProgram))
