@@ -1,33 +1,41 @@
 package scalaz.nio
 
-import scalaz.zio.IO
-
-import java.nio.{ ByteOrder, Buffer => JBuffer }
+import java.nio.{
+  Buffer => JBuffer,
+  ByteBuffer => JByteBuffer,
+  CharBuffer => JCharBuffer,
+  FloatBuffer => JFloatBuffer,
+  DoubleBuffer => JDoubleBuffer,
+  IntBuffer => JIntBuffer,
+  LongBuffer => JLongBuffer,
+  ShortBuffer => JShortBuffer
+}
+import scalaz.zio.{ Chunk, IO }
 
 import scala.reflect.ClassTag
 
 @specialized // See if Specialized will work on return values, e.g. `get`
-abstract class Buffer[A: ClassTag, B <: JBuffer] private[nio] (private[nio] val buffer: B) {
+abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffer) {
+  final val capacity: IO[Nothing, Int] = IO.succeed(buffer.capacity)
 
-  final def capacity: IO[Nothing, Int] = IO.now(buffer.capacity)
-
-  final def position: IO[Nothing, Int] = IO.now(buffer.position)
+  final def position: IO[Nothing, Int] = IO.sync(buffer.position)
 
   final def position(newPosition: Int): IO[Exception, Unit] =
     IO.syncException(buffer.position(newPosition)).void
 
-  final def limit: IO[Nothing, Int] = IO.now(buffer.limit)
+  final def limit: IO[Nothing, Int] = IO.sync(buffer.limit)
 
-  final def remaining: IO[Nothing, Int] = IO.now(buffer.remaining)
+  final def remaining: IO[Nothing, Int] = IO.sync(buffer.remaining)
 
-  final def hasRemaining: IO[Nothing, Boolean] = IO.now(buffer.hasRemaining)
+  final def hasRemaining: IO[Nothing, Boolean] = IO.sync(buffer.hasRemaining)
 
   final def limit(newLimit: Int): IO[Exception, Unit] =
     IO.syncException(buffer.limit(newLimit)).void
 
   final def mark: IO[Nothing, Unit] = IO.sync(buffer.mark()).void
 
-  final def reset: IO[Nothing, Unit] = IO.sync(buffer.reset()).void
+  final def reset: IO[Exception, Unit] =
+    IO.syncException(buffer.reset()).void
 
   final def clear: IO[Nothing, Unit] = IO.sync(buffer.clear()).void
 
@@ -35,42 +43,56 @@ abstract class Buffer[A: ClassTag, B <: JBuffer] private[nio] (private[nio] val 
 
   final def rewind: IO[Nothing, Unit] = IO.sync(buffer.rewind()).void
 
-  final def isReadOnly: IO[Nothing, Boolean] = IO.now(buffer.isReadOnly)
-
-  final def hasArray: IO[Nothing, Boolean] = IO.now(buffer.hasArray)
-
-  final def arrayOffset: IO[Nothing, Int] = IO.now(buffer.arrayOffset)
-
-  final def isDirect: IO[Nothing, Boolean] = IO.now(buffer.isDirect)
-
-  // Following operations are present in every buffer, but for some reason are not part of Buffer interface.
-
-  type Self <: Buffer[A, B]
+  final val isReadOnly: IO[Nothing, Boolean] = IO.succeed(buffer.isReadOnly)
 
   def array: IO[Exception, Array[A]]
 
-  def get: IO[Exception, A]
-
-  def get(i: Int): IO[Exception, A]
-
-  def put(element: A): IO[Exception, Self]
-
-  def put(index: Int, element: A): IO[Exception, Self]
-
-  def order: IO[Nothing, ByteOrder]
-
-  def slice: IO[Exception, Self]
-
-  def asReadOnlyBuffer: IO[Exception, Self]
+  final val hasArray: IO[Nothing, Boolean]  = IO.succeed(buffer.hasArray)
+  final def arrayOffset: IO[Exception, Int] = IO.syncException(buffer.arrayOffset)
+  final val isDirect: IO[Nothing, Boolean]  = IO.succeed(buffer.isDirect)
 }
 
-abstract class BufferOps[A: ClassTag, B <: JBuffer, C <: Buffer[A, B]] {
+object Buffer {
 
-  private[nio] def apply(javaBuffer: B): C
+  def byte(capacity: Int): IO[Exception, Buffer[Byte]] =
+    IO.syncException(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_))
 
-  def allocate(capacity: Int): IO[Exception, C]
+  def byte(chunk: Chunk[Byte]): IO[Exception, Buffer[Byte]] =
+    IO.syncException(JByteBuffer.wrap(chunk.toArray)).map(new ByteBuffer(_))
 
-  def wrap(array: Array[A]): IO[Exception, C]
+  def char(capacity: Int): IO[Exception, Buffer[Char]] =
+    IO.syncException(JCharBuffer.allocate(capacity)).map(new CharBuffer(_))
 
-  def wrap(array: Array[A], offset: Int, length: Int): IO[Exception, C]
+  def char(chunk: Chunk[Char]): IO[Exception, Buffer[Char]] =
+    IO.syncException(JCharBuffer.wrap(chunk.toArray)).map(new CharBuffer(_))
+
+  def float(capacity: Int): IO[Exception, Buffer[Float]] =
+    IO.syncException(JFloatBuffer.allocate(capacity)).map(new FloatBuffer(_))
+
+  def float(chunk: Chunk[Float]): IO[Exception, Buffer[Float]] =
+    IO.syncException(JFloatBuffer.wrap(chunk.toArray)).map(new FloatBuffer(_))
+
+  def double(capacity: Int): IO[Exception, Buffer[Double]] =
+    IO.syncException(JDoubleBuffer.allocate(capacity)).map(new DoubleBuffer(_))
+
+  def double(chunk: Chunk[Double]): IO[Exception, Buffer[Double]] =
+    IO.syncException(JDoubleBuffer.wrap(chunk.toArray)).map(new DoubleBuffer(_))
+
+  def int(capacity: Int): IO[Exception, Buffer[Int]] =
+    IO.syncException(JIntBuffer.allocate(capacity)).map(new IntBuffer(_))
+
+  def int(chunk: Chunk[Int]): IO[Exception, Buffer[Int]] =
+    IO.syncException(JIntBuffer.wrap(chunk.toArray)).map(new IntBuffer(_))
+
+  def long(capacity: Int): IO[Exception, Buffer[Long]] =
+    IO.syncException(JLongBuffer.allocate(capacity)).map(new LongBuffer(_))
+
+  def long(chunk: Chunk[Long]): IO[Exception, Buffer[Long]] =
+    IO.syncException(JLongBuffer.wrap(chunk.toArray)).map(new LongBuffer(_))
+
+  def short(capacity: Int): IO[Exception, Buffer[Short]] =
+    IO.syncException(JShortBuffer.allocate(capacity)).map(new ShortBuffer(_))
+
+  def short(chunk: Chunk[Short]): IO[Exception, Buffer[Short]] =
+    IO.syncException(JShortBuffer.wrap(chunk.toArray)).map(new ShortBuffer(_))
 }

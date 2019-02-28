@@ -15,13 +15,13 @@ object ChannelSuite extends RTS {
       def echoServer: IO[Exception, Unit] =
         for {
           address <- inetAddress
-          sink    <- ByteBuffer.allocate(3)
+          sink    <- Buffer.byte(3)
           server  <- AsynchronousServerSocketChannel()
           _       <- server.bind(address)
           worker  <- server.accept
-          _       <- worker.read(sink)
+          _       <- worker.readBuffer(sink)
           _       <- sink.flip
-          _       <- worker.write(sink)
+          _       <- worker.writeBuffer(sink)
           _       <- worker.close
           _       <- server.close
         } yield ()
@@ -29,14 +29,14 @@ object ChannelSuite extends RTS {
       def echoClient: IO[Exception, Boolean] =
         for {
           address  <- inetAddress
-          src      <- ByteBuffer.allocate(3)
+          src      <- Buffer.byte(3)
           client   <- AsynchronousSocketChannel()
           _        <- client.connect(address)
           sent     <- src.array
           _        = sent.update(0, 1)
-          _        <- client.write(src)
+          _        <- client.writeBuffer(src)
           _        <- src.flip
-          _        <- client.read(src)
+          _        <- client.readBuffer(src)
           received <- src.array
           _        <- client.close
         } yield sent.sameElements(received)
