@@ -25,7 +25,8 @@ object Main {
         ChannelSuite.tests(pureHarness)((), List("Channel tests")),
         FileChannelSuite.tests(pureHarness)((), List("FileChannel tests")),
         ScatterGatherChannelSuite
-          .tests(pureHarness)((), List("Scattering and Gathering Channel tests"))
+          .tests(pureHarness)((), List("Scattering and Gathering Channel tests")),
+        SelectorSuite.tests(pureHarness)((), List("Selector tests"))
       )
 
     def asyncChannelGroupSuite =
