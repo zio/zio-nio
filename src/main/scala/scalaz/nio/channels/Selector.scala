@@ -31,24 +31,24 @@ class Selector(private[nio] val selector: JSelector) {
     IO.sync(selector.selectedKeys().remove(key.selectionKey)).void
 
   final val selectNow: IO[IOException, Int] =
-    IO.syncIOException(selector.selectNow())
+    IO.syncCatch(selector.selectNow())(JustIOException)
 
   final def select(timeout: Duration): IO[IOException, Int] =
-    IO.syncIOException(selector.select(timeout.toMillis))
+    IO.syncCatch(selector.select(timeout.toMillis))(JustIOException)
 
   final val select: IO[IOException, Int] =
-    IO.syncIOException(selector.select())
+    IO.syncCatch(selector.select())(JustIOException)
 
   final val wakeup: IO[Nothing, Selector] =
     IO.sync(selector.wakeup()).map(new Selector(_))
 
   final val close: IO[IOException, Unit] =
-    IO.syncIOException(selector.close()).void
+    IO.syncCatch(selector.close())(JustIOException).void
 }
 
 object Selector {
 
   final val make: IO[IOException, Selector] =
-    IO.syncIOException(JSelector.open()).map(new Selector(_))
+    IO.syncCatch(new Selector(JSelector.open()))(JustIOException)
 
 }

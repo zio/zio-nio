@@ -1,10 +1,24 @@
 package scalaz.nio.channels
 
-import java.nio.channels.{ SelectableChannel => JSelectableChannel, SelectionKey => JSelectionKey }
+import java.nio.channels.{
+  CancelledKeyException,
+  SelectableChannel => JSelectableChannel,
+  SelectionKey => JSelectionKey
+}
 
 import scalaz.zio.IO
 
+object SelectionKey {
+
+  val JustCancelledKeyException: PartialFunction[Throwable, CancelledKeyException] = {
+    case e: CancelledKeyException => e
+  }
+
+}
+
 class SelectionKey(private[nio] val selectionKey: JSelectionKey) {
+
+  import SelectionKey._
 
   final val channel: IO[Nothing, JSelectableChannel] =
     IO.sync(selectionKey.channel())
@@ -27,17 +41,17 @@ class SelectionKey(private[nio] val selectionKey: JSelectionKey) {
   final val readyOps: IO[Nothing, Int] =
     IO.sync(selectionKey.readyOps())
 
-  final def isReadable: Boolean =
-    selectionKey.isReadable()
+  final def isReadable: IO[CancelledKeyException, Boolean] =
+    IO.syncCatch(selectionKey.isReadable())(JustCancelledKeyException)
 
-  final def isWritable: Boolean =
-    selectionKey.isWritable()
+  final def isWritable: IO[CancelledKeyException, Boolean] =
+    IO.syncCatch(selectionKey.isWritable())(JustCancelledKeyException)
 
-  final def isConnectable: Boolean =
-    selectionKey.isConnectable()
+  final def isConnectable: IO[CancelledKeyException, Boolean] =
+    IO.syncCatch(selectionKey.isConnectable())(JustCancelledKeyException)
 
-  final def isAcceptable: Boolean =
-    selectionKey.isAcceptable()
+  final def isAcceptable: IO[CancelledKeyException, Boolean] =
+    IO.syncCatch(selectionKey.isAcceptable())(JustCancelledKeyException)
 
   final def attach(ob: Option[AnyRef]): IO[Nothing, Option[AnyRef]] =
     IO.sync(Option(selectionKey.attach(ob.orNull)))

@@ -18,6 +18,6 @@ class Pipe(private val pipe: JPipe) {
 object Pipe {
 
   final val open: IO[IOException, Pipe] =
-    IO.syncIOException(JPipe.open()).map(new Pipe(_))
+    IO.syncCatch(new Pipe(JPipe.open()))(JustIOException)
 
 }

@@ -13,28 +13,30 @@ class SelectorProvider(private val selectorProvider: JSelectorProvider) {
 
   final val openDatagramChannel
     : IO[IOException, JDatagramChannel] = // TODO: wrapper for DatagramChannel
-    IO.syncIOException(selectorProvider.openDatagramChannel())
+    IO.syncCatch(selectorProvider.openDatagramChannel())(JustIOException)
 
   // this can throw UnsupportedOperationException - doesn't seem like a recoverable exception
   final def openDatagramChannel(
     family: ProtocolFamily
   ): IO[IOException, JDatagramChannel] = // TODO: wrapper for DatagramChannel
-    IO.syncIOException(selectorProvider.openDatagramChannel(family))
+    IO.syncCatch(selectorProvider.openDatagramChannel(family))(JustIOException)
 
   final val openPipe: IO[IOException, Pipe] =
-    IO.syncIOException(selectorProvider.openPipe()).map(new Pipe(_))
+    IO.syncCatch(new Pipe(selectorProvider.openPipe()))(JustIOException)
 
   final val openSelector: IO[IOException, Selector] =
-    IO.syncIOException(selectorProvider.openSelector()).map(new Selector(_))
+    IO.syncCatch(new Selector(selectorProvider.openSelector()))(JustIOException)
 
   final val openServerSocketChannel: IO[IOException, ServerSocketChannel] =
-    IO.syncIOException(selectorProvider.openServerSocketChannel()).map(new ServerSocketChannel(_))
+    IO.syncCatch(new ServerSocketChannel(selectorProvider.openServerSocketChannel()))(
+      JustIOException
+    )
 
   final val openSocketChannel: IO[IOException, SocketChannel] =
-    IO.syncIOException(selectorProvider.openSocketChannel()).map(new SocketChannel(_))
+    IO.syncCatch(new SocketChannel(selectorProvider.openSocketChannel()))(JustIOException)
 
   final val inheritedChannel: IO[IOException, Option[JChannel]] = // TODO: wrapper for Channel
-    IO.syncIOException(selectorProvider.inheritedChannel()).map(Option(_))
+    IO.syncCatch(Option(selectorProvider.inheritedChannel()))(JustIOException)
 }
 
 object SelectorProvider {
