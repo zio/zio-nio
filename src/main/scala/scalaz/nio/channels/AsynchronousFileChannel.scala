@@ -13,23 +13,23 @@ import java.nio.file.attribute.FileAttribute
 import java.util.concurrent.ExecutorService
 
 import scalaz.zio.interop.javaconcurrent._
-import scalaz.zio.IO
+import scalaz.zio.{ IO, JustExceptions }
 
 import scala.collection.JavaConverters._
 
 class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
 
   final def close: IO[Exception, Unit] =
-    IO.syncException(channel.close())
+    IO.effect(channel.close()).refineOrDie(JustExceptions)
 
   final def force(metaData: Boolean): IO[Exception, Unit] =
-    IO.syncException(channel.force(metaData))
+    IO.effect(channel.force(metaData)).refineOrDie(JustExceptions)
 
   final val lock: IO[Throwable, FileLock] =
     IO.fromFutureJava(() => channel.lock())
 
   final def lock[A](attachment: A, handler: CompletionHandler[FileLock, A]): IO[Exception, Unit] =
-    IO.syncException(channel.lock(attachment, handler))
+    IO.effect(channel.lock(attachment, handler)).refineOrDie(JustExceptions)
 
   final def lock(position: Long, size: Long, shared: Boolean): IO[Throwable, FileLock] =
     IO.fromFutureJava(() => channel.lock(position, size, shared))
@@ -41,7 +41,7 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
     attachment: A,
     handler: CompletionHandler[FileLock, A]
   ): IO[Exception, Unit] =
-    IO.syncException(channel.lock(position, size, shared, attachment, handler))
+    IO.effect(channel.lock(position, size, shared, attachment, handler)).refineOrDie(JustExceptions)
 
   final private[nio] def readBuffer(dst: Buffer[Byte], position: Long): IO[Throwable, Integer] =
     IO.fromFutureJava(() => channel.read(dst.buffer.asInstanceOf[JByteBuffer], position))
@@ -60,9 +60,10 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
     attachment: A,
     handler: CompletionHandler[Integer, A]
   ): IO[Exception, Unit] =
-    IO.syncException(
-      channel.read(dst.buffer.asInstanceOf[JByteBuffer], position, attachment, handler)
-    )
+    IO.effect(
+        channel.read(dst.buffer.asInstanceOf[JByteBuffer], position, attachment, handler)
+      )
+      .refineOrDie(JustExceptions)
 
   final def read[A](
     capacity: Int,
@@ -78,16 +79,16 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
     } yield r
 
   final val size: IO[Exception, Long] =
-    IO.syncException(channel.size())
+    IO.effect(channel.size()).refineOrDie(JustExceptions)
 
   final def truncate(size: Long): IO[Exception, AsynchronousFileChannel] =
-    IO.syncException(new AsynchronousFileChannel(channel.truncate(size)))
+    IO.effect(new AsynchronousFileChannel(channel.truncate(size))).refineOrDie(JustExceptions)
 
   final val tryLock: IO[Exception, FileLock] =
-    IO.syncException(channel.tryLock())
+    IO.effect(channel.tryLock()).refineOrDie(JustExceptions)
 
   final def tryLock(position: Long, size: Long, shared: Boolean): IO[Exception, FileLock] =
-    IO.syncException(channel.tryLock(position, size, shared))
+    IO.effect(channel.tryLock(position, size, shared)).refineOrDie(JustExceptions)
 
   final private[nio] def writeBuffer(src: Buffer[Byte], position: Long): IO[Throwable, Integer] =
     IO.fromFutureJava(() => channel.write(src.buffer.asInstanceOf[JByteBuffer], position))
@@ -104,9 +105,10 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
     attachment: A,
     handler: CompletionHandler[Integer, A]
   ): IO[Exception, Unit] =
-    IO.syncException(
-      channel.write(src.buffer.asInstanceOf[JByteBuffer], position, attachment, handler)
-    )
+    IO.effect(
+        channel.write(src.buffer.asInstanceOf[JByteBuffer], position, attachment, handler)
+      )
+      .refineOrDie(JustExceptions)
 
   final def write[A](
     src: Chunk[Byte],
@@ -123,9 +125,10 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
 object AsynchronousFileChannel {
 
   def open[A <: OpenOption](file: Path, options: Set[A]): IO[Exception, AsynchronousFileChannel] =
-    IO.syncException(
-      new AsynchronousFileChannel(JAsynchronousFileChannel.open(file, options.toSeq: _*))
-    )
+    IO.effect(
+        new AsynchronousFileChannel(JAsynchronousFileChannel.open(file, options.toSeq: _*))
+      )
+      .refineOrDie(JustExceptions)
 
   def open(
     file: Path,
@@ -133,10 +136,11 @@ object AsynchronousFileChannel {
     executor: Option[ExecutorService],
     attrs: Set[FileAttribute[_]]
   ): IO[Exception, AsynchronousFileChannel] =
-    IO.syncException(
-      new AsynchronousFileChannel(
-        JAsynchronousFileChannel.open(file, options.asJava, executor.orNull, attrs.toSeq: _*)
+    IO.effect(
+        new AsynchronousFileChannel(
+          JAsynchronousFileChannel.open(file, options.asJava, executor.orNull, attrs.toSeq: _*)
+        )
       )
-    )
+      .refineOrDie(JustExceptions)
 
 }

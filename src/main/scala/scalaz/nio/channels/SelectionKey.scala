@@ -6,7 +6,7 @@ import java.nio.channels.{
   SelectionKey => JSelectionKey
 }
 
-import scalaz.zio.IO
+import scalaz.zio.{ IO, UIO }
 
 object SelectionKey {
 
@@ -20,49 +20,49 @@ class SelectionKey(private[nio] val selectionKey: JSelectionKey) {
 
   import SelectionKey._
 
-  final val channel: IO[Nothing, JSelectableChannel] =
-    IO.sync(selectionKey.channel())
+  final val channel: UIO[JSelectableChannel] =
+    IO.effectTotal(selectionKey.channel())
 
-  final val selector: IO[Nothing, Selector] =
-    IO.sync(selectionKey.selector()).map(new Selector(_))
+  final val selector: UIO[Selector] =
+    IO.effectTotal(selectionKey.selector()).map(new Selector(_))
 
-  final val isValid: IO[Nothing, Boolean] =
-    IO.sync(selectionKey.isValid)
+  final val isValid: UIO[Boolean] =
+    IO.effectTotal(selectionKey.isValid)
 
-  final val cancel: IO[Nothing, Unit] =
-    IO.sync(selectionKey.cancel())
+  final val cancel: UIO[Unit] =
+    IO.effectTotal(selectionKey.cancel())
 
-  final val interestOps: IO[Nothing, Int] =
-    IO.sync(selectionKey.interestOps())
+  final val interestOps: UIO[Int] =
+    IO.effectTotal(selectionKey.interestOps())
 
-  final def interestOps(ops: Int): IO[Nothing, SelectionKey] =
-    IO.sync(selectionKey.interestOps(ops)).map(new SelectionKey(_))
+  final def interestOps(ops: Int): UIO[SelectionKey] =
+    IO.effectTotal(selectionKey.interestOps(ops)).map(new SelectionKey(_))
 
-  final val readyOps: IO[Nothing, Int] =
-    IO.sync(selectionKey.readyOps())
+  final val readyOps: UIO[Int] =
+    IO.effectTotal(selectionKey.readyOps())
 
   final def isReadable: IO[CancelledKeyException, Boolean] =
-    IO.syncCatch(selectionKey.isReadable())(JustCancelledKeyException)
+    IO.effect(selectionKey.isReadable()).refineOrDie(JustCancelledKeyException)
 
   final def isWritable: IO[CancelledKeyException, Boolean] =
-    IO.syncCatch(selectionKey.isWritable())(JustCancelledKeyException)
+    IO.effect(selectionKey.isWritable()).refineOrDie(JustCancelledKeyException)
 
   final def isConnectable: IO[CancelledKeyException, Boolean] =
-    IO.syncCatch(selectionKey.isConnectable())(JustCancelledKeyException)
+    IO.effect(selectionKey.isConnectable()).refineOrDie(JustCancelledKeyException)
 
   final def isAcceptable: IO[CancelledKeyException, Boolean] =
-    IO.syncCatch(selectionKey.isAcceptable())(JustCancelledKeyException)
+    IO.effect(selectionKey.isAcceptable()).refineOrDie(JustCancelledKeyException)
 
-  final def attach(ob: Option[AnyRef]): IO[Nothing, Option[AnyRef]] =
-    IO.sync(Option(selectionKey.attach(ob.orNull)))
+  final def attach(ob: Option[AnyRef]): UIO[Option[AnyRef]] =
+    IO.effectTotal(Option(selectionKey.attach(ob.orNull)))
 
-  final def attach(ob: AnyRef): IO[Nothing, AnyRef] =
-    IO.sync(selectionKey.attach(ob))
+  final def attach(ob: AnyRef): UIO[AnyRef] =
+    IO.effectTotal(selectionKey.attach(ob))
 
-  final val detach: IO[Nothing, Unit] =
-    IO.sync(selectionKey.attach(null)).map(_ => ())
+  final val detach: UIO[Unit] =
+    IO.effectTotal(selectionKey.attach(null)).map(_ => ())
 
-  final val attachment: IO[Nothing, Option[AnyRef]] =
-    IO.sync(selectionKey.attachment()).map(Option(_))
+  final val attachment: UIO[Option[AnyRef]] =
+    IO.effectTotal(selectionKey.attachment()).map(Option(_))
 
 }

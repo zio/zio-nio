@@ -5,10 +5,10 @@ import java.nio.{ ByteBuffer => JByteBuffer }
 import org.scalacheck.Prop.forAll
 import org.scalacheck.Test.Passed
 import org.scalacheck._
-import scalaz.zio.{ IO, RTS }
+import scalaz.zio.{ DefaultRuntime, IO }
 import testz.{ Harness, assert }
 
-object BufferSuite extends RTS {
+object BufferSuite extends DefaultRuntime {
 
   def tests[T](harness: Harness[T]): T = {
     import harness._
@@ -20,7 +20,7 @@ object BufferSuite extends RTS {
         val testProgram: IO[Exception, Boolean] = for {
           bb <- Buffer.byte(initialCapacity)
           c1 <- bb.capacity
-          c2 <- IO.sync {
+          c2 <- IO.effectTotal {
                  JByteBuffer.allocate(initialCapacity).capacity
                }
         } yield c1 == c2
@@ -172,7 +172,8 @@ object BufferSuite extends RTS {
 
                   // either invariant holds or exception was caught
                   unsafeRun(isInvariantPreserved.catchSome {
-                    case _: IllegalArgumentException | _: IllegalStateException => IO.sync(true)
+                    case _: IllegalArgumentException | _: IllegalStateException =>
+                      IO.effectTotal(true)
                   })
               }
 

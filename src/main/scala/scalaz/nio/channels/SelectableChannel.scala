@@ -12,95 +12,100 @@ import java.nio.channels.{
 import scalaz.nio.channels.spi.SelectorProvider
 import scalaz.nio.io._
 import scalaz.nio.{ Buffer, SocketAddress, SocketOption }
-import scalaz.zio.IO
+import scalaz.zio.{ IO, JustExceptions, UIO }
 
 class SelectableChannel(private val channel: JSelectableChannel) {
 
-  final val provider: IO[Nothing, SelectorProvider] =
-    IO.sync(new SelectorProvider(channel.provider()))
+  final val provider: UIO[SelectorProvider] =
+    IO.effectTotal(new SelectorProvider(channel.provider()))
 
-  final val validOps: IO[Nothing, Int] =
-    IO.sync(channel.validOps())
+  final val validOps: UIO[Int] =
+    IO.effectTotal(channel.validOps())
 
-  final val isRegistered: IO[Nothing, Boolean] =
-    IO.sync(channel.isRegistered())
+  final val isRegistered: UIO[Boolean] =
+    IO.effectTotal(channel.isRegistered())
 
-  final def keyFor(sel: Selector): IO[Nothing, Option[SelectionKey]] =
-    IO.sync(Option(channel.keyFor(sel.selector)).map(new SelectionKey(_)))
+  final def keyFor(sel: Selector): UIO[Option[SelectionKey]] =
+    IO.effectTotal(Option(channel.keyFor(sel.selector)).map(new SelectionKey(_)))
 
   final def register(sel: Selector, ops: Int, att: Option[AnyRef]): IO[IOException, SelectionKey] =
-    IO.syncCatch(new SelectionKey(channel.register(sel.selector, ops, att.orNull)))(JustIOException)
+    IO.effect(new SelectionKey(channel.register(sel.selector, ops, att.orNull)))
+      .refineOrDie(JustIOException)
 
   final def register(sel: Selector, ops: Int): IO[IOException, SelectionKey] =
-    IO.syncCatch(new SelectionKey(channel.register(sel.selector, ops)))(JustIOException)
+    IO.effect(new SelectionKey(channel.register(sel.selector, ops))).refineOrDie(JustIOException)
 
   final def configureBlocking(block: Boolean): IO[IOException, SelectableChannel] =
-    IO.syncCatch(new SelectableChannel(channel.configureBlocking(block)))(JustIOException)
+    IO.effect(new SelectableChannel(channel.configureBlocking(block))).refineOrDie(JustIOException)
 
-  final val isBlocking: IO[Nothing, Boolean] =
-    IO.sync(channel.isBlocking())
+  final val isBlocking: UIO[Boolean] =
+    IO.effectTotal(channel.isBlocking())
 
-  final val blockingLock: IO[Nothing, AnyRef] =
-    IO.sync(channel.blockingLock())
+  final val blockingLock: UIO[AnyRef] =
+    IO.effectTotal(channel.blockingLock())
 
-  final val isOpen: IO[Nothing, Boolean] =
-    IO.sync(channel.isOpen())
+  final val isOpen: UIO[Boolean] =
+    IO.effectTotal(channel.isOpen())
 
   final def close: IO[Exception, Unit] =
-    IO.syncException(channel.close())
+    IO.effect(channel.close()).refineOrDie {
+      case e: Exception => e
+    }
 
 }
 
 class SocketChannel(private val channel: JSocketChannel) extends SelectableChannel(channel) {
 
   final def bind(local: SocketAddress): IO[IOException, Unit] =
-    IO.syncCatch(channel.bind(local.jSocketAddress))(JustIOException).void
+    IO.effect(channel.bind(local.jSocketAddress)).refineOrDie(JustIOException).void
 
   final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.syncException(channel.setOption(name.jSocketOption, value)).void
+    IO.effect(channel.setOption(name.jSocketOption, value)).refineOrDie(JustExceptions).void
 
   final val shutdownInput: IO[IOException, Unit] =
-    IO.syncCatch(channel.shutdownInput())(JustIOException).void
+    IO.effect(channel.shutdownInput()).refineOrDie(JustIOException).void
 
   final val shutdownOutput: IO[IOException, Unit] =
-    IO.syncCatch(channel.shutdownOutput())(JustIOException).void
+    IO.effect(channel.shutdownOutput()).refineOrDie(JustIOException).void
 
-  final val socket: IO[Nothing, JSocket] =
-    IO.sync(channel.socket())
+  final val socket: UIO[JSocket] =
+    IO.effectTotal(channel.socket())
 
-  final val isConnected: IO[Nothing, Boolean] =
-    IO.sync(channel.isConnected)
+  final val isConnected: UIO[Boolean] =
+    IO.effectTotal(channel.isConnected)
 
-  final val isConnectionPending: IO[Nothing, Boolean] =
-    IO.sync(channel.isConnectionPending)
+  final val isConnectionPending: UIO[Boolean] =
+    IO.effectTotal(channel.isConnectionPending)
 
   final def connect(remote: SocketAddress): IO[IOException, Boolean] =
-    IO.syncCatch(channel.connect(remote.jSocketAddress))(JustIOException)
+    IO.effect(channel.connect(remote.jSocketAddress)).refineOrDie(JustIOException)
 
   final val finishConnect: IO[IOException, Boolean] =
-    IO.syncCatch(channel.finishConnect())(JustIOException)
+    IO.effect(channel.finishConnect()).refineOrDie(JustIOException)
 
   final val remoteAddress: IO[IOException, SocketAddress] =
-    IO.syncCatch(new SocketAddress(channel.getRemoteAddress()))(JustIOException)
+    IO.effect(new SocketAddress(channel.getRemoteAddress())).refineOrDie(JustIOException)
 
   final def read(b: Buffer[Byte]): IO[IOException, Int] =
-    IO.syncCatch(channel.read(b.buffer.asInstanceOf[JByteBuffer]))(JustIOException)
+    IO.effect(channel.read(b.buffer.asInstanceOf[JByteBuffer])).refineOrDie(JustIOException)
 
   final def write(b: Buffer[Byte]): IO[Exception, Int] =
-    IO.syncCatch(channel.write(b.buffer.asInstanceOf[JByteBuffer]))(JustIOException)
+    IO.effect(channel.write(b.buffer.asInstanceOf[JByteBuffer])).refineOrDie(JustIOException)
 
   final val localAddress: IO[IOException, Option[SocketAddress]] =
-    IO.syncCatch(Option(channel.getLocalAddress()).map(new SocketAddress(_)))(JustIOException)
+    IO.effect(Option(channel.getLocalAddress()).map(new SocketAddress(_)))
+      .refineOrDie(JustIOException)
 
 }
 
 object SocketChannel {
 
   final val open: IO[IOException, SocketChannel] =
-    IO.syncCatch(new SocketChannel(JSocketChannel.open()))(JustIOException)
+    IO.effect(new SocketChannel(JSocketChannel.open())).refineOrDie(JustIOException)
 
   final def open(remote: SocketAddress): IO[IOException, SocketChannel] =
-    IO.syncCatch(new SocketChannel(JSocketChannel.open(remote.jSocketAddress)))(JustIOException)
+    IO.effect(new SocketChannel(JSocketChannel.open(remote.jSocketAddress)))
+      .refineOrDie(JustIOException)
 
 }
 
@@ -108,28 +113,28 @@ class ServerSocketChannel(private val channel: JServerSocketChannel)
     extends SelectableChannel(channel) {
 
   final def bind(local: SocketAddress): IO[IOException, Unit] =
-    IO.syncCatch(channel.bind(local.jSocketAddress))(JustIOException).void
+    IO.effect(channel.bind(local.jSocketAddress)).refineOrDie(JustIOException).void
 
   final def bind(local: SocketAddress, backlog: Int): IO[IOException, Unit] =
-    IO.syncCatch(channel.bind(local.jSocketAddress, backlog))(JustIOException).void
+    IO.effect(channel.bind(local.jSocketAddress, backlog)).refineOrDie(JustIOException).void
 
   final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.syncException(channel.setOption(name.jSocketOption, value)).void
+    IO.effect(channel.setOption(name.jSocketOption, value)).refineOrDie(JustExceptions).void
 
-  final val socket: IO[Nothing, JServerSocket] =
-    IO.sync(channel.socket())
+  final val socket: UIO[JServerSocket] =
+    IO.effectTotal(channel.socket())
 
   final def accept: IO[IOException, Option[SocketChannel]] =
-    IO.syncCatch(Option(channel.accept()).map(new SocketChannel(_)))(JustIOException)
+    IO.effect(Option(channel.accept()).map(new SocketChannel(_))).refineOrDie(JustIOException)
 
   final val localAddress: IO[IOException, SocketAddress] =
-    IO.syncCatch(new SocketAddress(channel.getLocalAddress()))(JustIOException)
+    IO.effect(new SocketAddress(channel.getLocalAddress())).refineOrDie(JustIOException)
 
 }
 
 object ServerSocketChannel {
 
   final val open: IO[IOException, ServerSocketChannel] =
-    IO.syncCatch(new ServerSocketChannel(JServerSocketChannel.open()))(JustIOException)
+    IO.effect(new ServerSocketChannel(JServerSocketChannel.open())).refineOrDie(JustIOException)
 
 }

@@ -3,12 +3,12 @@ package scalaz.nio
 import java.nio.file.{ Files, Paths, StandardOpenOption }
 
 import scalaz.nio.channels.AsynchronousFileChannel
-import scalaz.zio.{ Chunk, RTS }
+import scalaz.zio.{ Chunk, DefaultRuntime }
 import testz.{ Harness, assert }
 
 import scala.io.Source
 
-object FileChannelSuite extends RTS {
+object FileChannelSuite extends DefaultRuntime {
 
   def tests[T](harness: Harness[T]): T = {
     import harness._

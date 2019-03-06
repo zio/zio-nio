@@ -2,7 +2,7 @@ package scalaz.nio
 
 import java.net.{ InetAddress => JInetAddress }
 
-import scalaz.zio.IO
+import scalaz.zio.{ IO, JustExceptions }
 
 class InetAddress private[nio] (private[nio] val jInetAddress: JInetAddress) {
 
@@ -27,14 +27,15 @@ class InetAddress private[nio] (private[nio] val jInetAddress: JInetAddress) {
   def isMCOrgLocal: Boolean = jInetAddress.isMCOrgLocal
 
   def isReachable(timeOut: Int): IO[Exception, Boolean] =
-    IO.syncException(jInetAddress.isReachable(timeOut))
+    IO.effect(jInetAddress.isReachable(timeOut)).refineOrDie(JustExceptions)
 
   def isReachable(
     networkInterface: NetworkInterface,
     ttl: Integer,
     timeout: Integer
   ): IO[Exception, Boolean] =
-    IO.syncException(jInetAddress.isReachable(networkInterface.jNetworkInterface, ttl, timeout))
+    IO.effect(jInetAddress.isReachable(networkInterface.jNetworkInterface, ttl, timeout))
+      .refineOrDie(JustExceptions)
 
   def hostname: String = jInetAddress.getHostName
 
@@ -47,21 +48,25 @@ class InetAddress private[nio] (private[nio] val jInetAddress: JInetAddress) {
 object InetAddress {
 
   def byAddress(bytes: Array[Byte]): IO[Exception, InetAddress] =
-    IO.syncException(JInetAddress.getByAddress(bytes))
+    IO.effect(JInetAddress.getByAddress(bytes))
+      .refineOrDie(JustExceptions)
       .map(new InetAddress(_))
 
   def byAddress(hostname: String, bytes: Array[Byte]): IO[Exception, InetAddress] =
-    IO.syncException(JInetAddress.getByAddress(hostname, bytes))
+    IO.effect(JInetAddress.getByAddress(hostname, bytes))
+      .refineOrDie(JustExceptions)
       .map(new InetAddress(_))
 
   def byAllName(hostName: String): IO[Exception, Array[InetAddress]] =
-    IO.syncException(JInetAddress.getAllByName(hostName))
+    IO.effect(JInetAddress.getAllByName(hostName))
+      .refineOrDie(JustExceptions)
       .map(_.map(new InetAddress(_)))
 
   def byName(hostName: String): IO[Exception, InetAddress] =
-    IO.syncException(JInetAddress.getByName(hostName))
+    IO.effect(JInetAddress.getByName(hostName))
+      .refineOrDie(JustExceptions)
       .map(new InetAddress(_))
 
   def localHost: IO[Exception, InetAddress] =
-    IO.syncException(JInetAddress.getLocalHost).map(new InetAddress(_))
+    IO.effect(JInetAddress.getLocalHost).refineOrDie(JustExceptions).map(new InetAddress(_))
 }
