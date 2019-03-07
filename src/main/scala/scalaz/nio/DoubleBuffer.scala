@@ -14,16 +14,16 @@ private[nio] class DoubleBuffer(val doubleBuffer: JDoubleBuffer)
   def slice: IO[Exception, DoubleBuffer] =
     IO.syncException(doubleBuffer.slice()).map(new DoubleBuffer(_))
 
-  def get: IO[Exception, Double] = IO.syncException(doubleBuffer.get())
+  override def get: IO[Exception, Double] = IO.syncException(doubleBuffer.get())
 
-  def get(i: Int): IO[Exception, Double] = IO.syncException(doubleBuffer.get(i))
+  override def get(i: Int): IO[Exception, Double] = IO.syncException(doubleBuffer.get(i))
 
-  def put(element: Double): IO[Exception, DoubleBuffer] =
+  override def put(element: Double): IO[Exception, DoubleBuffer] =
     IO.syncException(doubleBuffer.put(element)).map(new DoubleBuffer(_))
 
-  def put(index: Int, element: Double): IO[Exception, DoubleBuffer] =
+  override def put(index: Int, element: Double): IO[Exception, DoubleBuffer] =
     IO.syncException(doubleBuffer.put(index, element)).map(new DoubleBuffer(_))
 
-  def asReadOnlyBuffer: IO[Exception, DoubleBuffer] =
+  override def asReadOnlyBuffer: IO[Exception, DoubleBuffer] =
     IO.syncException(doubleBuffer.asReadOnlyBuffer()).map(new DoubleBuffer(_))
 }

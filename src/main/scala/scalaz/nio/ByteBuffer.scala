@@ -15,19 +15,19 @@ private[this] class ByteBuffer(val byteBuffer: JByteBuffer) extends Buffer[Byte]
   def slice: IO[Exception, ByteBuffer] =
     IO.syncException(byteBuffer.slice()).map(new ByteBuffer(_))
 
-  def get: IO[Exception, Byte] =
+  override def get: IO[Exception, Byte] =
     IO.syncException(byteBuffer.get())
 
-  def get(i: Int): IO[Exception, Byte] =
+  override def get(i: Int): IO[Exception, Byte] =
     IO.syncException(byteBuffer.get(i))
 
-  def put(element: Byte): IO[Exception, ByteBuffer] =
+  override def put(element: Byte): IO[Exception, ByteBuffer] =
     IO.syncException(byteBuffer.put(element)).map(new ByteBuffer(_))
 
-  def put(index: Int, element: Byte): IO[Exception, ByteBuffer] =
+  override def put(index: Int, element: Byte): IO[Exception, ByteBuffer] =
     IO.syncException(byteBuffer.put(index, element)).map(new ByteBuffer(_))
 
-  def asReadOnlyBuffer: IO[Exception, ByteBuffer] =
+  override def asReadOnlyBuffer: IO[Exception, ByteBuffer] =
     IO.syncException(byteBuffer.asReadOnlyBuffer()).map(new ByteBuffer(_))
 
   def asCharBuffer: IO[Exception, CharBuffer] =

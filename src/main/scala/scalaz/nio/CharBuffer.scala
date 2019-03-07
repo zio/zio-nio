@@ -12,16 +12,16 @@ private[nio] class CharBuffer(val charBuffer: JCharBuffer) extends Buffer[Char](
 
   def slice: IO[Exception, CharBuffer] = IO.syncException(charBuffer.slice()).map(new CharBuffer(_))
 
-  def get: IO[Exception, Char] = IO.syncException(charBuffer.get())
+  override def get: IO[Exception, Char] = IO.syncException(charBuffer.get())
 
-  def get(i: Int): IO[Exception, Char] = IO.syncException(charBuffer.get(i))
+  override def get(i: Int): IO[Exception, Char] = IO.syncException(charBuffer.get(i))
 
-  def put(element: Char): IO[Exception, CharBuffer] =
+  override def put(element: Char): IO[Exception, CharBuffer] =
     IO.syncException(charBuffer.put(element)).map(new CharBuffer(_))
 
-  def put(index: Int, element: Char): IO[Exception, CharBuffer] =
+  override def put(index: Int, element: Char): IO[Exception, CharBuffer] =
     IO.syncException(charBuffer.put(index, element)).map(new CharBuffer(_))
 
-  def asReadOnlyBuffer: IO[Exception, CharBuffer] =
+  override def asReadOnlyBuffer: IO[Exception, CharBuffer] =
     IO.syncException(charBuffer.asReadOnlyBuffer()).map(new CharBuffer(_))
 }

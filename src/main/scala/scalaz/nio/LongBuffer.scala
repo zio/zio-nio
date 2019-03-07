@@ -12,16 +12,16 @@ private[nio] class LongBuffer(val longBuffer: JLongBuffer) extends Buffer[Long](
 
   def slice: IO[Exception, LongBuffer] = IO.syncException(longBuffer.slice()).map(new LongBuffer(_))
 
-  def get: IO[Exception, Long] = IO.syncException(longBuffer.get())
+  override def get: IO[Exception, Long] = IO.syncException(longBuffer.get())
 
-  def get(i: Int): IO[Exception, Long] = IO.syncException(longBuffer.get(i))
+  override def get(i: Int): IO[Exception, Long] = IO.syncException(longBuffer.get(i))
 
-  def put(element: Long): IO[Exception, LongBuffer] =
+  override def put(element: Long): IO[Exception, LongBuffer] =
     IO.syncException(longBuffer.put(element)).map(new LongBuffer(_))
 
-  def put(index: Int, element: Long): IO[Exception, LongBuffer] =
+  override def put(index: Int, element: Long): IO[Exception, LongBuffer] =
     IO.syncException(longBuffer.put(index, element)).map(new LongBuffer(_))
 
-  def asReadOnlyBuffer: IO[Exception, LongBuffer] =
+  override def asReadOnlyBuffer: IO[Exception, LongBuffer] =
     IO.syncException(longBuffer.asReadOnlyBuffer()).map(new LongBuffer(_))
 }

@@ -13,16 +13,16 @@ private[nio] class ShortBuffer(val shortBuffer: JShortBuffer) extends Buffer[Sho
   def slice: IO[Exception, ShortBuffer] =
     IO.syncException(shortBuffer.slice()).map(new ShortBuffer(_))
 
-  def get: IO[Exception, Short] = IO.syncException(shortBuffer.get())
+  override def get: IO[Exception, Short] = IO.syncException(shortBuffer.get())
 
-  def get(i: Int): IO[Exception, Short] = IO.syncException(shortBuffer.get(i))
+  override def get(i: Int): IO[Exception, Short] = IO.syncException(shortBuffer.get(i))
 
-  def put(element: Short): IO[Exception, ShortBuffer] =
+  override def put(element: Short): IO[Exception, ShortBuffer] =
     IO.syncException(shortBuffer.put(element)).map(new ShortBuffer(_))
 
-  def put(index: Int, element: Short): IO[Exception, ShortBuffer] =
+  override def put(index: Int, element: Short): IO[Exception, ShortBuffer] =
     IO.syncException(shortBuffer.put(index, element)).map(new ShortBuffer(_))
 
-  def asReadOnlyBuffer: IO[Exception, ShortBuffer] =
+  override def asReadOnlyBuffer: IO[Exception, ShortBuffer] =
     IO.syncException(shortBuffer.asReadOnlyBuffer()).map(new ShortBuffer(_))
 }

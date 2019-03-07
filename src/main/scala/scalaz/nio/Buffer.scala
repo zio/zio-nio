@@ -45,11 +45,24 @@ abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffe
 
   final val isReadOnly: IO[Nothing, Boolean] = IO.succeed(buffer.isReadOnly)
 
+  final val hasArray: IO[Nothing, Boolean]  = IO.succeed(buffer.hasArray)
+
+  final def arrayOffset: IO[Exception, Int] = IO.syncException(buffer.arrayOffset)
+
+  final val isDirect: IO[Nothing, Boolean]  = IO.succeed(buffer.isDirect)
+
   def array: IO[Exception, Array[A]]
 
-  final val hasArray: IO[Nothing, Boolean]  = IO.succeed(buffer.hasArray)
-  final def arrayOffset: IO[Exception, Int] = IO.syncException(buffer.arrayOffset)
-  final val isDirect: IO[Nothing, Boolean]  = IO.succeed(buffer.isDirect)
+  def get: IO[Exception, A]
+
+  def get(i: Int): IO[Exception, A]
+
+  def put(element: A): IO[Exception, Buffer[A]]
+
+  def put(index: Int, element: A): IO[Exception, Buffer[A]]
+
+  def asReadOnlyBuffer: IO[Exception, Buffer[A]]
+
 }
 
 object Buffer {
