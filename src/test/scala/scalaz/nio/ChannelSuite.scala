@@ -10,7 +10,7 @@ object ChannelSuite extends DefaultRuntime {
     import harness._
     section(test("read/write") { () =>
       val inetAddress = InetAddress.localHost
-        .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 1337))
+        .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13370))
 
       def echoServer: IO[Exception, Unit] =
         for {
