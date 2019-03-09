@@ -8,9 +8,10 @@ import java.nio.channels.{
 
 import scalaz.nio.channels._
 import scalaz.zio._
+import scalaz.zio.clock.Clock
 import testz.{ Harness, assert }
 
-object SelectorSuite extends RTS {
+object SelectorSuite extends DefaultRuntime {
 
   def tests[T](harness: Harness[T]): T = {
     import harness._
@@ -21,9 +22,9 @@ object SelectorSuite extends RTS {
       val addressIo = SocketAddress.inetSocketAddress("0.0.0.0", 1111)
 
       def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
-        statusCheck.attempt.map(_.getOrElse(false))
+        statusCheck.either.map(_.getOrElse(false))
 
-      def server(started: Promise[Nothing, Unit]): IO[Exception, Unit] = {
+      def server(started: Promise[Nothing, Unit]): ZIO[Clock, Exception, Unit] = {
         def serverLoop(
           selector: Selector,
           channel: ServerSocketChannel,
@@ -94,7 +95,7 @@ object SelectorSuite extends RTS {
           _ <- buffer.clear
         } yield text
 
-      val testProgram: IO[Exception, Boolean] = for {
+      val testProgram: ZIO[Clock, Exception, Boolean] = for {
         started     <- Promise.make[Nothing, Unit]
         serverFiber <- server(started).fork
         _           <- started.await

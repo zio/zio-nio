@@ -14,12 +14,12 @@ import java.nio.{
 import org.scalacheck.Prop.forAll
 import org.scalacheck.Test.Passed
 import org.scalacheck._
-import scalaz.zio.{ Chunk, IO, RTS }
+import scalaz.zio.{ Chunk, DefaultRuntime, IO }
 import testz.{ Harness, assert }
 
 import scala.reflect.ClassTag
 
-object BufferSuite extends RTS {
+object BufferSuite extends DefaultRuntime {
 
   def tests[T](harness: Harness[T]): T = {
     import harness._
@@ -317,7 +317,8 @@ object BufferSuite extends RTS {
 
                   // either invariant holds or exception was caught
                   unsafeRun(isInvariantPreserved.catchSome {
-                    case _: IllegalArgumentException | _: IllegalStateException => IO.sync(true)
+                    case _: IllegalArgumentException | _: IllegalStateException =>
+                      IO.effectTotal(true)
                   })
               }
 

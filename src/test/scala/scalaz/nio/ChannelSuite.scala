@@ -1,10 +1,10 @@
 package scalaz.nio
 
 import scalaz.nio.channels.{ AsynchronousServerSocketChannel, AsynchronousSocketChannel }
-import scalaz.zio.{ IO, RTS }
+import scalaz.zio.{ DefaultRuntime, IO }
 import testz.{ Harness, assert }
 
-object ChannelSuite extends RTS {
+object ChannelSuite extends DefaultRuntime {
 
   def tests[T](harness: Harness[T]): T = {
     import harness._

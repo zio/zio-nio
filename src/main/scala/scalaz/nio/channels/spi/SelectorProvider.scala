@@ -13,35 +13,36 @@ class SelectorProvider(private val selectorProvider: JSelectorProvider) {
 
   final val openDatagramChannel
     : IO[IOException, JDatagramChannel] = // TODO: wrapper for DatagramChannel
-    IO.syncCatch(selectorProvider.openDatagramChannel())(JustIOException)
+    IO.effect(selectorProvider.openDatagramChannel()).refineOrDie(JustIOException)
 
   // this can throw UnsupportedOperationException - doesn't seem like a recoverable exception
   final def openDatagramChannel(
     family: ProtocolFamily
   ): IO[IOException, JDatagramChannel] = // TODO: wrapper for DatagramChannel
-    IO.syncCatch(selectorProvider.openDatagramChannel(family))(JustIOException)
+    IO.effect(selectorProvider.openDatagramChannel(family)).refineOrDie(JustIOException)
 
   final val openPipe: IO[IOException, Pipe] =
-    IO.syncCatch(new Pipe(selectorProvider.openPipe()))(JustIOException)
+    IO.effect(new Pipe(selectorProvider.openPipe())).refineOrDie(JustIOException)
 
   final val openSelector: IO[IOException, Selector] =
-    IO.syncCatch(new Selector(selectorProvider.openSelector()))(JustIOException)
+    IO.effect(new Selector(selectorProvider.openSelector())).refineOrDie(JustIOException)
 
   final val openServerSocketChannel: IO[IOException, ServerSocketChannel] =
-    IO.syncCatch(new ServerSocketChannel(selectorProvider.openServerSocketChannel()))(
-      JustIOException
-    )
+    IO.effect(new ServerSocketChannel(selectorProvider.openServerSocketChannel()))
+      .refineOrDie(
+        JustIOException
+      )
 
   final val openSocketChannel: IO[IOException, SocketChannel] =
-    IO.syncCatch(new SocketChannel(selectorProvider.openSocketChannel()))(JustIOException)
+    IO.effect(new SocketChannel(selectorProvider.openSocketChannel())).refineOrDie(JustIOException)
 
   final val inheritedChannel: IO[IOException, Option[JChannel]] = // TODO: wrapper for Channel
-    IO.syncCatch(Option(selectorProvider.inheritedChannel()))(JustIOException)
+    IO.effect(Option(selectorProvider.inheritedChannel())).refineOrDie(JustIOException)
 }
 
 object SelectorProvider {
 
   final val make: IO[Nothing, SelectorProvider] =
-    IO.sync(JSelectorProvider.provider()).map(new SelectorProvider(_))
+    IO.effectTotal(JSelectorProvider.provider()).map(new SelectorProvider(_))
 
 }

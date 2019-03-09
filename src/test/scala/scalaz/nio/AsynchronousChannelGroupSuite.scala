@@ -4,7 +4,7 @@ import java.util.concurrent.{ ExecutorService, TimeUnit }
 
 import org.specs2.matcher.MustMatchers
 import scalaz.nio.channels.AsynchronousChannelGroup
-import scalaz.zio.RTS
+import scalaz.zio.DefaultRuntime
 import scalaz.zio.duration.Duration
 import testz.{ Result, _ }
 
@@ -13,7 +13,7 @@ import java.util.concurrent.{ Executors, ExecutorService => JExecutorService }
 import scala.concurrent.Future
 import Future._
 
-object AsynchronousChannelGroupSuite extends RTS with MustMatchers {
+object AsynchronousChannelGroupSuite extends DefaultRuntime with MustMatchers {
 
   trait ClassFixture {
     def jExecutor: JExecutorService

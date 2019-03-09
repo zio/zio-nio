@@ -2,7 +2,7 @@ package scalaz.nio
 
 import java.net.{ InetSocketAddress => JInetSocketAddress, SocketAddress => JSocketAddress }
 
-import scalaz.zio.IO
+import scalaz.zio.{ IO, JustExceptions }
 
 class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocketAddress)
 
@@ -11,7 +11,8 @@ class InetSocketAddress private[nio] (private val jInetSocketAddress: JInetSocke
 
   def port: Int = jInetSocketAddress.getPort
 
-  def hostName: IO[Exception, String] = IO.syncException(jInetSocketAddress.getHostName)
+  def hostName: IO[Exception, String] =
+    IO.effect(jInetSocketAddress.getHostName).refineOrDie(JustExceptions)
 
   def hostString: String = jInetSocketAddress.getHostString
 
@@ -34,17 +35,23 @@ object SocketAddress {
   private object InetSocketAddress {
 
     def apply(port: Int): IO[Exception, InetSocketAddress] =
-      IO.syncException(new JInetSocketAddress(port)).map(new InetSocketAddress(_))
+      IO.effect(new JInetSocketAddress(port))
+        .refineOrDie(JustExceptions)
+        .map(new InetSocketAddress(_))
 
     def apply(host: String, port: Int): IO[Exception, InetSocketAddress] =
-      IO.syncException(new JInetSocketAddress(host, port)).map(new InetSocketAddress(_))
+      IO.effect(new JInetSocketAddress(host, port))
+        .refineOrDie(JustExceptions)
+        .map(new InetSocketAddress(_))
 
     def apply(addr: InetAddress, port: Int): IO[Exception, InetSocketAddress] =
-      IO.syncException(new JInetSocketAddress(addr.jInetAddress, port))
+      IO.effect(new JInetSocketAddress(addr.jInetAddress, port))
+        .refineOrDie(JustExceptions)
         .map(new InetSocketAddress(_))
 
     def createUnresolved(host: String, port: Int): IO[Exception, InetSocketAddress] =
-      IO.syncException(JInetSocketAddress.createUnresolved(host, port))
+      IO.effect(JInetSocketAddress.createUnresolved(host, port))
+        .refineOrDie(JustExceptions)
         .map(new InetSocketAddress(_))
   }
 }

@@ -5,12 +5,12 @@ import java.io.{ File, RandomAccessFile }
 import scalaz._
 
 import scalaz.nio.channels.{ GatheringByteChannel, ScatteringByteChannel }
-import scalaz.zio.{ Chunk, IO, RTS }
+import scalaz.zio.{ Chunk, DefaultRuntime, IO }
 import testz.{ Harness, assert }
 
 import scala.io.Source
 
-object ScatterGatherChannelSuite extends RTS {
+object ScatterGatherChannelSuite extends DefaultRuntime {
 
   def tests[T](harness: Harness[T]): T = {
     import harness._

@@ -10,46 +10,47 @@ import java.nio.{
   LongBuffer => JLongBuffer,
   ShortBuffer => JShortBuffer
 }
-import scalaz.zio.{ Chunk, IO }
+import scalaz.zio.{ Chunk, IO, JustExceptions, UIO, ZIO }
 
 import scala.reflect.ClassTag
 
 @specialized // See if Specialized will work on return values, e.g. `get`
 abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffer) {
-  final val capacity: IO[Nothing, Int] = IO.succeed(buffer.capacity)
+  final val capacity: UIO[Int] = ZIO.succeed(buffer.capacity)
 
-  final def position: IO[Nothing, Int] = IO.sync(buffer.position)
+  final def position: UIO[Int] = IO.effectTotal(buffer.position)
 
   final def position(newPosition: Int): IO[Exception, Unit] =
-    IO.syncException(buffer.position(newPosition)).void
+    IO.effect(buffer.position(newPosition)).void.refineOrDie(JustExceptions)
 
-  final def limit: IO[Nothing, Int] = IO.sync(buffer.limit)
+  final def limit: UIO[Int] = IO.effectTotal(buffer.limit)
 
-  final def remaining: IO[Nothing, Int] = IO.sync(buffer.remaining)
+  final def remaining: UIO[Int] = IO.effectTotal(buffer.remaining)
 
-  final def hasRemaining: IO[Nothing, Boolean] = IO.sync(buffer.hasRemaining)
+  final def hasRemaining: UIO[Boolean] = IO.effectTotal(buffer.hasRemaining)
 
   final def limit(newLimit: Int): IO[Exception, Unit] =
-    IO.syncException(buffer.limit(newLimit)).void
+    IO.effect(buffer.limit(newLimit)).void.refineOrDie(JustExceptions)
 
-  final def mark: IO[Nothing, Unit] = IO.sync(buffer.mark()).void
+  final def mark: UIO[Unit] = IO.effectTotal(buffer.mark()).void
 
   final def reset: IO[Exception, Unit] =
-    IO.syncException(buffer.reset()).void
+    IO.effect(buffer.reset()).void.refineOrDie(JustExceptions)
 
-  final def clear: IO[Nothing, Unit] = IO.sync(buffer.clear()).void
+  final def clear: UIO[Unit] = IO.effectTotal(buffer.clear()).void
 
-  final def flip: IO[Nothing, Unit] = IO.sync(buffer.flip()).void
+  final def flip: UIO[Unit] = IO.effectTotal(buffer.flip()).void
 
-  final def rewind: IO[Nothing, Unit] = IO.sync(buffer.rewind()).void
+  final def rewind: UIO[Unit] = IO.effectTotal(buffer.rewind()).void
 
-  final val isReadOnly: IO[Nothing, Boolean] = IO.succeed(buffer.isReadOnly)
+  final val isReadOnly: UIO[Boolean] = IO.succeed(buffer.isReadOnly)
 
-  final val hasArray: IO[Nothing, Boolean] = IO.succeed(buffer.hasArray)
+  final val hasArray: UIO[Boolean] = IO.succeed(buffer.hasArray)
 
-  final def arrayOffset: IO[Exception, Int] = IO.syncException(buffer.arrayOffset)
+  final def arrayOffset: IO[Exception, Int] =
+    IO.effect(buffer.arrayOffset).refineOrDie(JustExceptions)
 
-  final val isDirect: IO[Nothing, Boolean] = IO.succeed(buffer.isDirect)
+  final val isDirect: UIO[Boolean] = IO.succeed(buffer.isDirect)
 
   def array: IO[Exception, Array[A]]
 
@@ -68,44 +69,46 @@ abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffe
 object Buffer {
 
   def byte(capacity: Int): IO[Exception, Buffer[Byte]] =
-    IO.syncException(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_))
+    IO.effect(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_)).refineOrDie(JustExceptions)
 
   def byte(chunk: Chunk[Byte]): IO[Exception, Buffer[Byte]] =
-    IO.syncException(JByteBuffer.wrap(chunk.toArray)).map(new ByteBuffer(_))
+    IO.effect(JByteBuffer.wrap(chunk.toArray)).map(new ByteBuffer(_)).refineOrDie(JustExceptions)
 
   def char(capacity: Int): IO[Exception, Buffer[Char]] =
-    IO.syncException(JCharBuffer.allocate(capacity)).map(new CharBuffer(_))
+    IO.effect(JCharBuffer.allocate(capacity)).map(new CharBuffer(_)).refineOrDie(JustExceptions)
 
   def char(chunk: Chunk[Char]): IO[Exception, Buffer[Char]] =
-    IO.syncException(JCharBuffer.wrap(chunk.toArray)).map(new CharBuffer(_))
+    IO.effect(JCharBuffer.wrap(chunk.toArray)).map(new CharBuffer(_)).refineOrDie(JustExceptions)
 
   def float(capacity: Int): IO[Exception, Buffer[Float]] =
-    IO.syncException(JFloatBuffer.allocate(capacity)).map(new FloatBuffer(_))
+    IO.effect(JFloatBuffer.allocate(capacity)).map(new FloatBuffer(_)).refineOrDie(JustExceptions)
 
   def float(chunk: Chunk[Float]): IO[Exception, Buffer[Float]] =
-    IO.syncException(JFloatBuffer.wrap(chunk.toArray)).map(new FloatBuffer(_))
+    IO.effect(JFloatBuffer.wrap(chunk.toArray)).map(new FloatBuffer(_)).refineOrDie(JustExceptions)
 
   def double(capacity: Int): IO[Exception, Buffer[Double]] =
-    IO.syncException(JDoubleBuffer.allocate(capacity)).map(new DoubleBuffer(_))
+    IO.effect(JDoubleBuffer.allocate(capacity)).map(new DoubleBuffer(_)).refineOrDie(JustExceptions)
 
   def double(chunk: Chunk[Double]): IO[Exception, Buffer[Double]] =
-    IO.syncException(JDoubleBuffer.wrap(chunk.toArray)).map(new DoubleBuffer(_))
+    IO.effect(JDoubleBuffer.wrap(chunk.toArray))
+      .map(new DoubleBuffer(_))
+      .refineOrDie(JustExceptions)
 
   def int(capacity: Int): IO[Exception, Buffer[Int]] =
-    IO.syncException(JIntBuffer.allocate(capacity)).map(new IntBuffer(_))
+    IO.effect(JIntBuffer.allocate(capacity)).map(new IntBuffer(_)).refineOrDie(JustExceptions)
 
   def int(chunk: Chunk[Int]): IO[Exception, Buffer[Int]] =
-    IO.syncException(JIntBuffer.wrap(chunk.toArray)).map(new IntBuffer(_))
+    IO.effect(JIntBuffer.wrap(chunk.toArray)).map(new IntBuffer(_)).refineOrDie(JustExceptions)
 
   def long(capacity: Int): IO[Exception, Buffer[Long]] =
-    IO.syncException(JLongBuffer.allocate(capacity)).map(new LongBuffer(_))
+    IO.effect(JLongBuffer.allocate(capacity)).map(new LongBuffer(_)).refineOrDie(JustExceptions)
 
   def long(chunk: Chunk[Long]): IO[Exception, Buffer[Long]] =
-    IO.syncException(JLongBuffer.wrap(chunk.toArray)).map(new LongBuffer(_))
+    IO.effect(JLongBuffer.wrap(chunk.toArray)).map(new LongBuffer(_)).refineOrDie(JustExceptions)
 
   def short(capacity: Int): IO[Exception, Buffer[Short]] =
-    IO.syncException(JShortBuffer.allocate(capacity)).map(new ShortBuffer(_))
+    IO.effect(JShortBuffer.allocate(capacity)).map(new ShortBuffer(_)).refineOrDie(JustExceptions)
 
   def short(chunk: Chunk[Short]): IO[Exception, Buffer[Short]] =
-    IO.syncException(JShortBuffer.wrap(chunk.toArray)).map(new ShortBuffer(_))
+    IO.effect(JShortBuffer.wrap(chunk.toArray)).map(new ShortBuffer(_)).refineOrDie(JustExceptions)
 }
