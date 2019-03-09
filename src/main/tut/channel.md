@@ -5,18 +5,18 @@ object T {
   import scalaz.nio._
   import java.io.IOException
   import scalaz.nio.channels.{ AsynchronousServerSocketChannel, AsynchronousSocketChannel }
+  import scalaz.zio.clock.Clock
   import scalaz.zio.console._
   import scalaz.zio.duration._
-  import scalaz.zio.{ App, Chunk, IO }
+  import scalaz.zio.{ App, Chunk, IO, ZIO }
 
   object ClientServer extends App {
-    override def run(args: List[String]): IO[Nothing, ExitStatus] =
+    override def run(args: List[String]): ZIO[Environment, Nothing, Int] =
       myAppLogic
-        .attempt
+        .either
         .map(_.fold(e => { e.printStackTrace(); 1 }, _ => 0))
-        .map(ExitStatus.ExitNow(_))
 
-    def myAppLogic: IO[Exception, Unit] =
+    def myAppLogic: ZIO[Clock with Console, Exception, Unit] =
       for {
         localhost <- InetAddress.localHost
         address <- SocketAddress.inetSocketAddress(localhost, 1337)
@@ -26,8 +26,8 @@ object T {
         _ <- clientFiber.join
       } yield ()
 
-    def server(address: SocketAddress): IO[Exception, Unit] = {
-      def log(str: String): IO[IOException, Unit] = putStrLn("[Server] " + str)
+    def server(address: SocketAddress): ZIO[Console, Exception, Unit] = {
+      def log(str: String): ZIO[Console, IOException, Unit] = putStrLn("[Server] " + str)
       for {
         server <- AsynchronousServerSocketChannel()
         _      <- log(s"Listening on $address")
@@ -45,11 +45,11 @@ object T {
       } yield ()
     }
 
-    def client(address: SocketAddress): IO[Exception, Unit] = {
-      def log(str: String): IO[IOException, Unit] = putStrLn("[Client] " + str)
+    def client(address: SocketAddress): ZIO[Clock with Console, Exception, Unit] = {
+      def log(str: String): ZIO[Console, IOException, Unit] = putStrLn("[Client] " + str)
 
       for {
-        _      <- IO.sleep(1.second)
+        _      <- ZIO.sleep(1.second)
         client <- AsynchronousSocketChannel()
         _      <- client.connect(address)
         _      <- log("Connected.")

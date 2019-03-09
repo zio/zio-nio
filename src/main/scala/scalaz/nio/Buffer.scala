@@ -90,7 +90,9 @@ object Buffer {
     IO.effect(JDoubleBuffer.allocate(capacity)).map(new DoubleBuffer(_)).refineOrDie(JustExceptions)
 
   def double(chunk: Chunk[Double]): IO[Exception, Buffer[Double]] =
-    IO.effect(JDoubleBuffer.wrap(chunk.toArray)).map(new DoubleBuffer(_)).refineOrDie(JustExceptions)
+    IO.effect(JDoubleBuffer.wrap(chunk.toArray))
+      .map(new DoubleBuffer(_))
+      .refineOrDie(JustExceptions)
 
   def int(capacity: Int): IO[Exception, Buffer[Int]] =
     IO.effect(JIntBuffer.allocate(capacity)).map(new IntBuffer(_)).refineOrDie(JustExceptions)

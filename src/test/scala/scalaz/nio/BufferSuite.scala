@@ -107,18 +107,6 @@ object BufferSuite extends DefaultRuntime {
 //    val zeroValue       = f(0)
 
     section(
-// <<<<<<< HEAD
-//       test("capacity") { () =>
-//         val testProgram: IO[Exception, Boolean] = for {
-//           bb <- Buffer.byte(initialCapacity)
-//           c1 <- bb.capacity
-//           c2 <- IO.effectTotal {
-//                  JByteBuffer.allocate(initialCapacity).capacity
-//                }
-//         } yield c1 == c2
-//         assert(unsafeRun(testProgram))
-//       }, {
-// =======
       test("apply") { () =>
         val apply = allocate(3).flatMap(_.array)
         assert(unsafeRun(apply).sameElements(zeroValues))
@@ -130,7 +118,6 @@ object BufferSuite extends DefaultRuntime {
               buffer <- wrap(Chunk.fromArray(initialValues))
               array  <- buffer.array
             } yield array
-//>>>>>>> master
 
           assert(unsafeRun(wrapArray).sameElements(initialValues))
         }
