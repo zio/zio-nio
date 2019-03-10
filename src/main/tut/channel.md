@@ -16,7 +16,7 @@ object T {
         .either
         .map(_.fold(e => { e.printStackTrace(); 1 }, _ => 0))
 
-    def myAppLogic: ZIO[Clock with Console, Exception, Unit] =
+    val myAppLogic: ZIO[Clock with Console, Exception, Unit] =
       for {
         localhost <- InetAddress.localHost
         address <- SocketAddress.inetSocketAddress(localhost, 1337)

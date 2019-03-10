@@ -81,7 +81,7 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
   /**
    * Closes this channel.
    */
-  final def close: IO[Exception, Unit] =
+  final val close: IO[Exception, Unit] =
     IO.effect(channel.close()).refineOrDie(JustExceptions)
 
 }
@@ -108,7 +108,7 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
   /**
    * Accepts a connection.
    */
-  final def accept: IO[Exception, AsynchronousSocketChannel] =
+  final val accept: IO[Exception, AsynchronousSocketChannel] =
     wrap[Unit, JAsynchronousSocketChannel](h => channel.accept((), h))
       .map(AsynchronousSocketChannel(_))
 
@@ -136,7 +136,7 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
   /**
    * Closes this channel.
    */
-  final def close: IO[Exception, Unit] =
+  final val close: IO[Exception, Unit] =
     IO.effect(channel.close()).refineOrDie(JustExceptions)
 
 }

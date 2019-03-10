@@ -30,22 +30,22 @@ class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetwor
 
   def displayName: String = jNetworkInterface.getDisplayName
 
-  def isUp: IO[SocketException, Boolean] =
+  val isUp: IO[SocketException, Boolean] =
     IO.effect(jNetworkInterface.isUp).refineOrDie(JustSocketException)
 
-  def isLoopback: IO[SocketException, Boolean] =
+  val isLoopback: IO[SocketException, Boolean] =
     IO.effect(jNetworkInterface.isLoopback).refineOrDie(JustSocketException)
 
-  def isPointToPoint: IO[SocketException, Boolean] =
+  val isPointToPoint: IO[SocketException, Boolean] =
     IO.effect(jNetworkInterface.isPointToPoint).refineOrDie(JustSocketException)
 
-  def supportsMulticast: IO[SocketException, Boolean] =
+  val supportsMulticast: IO[SocketException, Boolean] =
     IO.effect(jNetworkInterface.supportsMulticast).refineOrDie(JustSocketException)
 
-  def hardwareAddress: IO[SocketException, Array[Byte]] =
+  val hardwareAddress: IO[SocketException, Array[Byte]] =
     IO.effect(jNetworkInterface.getHardwareAddress).refineOrDie(JustSocketException)
 
-  def mtu: IO[SocketException, Int] =
+  val mtu: IO[SocketException, Int] =
     IO.effect(jNetworkInterface.getMTU).refineOrDie(JustSocketException)
 
   def isVirtual: Boolean = jNetworkInterface.isVirtual

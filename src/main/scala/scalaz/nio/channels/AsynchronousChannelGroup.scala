@@ -45,14 +45,14 @@ class AsynchronousChannelGroup(private[channels] val channelGroup: JAsynchronous
     IO.effect(channelGroup.awaitTermination(timeout.asJava.toMillis, TimeUnit.MILLISECONDS))
       .refineOrDie(JustExceptions)
 
-  def isShutdown: UIO[Boolean] = IO.effectTotal(channelGroup.isShutdown)
+  val isShutdown: UIO[Boolean] = IO.effectTotal(channelGroup.isShutdown)
 
-  def isTerminated: UIO[Boolean] = IO.effectTotal(channelGroup.isTerminated)
+  val isTerminated: UIO[Boolean] = IO.effectTotal(channelGroup.isTerminated)
 
-  def provider: UIO[JAsynchronousChannelProvider] = IO.effectTotal(channelGroup.provider())
+  val provider: UIO[JAsynchronousChannelProvider] = IO.effectTotal(channelGroup.provider())
 
-  def shutdown(): UIO[Unit] = IO.effectTotal(channelGroup.shutdown())
+  val shutdown: UIO[Unit] = IO.effectTotal(channelGroup.shutdown())
 
-  def shutdownNow(): IO[IOException, Unit] =
+  val shutdownNow: IO[IOException, Unit] =
     IO.effect(channelGroup.shutdownNow()).refineOrDie(JustIOException)
 }
