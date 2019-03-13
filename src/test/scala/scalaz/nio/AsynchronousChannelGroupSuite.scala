@@ -104,7 +104,7 @@ object AsynchronousChannelGroupSuite extends DefaultRuntime with MustMatchers {
             case (fixture: ClassFixture, _) =>
               import fixture.testObj
 
-              unsafeRun(testObj.shutdown())
+              unsafeRun(testObj.shutdown)
 
               assert(true)
           }
@@ -116,14 +116,14 @@ object AsynchronousChannelGroupSuite extends DefaultRuntime with MustMatchers {
             case (fixture: ClassFixture, _) =>
               import fixture.testObj
 
-              assert(unsafeRunSync(testObj.shutdownNow()).toEither must beRight)
+              assert(unsafeRunSync(testObj.shutdownNow).toEither must beRight)
           }
         },
         noResBracket(
           test("fails") {
             case (_, _) =>
               assert(
-                unsafeRunSync(new AsynchronousChannelGroup(null).shutdownNow()).toEither must beLeft
+                unsafeRunSync(new AsynchronousChannelGroup(null).shutdownNow).toEither must beLeft
               )
           }
         )

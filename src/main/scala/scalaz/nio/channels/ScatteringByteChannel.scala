@@ -33,10 +33,10 @@ class ScatteringByteChannel(private val channel: JScatteringByteChannel) {
       r  <- readBuffer(bs)
     } yield r
 
-  final def close(): IO[Exception, Unit] =
+  final val close: IO[Exception, Unit] =
     IO.effect(channel.close).refineOrDie(JustExceptions)
 
-  final def isOpen(): IO[Exception, Boolean] =
+  final val isOpen: IO[Exception, Boolean] =
     IO.effect(channel.isOpen).refineOrDie(JustExceptions)
 
   private def unwrap(dsts: IList[Buffer[Byte]]): Array[JByteBuffer] =

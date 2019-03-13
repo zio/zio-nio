@@ -18,30 +18,30 @@ import scala.reflect.ClassTag
 abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffer) {
   final val capacity: UIO[Int] = ZIO.succeed(buffer.capacity)
 
-  final def position: UIO[Int] = IO.effectTotal(buffer.position)
+  final val position: UIO[Int] = IO.effectTotal(buffer.position)
 
   final def position(newPosition: Int): IO[Exception, Unit] =
     IO.effect(buffer.position(newPosition)).void.refineOrDie(JustExceptions)
 
-  final def limit: UIO[Int] = IO.effectTotal(buffer.limit)
+  final val limit: UIO[Int] = IO.effectTotal(buffer.limit)
 
-  final def remaining: UIO[Int] = IO.effectTotal(buffer.remaining)
+  final val remaining: UIO[Int] = IO.effectTotal(buffer.remaining)
 
-  final def hasRemaining: UIO[Boolean] = IO.effectTotal(buffer.hasRemaining)
+  final val hasRemaining: UIO[Boolean] = IO.effectTotal(buffer.hasRemaining)
 
   final def limit(newLimit: Int): IO[Exception, Unit] =
     IO.effect(buffer.limit(newLimit)).void.refineOrDie(JustExceptions)
 
-  final def mark: UIO[Unit] = IO.effectTotal(buffer.mark()).void
+  final val mark: UIO[Unit] = IO.effectTotal(buffer.mark()).void
 
-  final def reset: IO[Exception, Unit] =
+  final val reset: IO[Exception, Unit] =
     IO.effect(buffer.reset()).void.refineOrDie(JustExceptions)
 
-  final def clear: UIO[Unit] = IO.effectTotal(buffer.clear()).void
+  final val clear: UIO[Unit] = IO.effectTotal(buffer.clear()).void
 
-  final def flip: UIO[Unit] = IO.effectTotal(buffer.flip()).void
+  final val flip: UIO[Unit] = IO.effectTotal(buffer.flip()).void
 
-  final def rewind: UIO[Unit] = IO.effectTotal(buffer.rewind()).void
+  final val rewind: UIO[Unit] = IO.effectTotal(buffer.rewind()).void
 
   final val isReadOnly: UIO[Boolean] = IO.succeed(buffer.isReadOnly)
 
@@ -52,9 +52,9 @@ abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffe
 
   final val isDirect: UIO[Boolean] = IO.succeed(buffer.isDirect)
 
-  def array: IO[Exception, Array[A]]
+  val array: IO[Exception, Array[A]]
 
-  def get: IO[Exception, A]
+  val get: IO[Exception, A]
 
   def get(i: Int): IO[Exception, A]
 
@@ -62,7 +62,7 @@ abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffe
 
   def put(index: Int, element: A): IO[Exception, Buffer[A]]
 
-  def asReadOnlyBuffer: IO[Exception, Buffer[A]]
+  val asReadOnlyBuffer: IO[Exception, Buffer[A]]
 
 }
 
