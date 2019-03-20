@@ -30,7 +30,7 @@ object ScatterGatherChannelSuite extends DefaultRuntime {
         val testProgram = for {
           buffs   <- IO.collectAll(Seq(Buffer.byte(5), Buffer.byte(5)))
           channel = new ScatteringByteChannel(fileChannel)
-          _       <- channel.readBuffer(IList.fromList(buffs))
+          _       <- channel.readBuffer(buffs)
           list    <- IO.collectAll(buffs.map(readLine))
           _       <- channel.close
         } yield list
@@ -53,7 +53,7 @@ object ScatterGatherChannelSuite extends DefaultRuntime {
                     )
                   )
           channel = new GatheringByteChannel(fileChannel)
-          _       <- channel.writeBuffer(IList.fromList(buffs))
+          _       <- channel.writeBuffer(buffs)
           _       <- channel.close
         } yield ()
 

@@ -3,33 +3,30 @@ package scalaz.nio.channels
 import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
 
-import scalaz._
-import Scalaz._
 import scalaz.nio.Buffer
 import scalaz.zio.{ Chunk, IO, JustExceptions }
-import scalaz.zio.interop.scalaz72._
 
 class ScatteringByteChannel(private val channel: JScatteringByteChannel) {
 
   final private[nio] def readBuffer(
-    dsts: IList[Buffer[Byte]],
+    dsts: List[Buffer[Byte]],
     offset: Int,
     length: Int
   ): IO[Exception, Long] =
     IO.effect(channel.read(unwrap(dsts), offset, length)).refineOrDie(JustExceptions)
 
-  final def read(dsts: IList[Chunk[Byte]], offset: Int, length: Int): IO[Exception, Long] =
+  final def read(dsts: List[Chunk[Byte]], offset: Int, length: Int): IO[Exception, Long] =
     for {
-      bs <- dsts.map(Buffer.byte(_)).sequence
+      bs <- IO.collectAll(dsts.map(Buffer.byte(_)))
       r  <- readBuffer(bs, offset, length)
     } yield r
 
-  final private[nio] def readBuffer(dsts: IList[Buffer[Byte]]): IO[Exception, Long] =
+  final private[nio] def readBuffer(dsts: List[Buffer[Byte]]): IO[Exception, Long] =
     IO.effect(channel.read(unwrap(dsts))).refineOrDie(JustExceptions)
 
-  final def read(dsts: IList[Chunk[Byte]]): IO[Exception, Long] =
+  final def read(dsts: List[Chunk[Byte]]): IO[Exception, Long] =
     for {
-      bs <- dsts.map(Buffer.byte(_)).sequence
+      bs <- IO.collectAll(dsts.map(Buffer.byte(_)))
       r  <- readBuffer(bs)
     } yield r
 
@@ -39,6 +36,6 @@ class ScatteringByteChannel(private val channel: JScatteringByteChannel) {
   final val isOpen: IO[Exception, Boolean] =
     IO.effect(channel.isOpen).refineOrDie(JustExceptions)
 
-  private def unwrap(dsts: IList[Buffer[Byte]]): Array[JByteBuffer] =
+  private def unwrap(dsts: List[Buffer[Byte]]): Array[JByteBuffer] =
     dsts.map(d => d.buffer.asInstanceOf[JByteBuffer]).toList.toArray
 }

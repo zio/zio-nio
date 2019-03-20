@@ -11,14 +11,10 @@ import java.nio.channels.{
 
 import java.util.concurrent.TimeUnit
 
-import scalaz._
-import Scalaz._
-
 import scalaz.nio.channels.AsynchronousChannel._
 import scalaz.nio.{ Buffer, SocketAddress, SocketOption }
 import scalaz.zio.{ Chunk, IO, JustExceptions, ZIO }
 import scalaz.zio.duration._
-import scalaz.zio.interop.scalaz72._
 
 class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
 
@@ -125,12 +121,10 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    * denied by the security manager, or `Maybe.empty` if the
    * channel's socket is not bound.
    */
-  final def localAddress: IO[Exception, Maybe[SocketAddress]] =
+  final def localAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
-        Maybe
-          .fromNullable(channel.getLocalAddress)
-          .map(new SocketAddress(_))
-      )
+      Option(channel.getLocalAddress).map(new SocketAddress(_))
+    )
       .refineOrDie(JustExceptions)
 
   /**
@@ -175,20 +169,18 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
   final def shutdownOutput: IO[Exception, Unit] =
     IO.effect(channel.shutdownOutput()).refineOrDie(JustExceptions).void
 
-  final def remoteAddress: IO[Exception, Maybe[SocketAddress]] =
+  final def remoteAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
-        Maybe
-          .fromNullable(channel.getRemoteAddress)
-          .map(new SocketAddress(_))
-      )
+      Option(channel.getRemoteAddress)
+        .map(new SocketAddress(_))
+    )
       .refineOrDie(JustExceptions)
 
-  final def localAddress: IO[Exception, Maybe[SocketAddress]] =
+  final def localAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
-        Maybe
-          .fromNullable(channel.getLocalAddress)
-          .map(new SocketAddress(_))
-      )
+      Option(channel.getLocalAddress)
+        .map(new SocketAddress(_))
+    )
       .refineOrDie(JustExceptions)
 
   final def connect(socketAddress: SocketAddress): IO[Exception, Unit] =
@@ -221,7 +213,7 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     } yield r
 
   final private[nio] def readBuffer[A](
-    dsts: IList[Buffer[Byte]],
+    dsts: List[Buffer[Byte]],
     offset: Int,
     length: Int,
     timeout: Duration,
@@ -241,16 +233,16 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     ).map(_.toLong)
 
   final def read[A](
-    capacities: IList[Int],
+    capacities: List[Int],
     offset: Int,
     length: Int,
     timeout: Duration,
     attachment: A
-  ): IO[Exception, IList[Chunk[Byte]]] =
+  ): IO[Exception, List[Chunk[Byte]]] =
     for {
-      bs <- capacities.map(Buffer.byte(_)).sequence
+      bs <- IO.collectAll(capacities.map(Buffer.byte(_)))
       _  <- readBuffer(bs, offset, length, timeout, attachment)
-      as <- bs.map(_.array).sequence
+      as <- IO.collectAll(bs.map(_.array))
       ds = as.map(Chunk.fromArray(_))
     } yield ds
 

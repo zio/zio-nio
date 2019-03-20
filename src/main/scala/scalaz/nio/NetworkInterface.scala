@@ -2,7 +2,6 @@ package scalaz.nio
 
 import java.net.{ NetworkInterface => JNetworkInterface, SocketException }
 
-import scalaz.IList
 import scalaz.zio.IO
 
 import scala.collection.JavaConverters._
@@ -16,10 +15,8 @@ class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetwor
   def inetAddresses: Iterator[InetAddress] =
     jNetworkInterface.getInetAddresses.asScala.map(new InetAddress(_))
 
-  def interfaceAddresses: IList[InterfaceAddress] =
-    IList.fromList(
-      jNetworkInterface.getInterfaceAddresses.asScala.map(new InterfaceAddress(_)).toList
-    )
+  def interfaceAddresses: List[InterfaceAddress] =
+    jNetworkInterface.getInterfaceAddresses.asScala.map(new InterfaceAddress(_)).toList
 
   def subInterfaces: Iterator[NetworkInterface] =
     jNetworkInterface.getSubInterfaces.asScala.map(new NetworkInterface(_))
