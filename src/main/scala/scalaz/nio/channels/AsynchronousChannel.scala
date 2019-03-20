@@ -123,8 +123,8 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    */
   final def localAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
-      Option(channel.getLocalAddress).map(new SocketAddress(_))
-    )
+        Option(channel.getLocalAddress).map(new SocketAddress(_))
+      )
       .refineOrDie(JustExceptions)
 
   /**
@@ -171,16 +171,16 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
 
   final def remoteAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
-      Option(channel.getRemoteAddress)
-        .map(new SocketAddress(_))
-    )
+        Option(channel.getRemoteAddress)
+          .map(new SocketAddress(_))
+      )
       .refineOrDie(JustExceptions)
 
   final def localAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
-      Option(channel.getLocalAddress)
-        .map(new SocketAddress(_))
-    )
+        Option(channel.getLocalAddress)
+          .map(new SocketAddress(_))
+      )
       .refineOrDie(JustExceptions)
 
   final def connect(socketAddress: SocketAddress): IO[Exception, Unit] =
