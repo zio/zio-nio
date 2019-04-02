@@ -6,6 +6,7 @@ import java.nio.channels.{
   CompletionHandler,
   FileLock
 }
+import scalaz.zio.Task
 import scalaz.zio.Chunk
 import scalaz.nio.Buffer
 import java.nio.file.{ OpenOption, Path }
@@ -26,13 +27,13 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
     IO.effect(channel.force(metaData)).refineOrDie(JustExceptions)
 
   final val lock: IO[Throwable, FileLock] =
-    IO.fromFutureJava(() => channel.lock())
+    Task.fromFutureJava(() => channel.lock())
 
   final def lock[A](attachment: A, handler: CompletionHandler[FileLock, A]): IO[Exception, Unit] =
     IO.effect(channel.lock(attachment, handler)).refineOrDie(JustExceptions)
 
   final def lock(position: Long, size: Long, shared: Boolean): IO[Throwable, FileLock] =
-    IO.fromFutureJava(() => channel.lock(position, size, shared))
+    Task.fromFutureJava(() => channel.lock(position, size, shared))
 
   final def lock[A](
     position: Long,
@@ -44,7 +45,7 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
     IO.effect(channel.lock(position, size, shared, attachment, handler)).refineOrDie(JustExceptions)
 
   final private[nio] def readBuffer(dst: Buffer[Byte], position: Long): IO[Throwable, Integer] =
-    IO.fromFutureJava(() => channel.read(dst.buffer.asInstanceOf[JByteBuffer], position))
+    Task.fromFutureJava(() => channel.read(dst.buffer.asInstanceOf[JByteBuffer], position))
 
   final def read(capacity: Int, position: Long): IO[Throwable, Chunk[Byte]] =
     for {
@@ -91,7 +92,7 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
     IO.effect(channel.tryLock(position, size, shared)).refineOrDie(JustExceptions)
 
   final private[nio] def writeBuffer(src: Buffer[Byte], position: Long): IO[Throwable, Integer] =
-    IO.fromFutureJava(() => channel.write(src.buffer.asInstanceOf[JByteBuffer], position))
+    Task.fromFutureJava(() => channel.write(src.buffer.asInstanceOf[JByteBuffer], position))
 
   final def write(src: Chunk[Byte], position: Long): IO[Throwable, Integer] =
     for {

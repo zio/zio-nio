@@ -3,7 +3,7 @@ import sbt.Keys._
 
 object Scalaz {
 
-  lazy val scalazZioVersion = "1.0-RC1"
+  lazy val scalazZioVersion = "1.0-RC3"
 
   val testDeps = Seq(
     "org.scalacheck" %% "scalacheck"   % "1.14.0" % "test",
