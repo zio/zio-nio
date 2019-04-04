@@ -121,6 +121,12 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
       b <- Buffer.byte(src)
       _ <- writeBuffer(b, position, attachment, handler)
     } yield ()
+
+  /**
+   * Tells whether or not this channel is open.
+   */
+  final val isOpen: IO[Exception, Boolean] =
+    IO.effect(channel.isOpen).refineOrDie(JustExceptions)
 }
 
 object AsynchronousFileChannel {

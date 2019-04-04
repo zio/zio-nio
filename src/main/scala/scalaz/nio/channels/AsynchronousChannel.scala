@@ -80,6 +80,11 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
   final val close: IO[Exception, Unit] =
     IO.effect(channel.close()).refineOrDie(JustExceptions)
 
+  /**
+   * Tells whether or not this channel is open.
+   */
+  final val isOpen: IO[Exception, Boolean] =
+    IO.effect(channel.isOpen).refineOrDie(JustExceptions)
 }
 
 class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSocketChannel) {
@@ -133,6 +138,11 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
   final val close: IO[Exception, Unit] =
     IO.effect(channel.close()).refineOrDie(JustExceptions)
 
+  /**
+   * Tells whether or not this channel is open.
+   */
+  final val isOpen: IO[Exception, Boolean] =
+    IO.effect(channel.isOpen).refineOrDie(JustExceptions)
 }
 
 object AsynchronousServerSocketChannel {
