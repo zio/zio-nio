@@ -3,8 +3,8 @@ package scalaz.nio.channels
 import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{ GatheringByteChannel => JGatheringByteChannel }
 
-import scalaz.nio.{ Buffer }
-import scalaz.zio.{ Chunk, IO, JustExceptions }
+import scalaz.nio.Buffer
+import scalaz.zio.{ Chunk, IO, JustExceptions, UIO }
 
 class GatheringByteChannel(private val channel: JGatheringByteChannel) {
 
@@ -33,8 +33,8 @@ class GatheringByteChannel(private val channel: JGatheringByteChannel) {
   final val close: IO[Exception, Unit] =
     IO.effect(channel.close()).refineOrDie(JustExceptions)
 
-  final val isOpen: IO[Exception, Boolean] =
-    IO.effect(channel.isOpen).refineOrDie(JustExceptions)
+  final val isOpen: UIO[Boolean] =
+    IO.effectTotal(channel.isOpen)
 
   private def unwrap(srcs: List[Buffer[Byte]]): Array[JByteBuffer] =
     srcs.map(d => d.buffer.asInstanceOf[JByteBuffer]).toList.toArray

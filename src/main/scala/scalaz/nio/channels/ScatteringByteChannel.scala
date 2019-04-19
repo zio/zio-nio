@@ -4,7 +4,7 @@ import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
 
 import scalaz.nio.Buffer
-import scalaz.zio.{ Chunk, IO, JustExceptions }
+import scalaz.zio.{ Chunk, IO, JustExceptions, UIO }
 
 class ScatteringByteChannel(private val channel: JScatteringByteChannel) {
 
@@ -33,8 +33,8 @@ class ScatteringByteChannel(private val channel: JScatteringByteChannel) {
   final val close: IO[Exception, Unit] =
     IO.effect(channel.close).refineOrDie(JustExceptions)
 
-  final val isOpen: IO[Exception, Boolean] =
-    IO.effect(channel.isOpen).refineOrDie(JustExceptions)
+  final val isOpen: UIO[Boolean] =
+    IO.effectTotal(channel.isOpen)
 
   private def unwrap(dsts: List[Buffer[Byte]]): Array[JByteBuffer] =
     dsts.map(d => d.buffer.asInstanceOf[JByteBuffer]).toList.toArray

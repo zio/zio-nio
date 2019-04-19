@@ -45,7 +45,7 @@ class SelectableChannel(private val channel: JSelectableChannel) {
     IO.effectTotal(channel.blockingLock())
 
   final val isOpen: UIO[Boolean] =
-    IO.effectTotal(channel.isOpen())
+    IO.effectTotal(channel.isOpen)
 
   final def close: IO[Exception, Unit] =
     IO.effect(channel.close()).refineOrDie {
