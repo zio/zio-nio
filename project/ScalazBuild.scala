@@ -5,15 +5,19 @@ object Scalaz {
 
   lazy val scalazZioVersion = "1.0-RC3"
 
+  def testz           = "0.0.5"
+  def silencerVersion = "1.4.1"
+  def Scala212        = "2.12.8"
+
   val testDeps = Seq(
     "org.scalacheck" %% "scalacheck"   % "1.14.0" % "test",
-    "org.scalaz"     %% "testz-core"   % "0.0.5"  % "test",
-    "org.scalaz"     %% "testz-stdlib" % "0.0.5"  % "test",
-    "org.scalaz"     %% "testz-runner" % "0.0.5"  % "test",
-    "org.scalaz"     %% "testz-scalaz" % "0.0.5"  % "test",
-    "org.scalaz"     %% "testz-specs2" % "0.0.5"  % "test"
+    "org.scalaz"     %% "testz-core"   % testz    % "test",
+    "org.scalaz"     %% "testz-stdlib" % testz    % "test",
+    "org.scalaz"     %% "testz-runner" % testz    % "test",
+    "org.scalaz"     %% "testz-scalaz" % testz    % "test",
+    "org.scalaz"     %% "testz-specs2" % testz    % "test"
   )
-  val compileOnlyDeps = Seq("com.github.ghik" %% "silencer-lib" % "1.3.4" % "provided")
+  val compileOnlyDeps = Seq("com.github.ghik" %% "silencer-lib" % silencerVersion % "provided")
 
   val compileAndTest = Seq(
     "org.scalaz" %% "scalaz-zio"              % scalazZioVersion,
@@ -66,12 +70,12 @@ object Scalaz {
   def stdSettings(prjName: String) = Seq(
     name := s"scalaz-$prjName",
     scalacOptions := stdOptions,
-    crossScalaVersions := Seq("2.12.6", "2.11.12"),
-    scalaVersion in ThisBuild := crossScalaVersions.value.head,
+    crossScalaVersions := Seq(Scala212),
+    scalaVersion in ThisBuild := Scala212,
     scalacOptions := stdOptions ++ extraOptions(scalaVersion.value),
     libraryDependencies ++= compileOnlyDeps ++ testDeps ++ compileAndTest ++ Seq(
-      compilerPlugin("org.spire-math"  %% "kind-projector"  % "0.9.10"),
-      compilerPlugin("com.github.ghik" %% "silencer-plugin" % "1.3.4")
+      compilerPlugin("org.typelevel"   %% "kind-projector"  % "0.10.3"),
+      compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion)
     ),
     incOptions ~= (_.withLogRecompileOnMacro(false))
   )

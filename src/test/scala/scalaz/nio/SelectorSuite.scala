@@ -31,8 +31,8 @@ object SelectorSuite extends DefaultRuntime {
           buffer: Buffer[Byte]
         ): IO[Exception, Unit] =
           for {
-            readyChannels <- selector.select
-            selectedKeys  <- selector.selectedKeys
+            _            <- selector.select
+            selectedKeys <- selector.selectedKeys
             _ <- IO.foreach(selectedKeys) {
                   key =>
                     IO.whenM(safeStatusCheck(key.isAcceptable)) {
@@ -66,7 +66,7 @@ object SelectorSuite extends DefaultRuntime {
           channel  <- ServerSocketChannel.open
           _        <- channel.bind(address)
           _        <- channel.configureBlocking(false)
-          key      <- channel.register(selector, JSelectionKey.OP_ACCEPT)
+          _        <- channel.register(selector, JSelectionKey.OP_ACCEPT)
           buffer   <- Buffer.byte(256)
           _        <- started.succeed(())
 
