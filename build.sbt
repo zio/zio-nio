@@ -1,8 +1,8 @@
-import Scalaz._
+import BuildHelper._
 
-organization in ThisBuild := "org.scalaz"
+organization in ThisBuild := "dev.zio"
 
-version in ThisBuild := "0.1.0-SNAPSHOT"
+version in ThisBuild := "0.2.0-SNAPSHOT"
 
 publishTo in ThisBuild := {
   val nexus = "https://oss.sonatype.org/"
