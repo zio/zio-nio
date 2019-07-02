@@ -2,13 +2,13 @@
 
 ```tut
 object T {
-  import scalaz.nio._
+  import zio.nio._
   import java.io.IOException
-  import scalaz.nio.channels.{ AsynchronousServerSocketChannel, AsynchronousSocketChannel }
-  import scalaz.zio.clock.Clock
-  import scalaz.zio.console._
-  import scalaz.zio.duration._
-  import scalaz.zio.{ App, Chunk, IO, ZIO }
+  import zio.nio.channels.{ AsynchronousServerSocketChannel, AsynchronousSocketChannel }
+  import zio.clock.Clock
+  import zio.console._
+  import zio.duration._
+  import zio.{ App, Chunk, IO, ZIO }
 
   object ClientServer extends App {
     override def run(args: List[String]): ZIO[Environment, Nothing, Int] =
