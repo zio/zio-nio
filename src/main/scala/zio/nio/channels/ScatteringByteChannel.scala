@@ -1,9 +1,9 @@
 package zio.nio.channels
 
-import java.nio.{ByteBuffer => JByteBuffer}
-import java.nio.channels.{ScatteringByteChannel => JScatteringByteChannel}
+import java.nio.{ ByteBuffer => JByteBuffer }
+import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
 
-import zio.{Chunk, IO, UIO}
+import zio.{ Chunk, IO, UIO }
 import zio.nio.Buffer
 
 class ScatteringByteChannel(private val channel: JScatteringByteChannel) {

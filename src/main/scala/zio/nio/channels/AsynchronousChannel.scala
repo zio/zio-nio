@@ -1,14 +1,19 @@
 package zio.nio.channels
 
-import java.lang.{Integer => JInteger, Long => JLong, Void => JVoid}
-import java.nio.{ByteBuffer => JByteBuffer}
-import java.nio.channels.{AsynchronousByteChannel => JAsynchronousByteChannel, AsynchronousServerSocketChannel => JAsynchronousServerSocketChannel, AsynchronousSocketChannel => JAsynchronousSocketChannel, CompletionHandler => JCompletionHandler}
+import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
+import java.nio.{ ByteBuffer => JByteBuffer }
+import java.nio.channels.{
+  AsynchronousByteChannel => JAsynchronousByteChannel,
+  AsynchronousServerSocketChannel => JAsynchronousServerSocketChannel,
+  AsynchronousSocketChannel => JAsynchronousSocketChannel,
+  CompletionHandler => JCompletionHandler
+}
 import java.util.concurrent.TimeUnit
 
 import AsynchronousChannel._
-import zio.{Chunk, IO, UIO, ZIO}
+import zio.{ Chunk, IO, UIO, ZIO }
 import zio.duration._
-import zio.nio.{Buffer, SocketAddress, SocketOption}
+import zio.nio.{ Buffer, SocketAddress, SocketOption }
 
 class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
 

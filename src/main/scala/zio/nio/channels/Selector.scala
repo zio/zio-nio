@@ -1,9 +1,9 @@
 package zio.nio.channels
 
 import java.io.IOException
-import java.nio.channels.{Selector => JSelector}
+import java.nio.channels.{ Selector => JSelector }
 
-import zio.{IO, UIO}
+import zio.{ IO, UIO }
 import zio.duration.Duration
 import zio.nio.channels.spi.SelectorProvider
 

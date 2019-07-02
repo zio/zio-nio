@@ -1,9 +1,9 @@
 package zio.nio
 
-import java.nio.file.{Files, Paths, StandardOpenOption}
+import java.nio.file.{ Files, Paths, StandardOpenOption }
 
-import zio.{Chunk, DefaultRuntime}
-import testz.{Harness, assert}
+import zio.{ Chunk, DefaultRuntime }
+import testz.{ Harness, assert }
 import zio.nio.channels.AsynchronousFileChannel
 
 import scala.io.Source

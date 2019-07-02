@@ -1,10 +1,10 @@
 package zio.nio
 
-import java.io.{File, RandomAccessFile}
+import java.io.{ File, RandomAccessFile }
 
-import zio.nio.channels.{GatheringByteChannel, ScatteringByteChannel}
-import zio.{Chunk, DefaultRuntime, IO}
-import testz.{Harness, assert}
+import zio.nio.channels.{ GatheringByteChannel, ScatteringByteChannel }
+import zio.{ Chunk, DefaultRuntime, IO }
+import testz.{ Harness, assert }
 
 import scala.io.Source
 

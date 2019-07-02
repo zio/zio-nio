@@ -20,8 +20,8 @@ object BuildHelper {
   val compileOnlyDeps = Seq("com.github.ghik" %% "silencer-lib" % silencerVersion % "provided")
 
   val compileAndTest = Seq(
-    "dev.zio"    %% "zio-streams"             % zioCoreVersion,
-    "dev.zio"    %% "zio-interop-java"        % "1.1.0-RC1"
+    "dev.zio" %% "zio-streams"      % zioCoreVersion,
+    "dev.zio" %% "zio-interop-java" % "1.1.0-RC1"
   )
 
   private val stdOptions = Seq(

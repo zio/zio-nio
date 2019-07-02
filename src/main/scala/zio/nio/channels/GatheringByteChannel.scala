@@ -1,9 +1,9 @@
 package zio.nio.channels
 
-import java.nio.{ByteBuffer => JByteBuffer}
-import java.nio.channels.{GatheringByteChannel => JGatheringByteChannel}
+import java.nio.{ ByteBuffer => JByteBuffer }
+import java.nio.channels.{ GatheringByteChannel => JGatheringByteChannel }
 
-import zio.{Chunk, IO, UIO}
+import zio.{ Chunk, IO, UIO }
 import zio.nio.Buffer
 
 class GatheringByteChannel(private val channel: JGatheringByteChannel) {

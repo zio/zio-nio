@@ -1,13 +1,13 @@
 package zio.nio
 
-import java.nio.channels.{AsynchronousChannelGroup => JAsynchronousChannelGroup}
-import java.util.concurrent.{ExecutorService, TimeUnit}
+import java.nio.channels.{ AsynchronousChannelGroup => JAsynchronousChannelGroup }
+import java.util.concurrent.{ ExecutorService, TimeUnit }
 
 import org.specs2.matcher.MustMatchers
 import zio.DefaultRuntime
 import zio.duration.Duration
-import testz.{Result, _}
-import java.util.concurrent.{Executors, ExecutorService => JExecutorService}
+import testz.{ Result, _ }
+import java.util.concurrent.{ Executors, ExecutorService => JExecutorService }
 
 import zio.nio.channels.AsynchronousChannelGroup
 

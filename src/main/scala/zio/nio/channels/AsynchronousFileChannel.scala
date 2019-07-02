@@ -1,10 +1,14 @@
 package zio.nio.channels
 
-import java.nio.{ByteBuffer => JByteBuffer}
-import java.nio.channels.{CompletionHandler, FileLock, AsynchronousFileChannel => JAsynchronousFileChannel}
+import java.nio.{ ByteBuffer => JByteBuffer }
+import java.nio.channels.{
+  CompletionHandler,
+  FileLock,
+  AsynchronousFileChannel => JAsynchronousFileChannel
+}
 
-import zio.{Chunk, IO, Task, UIO}
-import java.nio.file.{OpenOption, Path}
+import zio.{ Chunk, IO, Task, UIO }
+import java.nio.file.{ OpenOption, Path }
 import java.nio.file.attribute.FileAttribute
 import java.util.concurrent.ExecutorService
 

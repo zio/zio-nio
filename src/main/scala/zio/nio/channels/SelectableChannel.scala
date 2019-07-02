@@ -1,13 +1,17 @@
 package zio.nio.channels
 
 import java.io.IOException
-import java.net.{ServerSocket => JServerSocket, Socket => JSocket}
-import java.nio.{ByteBuffer => JByteBuffer}
-import java.nio.channels.{SelectableChannel => JSelectableChannel, ServerSocketChannel => JServerSocketChannel, SocketChannel => JSocketChannel}
+import java.net.{ ServerSocket => JServerSocket, Socket => JSocket }
+import java.nio.{ ByteBuffer => JByteBuffer }
+import java.nio.channels.{
+  SelectableChannel => JSelectableChannel,
+  ServerSocketChannel => JServerSocketChannel,
+  SocketChannel => JSocketChannel
+}
 
 import zio.nio.channels.spi.SelectorProvider
-import zio.nio.{Buffer, SocketAddress, SocketOption}
-import zio.{IO, UIO}
+import zio.nio.{ Buffer, SocketAddress, SocketOption }
+import zio.{ IO, UIO }
 
 class SelectableChannel(private val channel: JSelectableChannel) {
 
