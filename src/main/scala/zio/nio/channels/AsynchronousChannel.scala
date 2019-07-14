@@ -22,7 +22,7 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
    *  read, or -1 if no bytes were read.
    */
   final private[nio] def readBuffer(b: Buffer[Byte]): IO[Exception, Int] =
-    wrap[Unit, JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], (), h)).map(_.toInt)
+    wrap[JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], (), h)).map(_.toInt)
 
   final def read(capacity: Int): IO[Exception, Chunk[Byte]] =
     for {
@@ -33,44 +33,15 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
     } yield r
 
   /**
-   *  Reads data from this channel into buffer, returning the number of bytes
-   *  read, or -1 if no bytes were read.
-   */
-  final private[nio] def readBuffer[A](b: Buffer[Byte], attachment: A): IO[Exception, Int] =
-    wrap[A, JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], attachment, h))
-      .map(_.toInt)
-
-  final def read[A](capacity: Int, attachment: A): IO[Exception, Chunk[Byte]] =
-    for {
-      b <- Buffer.byte(capacity)
-      _ <- readBuffer(b, attachment)
-      a <- b.array
-      r = Chunk.fromArray(a)
-    } yield r
-
-  /**
    *  Writes data into this channel from buffer, returning the number of bytes written.
    */
   final private[nio] def writeBuffer(b: Buffer[Byte]): IO[Exception, Int] =
-    wrap[Unit, JInteger](h => channel.write(b.buffer.asInstanceOf[JByteBuffer], (), h)).map(_.toInt)
+    wrap[JInteger](h => channel.write(b.buffer.asInstanceOf[JByteBuffer], (), h)).map(_.toInt)
 
   final def write(chunk: Chunk[Byte]): IO[Exception, Int] =
     for {
       b <- Buffer.byte(chunk)
       r <- writeBuffer(b)
-    } yield r
-
-  /**
-   *  Writes data into this channel from buffer, returning the number of bytes written.
-   */
-  final private[nio] def write[A](b: Buffer[Byte], attachment: A): IO[Exception, Int] =
-    wrap[A, JInteger](h => channel.write(b.buffer.asInstanceOf[JByteBuffer], attachment, h))
-      .map(_.toInt)
-
-  final def write[A](chunk: Chunk[Byte], attachment: A): IO[Exception, Int] =
-    for {
-      b <- Buffer.byte(chunk)
-      r <- write(b, attachment)
     } yield r
 
   /**
@@ -109,14 +80,7 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    * Accepts a connection.
    */
   final val accept: IO[Exception, AsynchronousSocketChannel] =
-    wrap[Unit, JAsynchronousSocketChannel](h => channel.accept((), h))
-      .map(AsynchronousSocketChannel(_))
-
-  /**
-   * Accepts a connection.
-   */
-  final def accept[A](attachment: A): IO[Exception, AsynchronousSocketChannel] =
-    wrap[A, JAsynchronousSocketChannel](h => channel.accept(attachment, h))
+    wrap[JAsynchronousSocketChannel](h => channel.accept((), h))
       .map(AsynchronousSocketChannel(_))
 
   /**
@@ -193,30 +157,23 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
       .refineToOrDie[Exception]
 
   final def connect(socketAddress: SocketAddress): IO[Exception, Unit] =
-    wrap[Unit, JVoid](h => channel.connect(socketAddress.jSocketAddress, (), h)).unit
+    wrap[JVoid](h => channel.connect(socketAddress.jSocketAddress, (), h)).unit
 
-  final def connect[A](socketAddress: SocketAddress, attachment: A): IO[Exception, Unit] =
-    wrap[A, JVoid](h => channel.connect(socketAddress.jSocketAddress, attachment, h)).unit
-
-  final private[nio] def readBuffer[A](
-    dst: Buffer[Byte],
-    timeout: Duration,
-    attachment: A
-  ): IO[Exception, Int] =
-    wrap[A, JInteger] { h =>
+  final private[nio] def readBuffer[A](dst: Buffer[Byte], timeout: Duration): IO[Exception, Int] =
+    wrap[JInteger] { h =>
       channel.read(
         dst.buffer.asInstanceOf[JByteBuffer],
         timeout.fold(Long.MaxValue, _.nanos),
         TimeUnit.NANOSECONDS,
-        attachment,
+        (),
         h
       )
     }.map(_.toInt)
 
-  final def read[A](capacity: Int, timeout: Duration, attachment: A): IO[Exception, Chunk[Byte]] =
+  final def read[A](capacity: Int, timeout: Duration): IO[Exception, Chunk[Byte]] =
     for {
       b <- Buffer.byte(capacity)
-      _ <- readBuffer(b, timeout, attachment)
+      _ <- readBuffer(b, timeout)
       a <- b.array
       r = Chunk.fromArray(a)
     } yield r
@@ -225,18 +182,17 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     dsts: List[Buffer[Byte]],
     offset: Int,
     length: Int,
-    timeout: Duration,
-    attachment: A
+    timeout: Duration
   ): IO[Exception, Long] =
-    wrap[A, JLong](
+    wrap[JLong](
       h =>
         channel.read(
-          dsts.map(_.buffer.asInstanceOf[JByteBuffer]).toList.toArray,
+          dsts.map(_.buffer.asInstanceOf[JByteBuffer]).toArray,
           offset,
           length,
           timeout.fold(Long.MaxValue, _.nanos),
           TimeUnit.NANOSECONDS,
-          attachment,
+          (),
           h
         )
     ).map(_.toLong)
@@ -245,12 +201,11 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     capacities: List[Int],
     offset: Int,
     length: Int,
-    timeout: Duration,
-    attachment: A
+    timeout: Duration
   ): IO[Exception, List[Chunk[Byte]]] =
     for {
       bs <- IO.collectAll(capacities.map(Buffer.byte(_)))
-      _  <- readBuffer(bs, offset, length, timeout, attachment)
+      _  <- readBuffer(bs, offset, length, timeout)
       as <- IO.collectAll(bs.map(_.array))
       ds = as.map(Chunk.fromArray(_))
     } yield ds
@@ -279,13 +234,13 @@ object AsynchronousSocketChannel {
 
 object AsynchronousChannel {
 
-  private[nio] def wrap[A, T](op: JCompletionHandler[T, A] => Unit): ZIO[Any, Exception, T] =
+  private[nio] def wrap[T](op: JCompletionHandler[T, Unit] => Unit): ZIO[Any, Exception, T] =
     ZIO.effectAsync[Any, Exception, T] { k =>
-      val handler = new JCompletionHandler[T, A] {
-        def completed(result: T, u: A): Unit =
+      val handler = new JCompletionHandler[T, Unit] {
+        def completed(result: T, u: Unit): Unit =
           k(IO.succeedLazy(result))
 
-        def failed(t: Throwable, u: A): Unit =
+        def failed(t: Throwable, u: Unit): Unit =
           t match {
             case e: Exception => k(IO.fail(e))
             case _            => k(IO.die(t))
