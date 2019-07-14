@@ -32,14 +32,16 @@ class SelectionKey(private[nio] val selectionKey: JSelectionKey) {
   final val cancel: UIO[Unit] =
     IO.effectTotal(selectionKey.cancel())
 
-  final val interestOps: UIO[Int] =
-    IO.effectTotal(selectionKey.interestOps())
+  final val interestOps: IO[CancelledKeyException, Int] =
+    IO.effect(selectionKey.interestOps()).refineToOrDie[CancelledKeyException]
 
-  final def interestOps(ops: Int): UIO[SelectionKey] =
-    IO.effectTotal(selectionKey.interestOps(ops)).map(new SelectionKey(_))
+  final def interestOps(ops: Int): IO[CancelledKeyException, SelectionKey] =
+    IO.effect(selectionKey.interestOps(ops))
+      .map(new SelectionKey(_))
+      .refineToOrDie[CancelledKeyException]
 
-  final val readyOps: UIO[Int] =
-    IO.effectTotal(selectionKey.readyOps())
+  final val readyOps: IO[CancelledKeyException, Int] =
+    IO.effect(selectionKey.readyOps()).refineToOrDie[CancelledKeyException]
 
   final def isReadable: IO[CancelledKeyException, Boolean] =
     IO.effect(selectionKey.isReadable()).refineOrDie(JustCancelledKeyException)

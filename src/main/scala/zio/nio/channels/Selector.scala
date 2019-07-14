@@ -1,7 +1,7 @@
 package zio.nio.channels
 
 import java.io.IOException
-import java.nio.channels.{ Selector => JSelector }
+import java.nio.channels.{ ClosedSelectorException, Selector => JSelector }
 
 import zio.{ IO, UIO }
 import zio.duration.Duration
@@ -16,26 +16,41 @@ class Selector(private[nio] val selector: JSelector) {
   final val provider: UIO[SelectorProvider] =
     IO.effectTotal(selector.provider()).map(new SelectorProvider(_))
 
-  final val keys: UIO[Set[SelectionKey]] =
-    IO.effectTotal(selector.keys()).map { keys =>
-      JavaConverters.asScalaSet(keys).toSet.map(new SelectionKey(_))
-    }
+  final val keys: IO[ClosedSelectorException, Set[SelectionKey]] =
+    IO.effect(selector.keys())
+      .map { keys =>
+        JavaConverters.asScalaSet(keys).toSet.map(new SelectionKey(_))
+      }
+      .refineToOrDie[ClosedSelectorException]
 
-  final val selectedKeys: UIO[Set[SelectionKey]] =
-    IO.effectTotal(selector.selectedKeys()).map { keys =>
-      JavaConverters.asScalaSet(keys).toSet.map(new SelectionKey(_))
-    }
+  final val selectedKeys: IO[ClosedSelectorException, Set[SelectionKey]] =
+    IO.effect(selector.selectedKeys())
+      .map { keys =>
+        JavaConverters.asScalaSet(keys).toSet.map(new SelectionKey(_))
+      }
+      .refineToOrDie[ClosedSelectorException]
 
-  final def removeKey(key: SelectionKey): UIO[Unit] =
-    IO.effectTotal(selector.selectedKeys().remove(key.selectionKey)).unit
+  final def removeKey(key: SelectionKey): IO[ClosedSelectorException, Unit] =
+    IO.effect(selector.selectedKeys().remove(key.selectionKey))
+      .unit
+      .refineToOrDie[ClosedSelectorException]
 
-  final val selectNow: IO[IOException, Int] =
-    IO.effect(selector.selectNow()).refineToOrDie[IOException]
+  /**
+   * Can throw IOException and ClosedSelectorException.
+   */
+  final val selectNow: IO[Exception, Int] =
+    IO.effect(selector.selectNow()).refineToOrDie[Exception]
 
-  final def select(timeout: Duration): IO[IOException, Int] =
-    IO.effect(selector.select(timeout.toMillis)).refineToOrDie[IOException]
+  /**
+   * Can throw IOException and ClosedSelectorException.
+   */
+  final def select(timeout: Duration): IO[Exception, Int] =
+    IO.effect(selector.select(timeout.toMillis)).refineToOrDie[Exception]
 
-  final val select: IO[IOException, Int] =
+  /**
+   * Can throw IOException and ClosedSelectorException.
+   */
+  final val select: IO[Exception, Int] =
     IO.effect(selector.select()).refineToOrDie[IOException]
 
   final val wakeup: IO[Nothing, Selector] =
