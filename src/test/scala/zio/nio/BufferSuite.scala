@@ -291,7 +291,7 @@ object BufferSuite extends DefaultRuntime {
       test("heap buffers a backed by an array") { () =>
         val hasArray =
           for {
-            b        <- allocate(initialCapacity)
+            b <- allocate(initialCapacity)
           } yield b.hasArray
         assert(unsafeRun(hasArray))
       }, {

@@ -1,7 +1,12 @@
 package zio.nio
 
-import zio.{Chunk, IO, ZIO}
-import java.nio.{BufferUnderflowException, ByteOrder, ReadOnlyBufferException, ByteBuffer => JByteBuffer}
+import zio.{ Chunk, IO, ZIO }
+import java.nio.{
+  BufferUnderflowException,
+  ByteOrder,
+  ReadOnlyBufferException,
+  ByteBuffer => JByteBuffer
+}
 
 final class ByteBuffer(byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
 
@@ -16,7 +21,8 @@ final class ByteBuffer(byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer)
   override def compact: IO[ReadOnlyBufferException, Unit] =
     IO.effect(byteBuffer.compact()).unit.refineToOrDie[ReadOnlyBufferException]
 
-  override def duplicate: IO[Nothing, ByteBuffer] = IO.effectTotal(new ByteBuffer(byteBuffer.duplicate()))
+  override def duplicate: IO[Nothing, ByteBuffer] =
+    IO.effectTotal(new ByteBuffer(byteBuffer.duplicate()))
 
   def withJavaBuffer[R, E, A](f: JByteBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(byteBuffer)
 
@@ -26,11 +32,13 @@ final class ByteBuffer(byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer)
   override def get(i: Int): IO[IndexOutOfBoundsException, Byte] =
     IO.effect(byteBuffer.get(i)).refineToOrDie[IndexOutOfBoundsException]
 
-  override def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[Byte]] = IO.effect {
-    val array = Array.ofDim[Byte](math.min(maxLength, byteBuffer.remaining()))
-    byteBuffer.get(array)
-    Chunk.fromArray(array)
-  }.refineToOrDie[BufferUnderflowException]
+  override def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[Byte]] =
+    IO.effect {
+        val array = Array.ofDim[Byte](math.min(maxLength, byteBuffer.remaining()))
+        byteBuffer.get(array)
+        Chunk.fromArray(array)
+      }
+      .refineToOrDie[BufferUnderflowException]
 
   override def put(element: Byte): IO[Exception, Unit] =
     IO.effect(byteBuffer.put(element)).unit.refineToOrDie[Exception]
@@ -38,10 +46,13 @@ final class ByteBuffer(byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer)
   override def put(index: Int, element: Byte): IO[Exception, Unit] =
     IO.effect(byteBuffer.put(index, element)).unit.refineToOrDie[Exception]
 
-  override def putChunk(chunk: Chunk[Byte]): IO[Exception, Unit] = IO.effect {
-    val array = chunk.toArray
-    byteBuffer.put(array)
-  }.unit.refineToOrDie[Exception]
+  override def putChunk(chunk: Chunk[Byte]): IO[Exception, Unit] =
+    IO.effect {
+        val array = chunk.toArray
+        byteBuffer.put(array)
+      }
+      .unit
+      .refineToOrDie[Exception]
 
   override def asReadOnlyBuffer: IO[Nothing, ByteBuffer] =
     IO.effectTotal(byteBuffer.asReadOnlyBuffer()).map(new ByteBuffer(_))
