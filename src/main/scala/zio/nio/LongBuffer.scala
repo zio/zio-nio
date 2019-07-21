@@ -1,30 +1,47 @@
 package zio.nio
 
-import zio.IO
+import zio.{Chunk, IO, ZIO}
+import java.nio.{BufferUnderflowException, ByteOrder, ReadOnlyBufferException, LongBuffer => JLongBuffer}
 
-import java.nio.{ ByteOrder, LongBuffer => JLongBuffer }
+final class LongBuffer(val longBuffer: JLongBuffer) extends Buffer[Long](longBuffer) {
 
-private[nio] class LongBuffer(val longBuffer: JLongBuffer) extends Buffer[Long](longBuffer) {
-
-  override val array: IO[Exception, Array[Long]] =
+  override protected[nio] def array: IO[Exception, Array[Long]] =
     IO.effect(longBuffer.array()).refineToOrDie[Exception]
 
-  def order: IO[Nothing, ByteOrder] = IO.succeed(longBuffer.order())
+  override def order: ByteOrder = longBuffer.order
 
-  def slice: IO[Exception, LongBuffer] =
-    IO.effect(longBuffer.slice()).map(new LongBuffer(_)).refineToOrDie[Exception]
+  override def slice: IO[Nothing, LongBuffer] =
+    IO.effectTotal(longBuffer.slice()).map(new LongBuffer(_))
 
-  override val get: IO[Exception, Long] = IO.effect(longBuffer.get()).refineToOrDie[Exception]
+  override def compact: IO[ReadOnlyBufferException, Unit] = IO.effect(longBuffer.compact()).unit.refineToOrDie[ReadOnlyBufferException]
 
-  override def get(i: Int): IO[Exception, Long] =
-    IO.effect(longBuffer.get(i)).refineToOrDie[Exception]
+  override def duplicate: IO[Nothing, LongBuffer] = IO.effectTotal(new LongBuffer(longBuffer.duplicate()))
 
-  override def put(element: Long): IO[Exception, LongBuffer] =
-    IO.effect(longBuffer.put(element)).map(new LongBuffer(_)).refineToOrDie[Exception]
+  def withJavaBuffer[R, E, A](f: JLongBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(longBuffer)
 
-  override def put(index: Int, element: Long): IO[Exception, LongBuffer] =
-    IO.effect(longBuffer.put(index, element)).map(new LongBuffer(_)).refineToOrDie[Exception]
+  override def get: IO[BufferUnderflowException, Long] = IO.effect(longBuffer.get()).refineToOrDie[BufferUnderflowException]
 
-  override val asReadOnlyBuffer: IO[Exception, LongBuffer] =
-    IO.effect(longBuffer.asReadOnlyBuffer()).map(new LongBuffer(_)).refineToOrDie[Exception]
+  override def get(i: Int): IO[IndexOutOfBoundsException, Long] =
+    IO.effect(longBuffer.get(i)).refineToOrDie[IndexOutOfBoundsException]
+
+  override def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[Long]] = IO.effect {
+    val array = Array.ofDim[Long](math.min(maxLength, longBuffer.remaining()))
+    longBuffer.get(array)
+    Chunk.fromArray(array)
+  }.refineToOrDie[BufferUnderflowException]
+
+  override def put(element: Long): IO[Exception, Unit] =
+    IO.effect(longBuffer.put(element)).unit.refineToOrDie[Exception]
+
+  override def put(index: Int, element: Long): IO[Exception, Unit] =
+    IO.effect(longBuffer.put(index, element)).unit.refineToOrDie[Exception]
+
+  override def putChunk(chunk: Chunk[Long]): IO[Exception, Unit] = IO.effect {
+    val array = chunk.toArray
+    longBuffer.put(array)
+  }.unit.refineToOrDie[Exception]
+
+  override def asReadOnlyBuffer: IO[Nothing, LongBuffer] =
+    IO.effectTotal(longBuffer.asReadOnlyBuffer()).map(new LongBuffer(_))
+
 }

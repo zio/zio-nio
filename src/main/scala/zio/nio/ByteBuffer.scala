@@ -1,122 +1,138 @@
 package zio.nio
 
-import zio.IO
+import zio.{Chunk, IO, ZIO}
+import java.nio.{BufferUnderflowException, ByteOrder, ReadOnlyBufferException, ByteBuffer => JByteBuffer}
 
-import java.nio.{ ByteOrder, ByteBuffer => JByteBuffer }
+final class ByteBuffer(byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
 
-private[this] class ByteBuffer(val byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
+  override protected[nio] def array: IO[UnsupportedOperationException, Array[Byte]] =
+    IO.effect(byteBuffer.array()).refineToOrDie[UnsupportedOperationException]
 
-  override val array: IO[Exception, Array[Byte]] =
-    IO.effect(byteBuffer.array()).refineToOrDie[Exception]
+  def order: ByteOrder = byteBuffer.order()
 
-  val order: IO[Nothing, ByteOrder] =
-    IO.succeed(byteBuffer.order())
+  override def slice: IO[Nothing, ByteBuffer] =
+    IO.effectTotal(byteBuffer.slice()).map(new ByteBuffer(_))
 
-  val slice: IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.slice()).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  override def compact: IO[ReadOnlyBufferException, Unit] =
+    IO.effect(byteBuffer.compact()).unit.refineToOrDie[ReadOnlyBufferException]
 
-  override val get: IO[Exception, Byte] =
-    IO.effect(byteBuffer.get()).refineToOrDie[Exception]
+  override def duplicate: IO[Nothing, ByteBuffer] = IO.effectTotal(new ByteBuffer(byteBuffer.duplicate()))
 
-  override def get(i: Int): IO[Exception, Byte] =
-    IO.effect(byteBuffer.get(i)).refineToOrDie[Exception]
+  def withJavaBuffer[R, E, A](f: JByteBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(byteBuffer)
 
-  override def put(element: Byte): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.put(element)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  override def get: IO[BufferUnderflowException, Byte] =
+    IO.effect(byteBuffer.get()).refineToOrDie[BufferUnderflowException]
 
-  override def put(index: Int, element: Byte): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.put(index, element)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  override def get(i: Int): IO[IndexOutOfBoundsException, Byte] =
+    IO.effect(byteBuffer.get(i)).refineToOrDie[IndexOutOfBoundsException]
 
-  override val asReadOnlyBuffer: IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.asReadOnlyBuffer()).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  override def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[Byte]] = IO.effect {
+    val array = Array.ofDim[Byte](math.min(maxLength, byteBuffer.remaining()))
+    byteBuffer.get(array)
+    Chunk.fromArray(array)
+  }.refineToOrDie[BufferUnderflowException]
 
-  val asCharBuffer: IO[Exception, CharBuffer] =
-    IO.effect(new CharBuffer(byteBuffer.asCharBuffer())).refineToOrDie[Exception]
+  override def put(element: Byte): IO[Exception, Unit] =
+    IO.effect(byteBuffer.put(element)).unit.refineToOrDie[Exception]
 
-  val asDoubleBuffer: IO[Exception, DoubleBuffer] =
-    IO.effect(new DoubleBuffer(byteBuffer.asDoubleBuffer())).refineToOrDie[Exception]
+  override def put(index: Int, element: Byte): IO[Exception, Unit] =
+    IO.effect(byteBuffer.put(index, element)).unit.refineToOrDie[Exception]
 
-  val asFloatBuffer: IO[Exception, FloatBuffer] =
-    IO.effect(new FloatBuffer(byteBuffer.asFloatBuffer())).refineToOrDie[Exception]
+  override def putChunk(chunk: Chunk[Byte]): IO[Exception, Unit] = IO.effect {
+    val array = chunk.toArray
+    byteBuffer.put(array)
+  }.unit.refineToOrDie[Exception]
 
-  val asIntBuffer: IO[Exception, IntBuffer] =
-    IO.effect(new IntBuffer(byteBuffer.asIntBuffer())).refineToOrDie[Exception]
+  override def asReadOnlyBuffer: IO[Nothing, ByteBuffer] =
+    IO.effectTotal(byteBuffer.asReadOnlyBuffer()).map(new ByteBuffer(_))
 
-  val asLongBuffer: IO[Exception, LongBuffer] =
-    IO.effect(new LongBuffer(byteBuffer.asLongBuffer())).refineToOrDie[Exception]
+  def asCharBuffer: IO[Nothing, CharBuffer] =
+    IO.effectTotal(new CharBuffer(byteBuffer.asCharBuffer()))
 
-  val asShortBuffer: IO[Exception, ShortBuffer] =
-    IO.effect(new ShortBuffer(byteBuffer.asShortBuffer())).refineToOrDie[Exception]
+  def asDoubleBuffer: IO[Nothing, DoubleBuffer] =
+    IO.effectTotal(new DoubleBuffer(byteBuffer.asDoubleBuffer()))
 
-  def putChar(value: Char): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.putChar(value)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def asFloatBuffer: IO[Nothing, FloatBuffer] =
+    IO.effectTotal(new FloatBuffer(byteBuffer.asFloatBuffer()))
 
-  def putChar(index: Int, value: Char): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.putChar(index, value)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def asIntBuffer: IO[Nothing, IntBuffer] =
+    IO.effectTotal(new IntBuffer(byteBuffer.asIntBuffer()))
 
-  def putDouble(value: Double): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.putDouble(value)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def asLongBuffer: IO[Nothing, LongBuffer] =
+    IO.effectTotal(new LongBuffer(byteBuffer.asLongBuffer()))
 
-  def putDouble(index: Int, value: Double): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.putDouble(index, value)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def asShortBuffer: IO[Nothing, ShortBuffer] =
+    IO.effectTotal(new ShortBuffer(byteBuffer.asShortBuffer()))
 
-  def putFloat(value: Float): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.putFloat(value)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def putChar(value: Char): IO[Exception, Unit] =
+    IO.effect(byteBuffer.putChar(value)).unit.refineToOrDie[Exception]
 
-  def putFloat(index: Int, value: Float): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.putFloat(index, value)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def putChar(index: Int, value: Char): IO[Exception, Unit] =
+    IO.effect(byteBuffer.putChar(index, value)).unit.refineToOrDie[Exception]
 
-  def putInt(value: Int): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.putInt(value)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def putDouble(value: Double): IO[Exception, Unit] =
+    IO.effect(byteBuffer.putDouble(value)).unit.refineToOrDie[Exception]
 
-  def putInt(index: Int, value: Int): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.putInt(index, value)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def putDouble(index: Int, value: Double): IO[Exception, Unit] =
+    IO.effect(byteBuffer.putDouble(index, value)).unit.refineToOrDie[Exception]
 
-  def putLong(value: Long): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.putLong(value)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def putFloat(value: Float): IO[Exception, Unit] =
+    IO.effect(byteBuffer.putFloat(value)).unit.refineToOrDie[Exception]
 
-  def putLong(index: Int, value: Long): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.putLong(index, value)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def putFloat(index: Int, value: Float): IO[Exception, Unit] =
+    IO.effect(byteBuffer.putFloat(index, value)).unit.refineToOrDie[Exception]
 
-  def putShort(value: Short): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.putShort(value)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def putInt(value: Int): IO[Exception, Unit] =
+    IO.effect(byteBuffer.putInt(value)).unit.refineToOrDie[Exception]
 
-  def putShort(index: Int, value: Short): IO[Exception, ByteBuffer] =
-    IO.effect(byteBuffer.putShort(index, value)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def putInt(index: Int, value: Int): IO[Exception, Unit] =
+    IO.effect(byteBuffer.putInt(index, value)).unit.refineToOrDie[Exception]
 
-  val getChar: IO[Exception, Char] =
-    IO.effect(byteBuffer.getChar()).refineToOrDie[Exception]
+  def putLong(value: Long): IO[Exception, Unit] =
+    IO.effect(byteBuffer.putLong(value)).unit.refineToOrDie[Exception]
 
-  def getChar(index: Int): IO[Exception, Char] =
-    IO.effect(byteBuffer.getChar(index)).refineToOrDie[Exception]
+  def putLong(index: Int, value: Long): IO[Exception, Unit] =
+    IO.effect(byteBuffer.putLong(index, value)).unit.refineToOrDie[Exception]
 
-  val getDouble: IO[Exception, Double] =
-    IO.effect(byteBuffer.getDouble()).refineToOrDie[Exception]
+  def putShort(value: Short): IO[Exception, Unit] =
+    IO.effect(byteBuffer.putShort(value)).unit.refineToOrDie[Exception]
 
-  def getDouble(index: Int): IO[Exception, Double] =
-    IO.effect(byteBuffer.getDouble(index)).refineToOrDie[Exception]
+  def putShort(index: Int, value: Short): IO[Exception, Unit] =
+    IO.effect(byteBuffer.putShort(index, value)).unit.refineToOrDie[Exception]
 
-  val getFloat: IO[Exception, Float] =
-    IO.effect(byteBuffer.getFloat()).refineToOrDie[Exception]
+  def getChar: IO[BufferUnderflowException, Char] =
+    IO.effect(byteBuffer.getChar()).refineToOrDie[BufferUnderflowException]
 
-  def getFloat(index: Int): IO[Exception, Float] =
-    IO.effect(byteBuffer.getFloat(index)).refineToOrDie[Exception]
+  def getChar(index: Int): IO[IndexOutOfBoundsException, Char] =
+    IO.effect(byteBuffer.getChar(index)).refineToOrDie[IndexOutOfBoundsException]
 
-  val getInt: IO[Exception, Int] =
-    IO.effect(byteBuffer.getInt()).refineToOrDie[Exception]
+  def getDouble: IO[BufferUnderflowException, Double] =
+    IO.effect(byteBuffer.getDouble()).refineToOrDie[BufferUnderflowException]
 
-  def getInt(index: Int): IO[Exception, Int] =
-    IO.effect(byteBuffer.getInt(index)).refineToOrDie[Exception]
+  def getDouble(index: Int): IO[IndexOutOfBoundsException, Double] =
+    IO.effect(byteBuffer.getDouble(index)).refineToOrDie[IndexOutOfBoundsException]
 
-  val getLong: IO[Exception, Long] =
-    IO.effect(byteBuffer.getLong()).refineToOrDie[Exception]
+  def getFloat: IO[BufferUnderflowException, Float] =
+    IO.effect(byteBuffer.getFloat()).refineToOrDie[BufferUnderflowException]
 
-  def getLong(index: Int): IO[Exception, Long] =
-    IO.effect(byteBuffer.getLong(index)).refineToOrDie[Exception]
+  def getFloat(index: Int): IO[IndexOutOfBoundsException, Float] =
+    IO.effect(byteBuffer.getFloat(index)).refineToOrDie[IndexOutOfBoundsException]
 
-  val getShort: IO[Exception, Short] =
-    IO.effect(byteBuffer.getShort()).refineToOrDie[Exception]
+  def getInt: IO[BufferUnderflowException, Int] =
+    IO.effect(byteBuffer.getInt()).refineToOrDie[BufferUnderflowException]
 
-  def getShort(index: Int): IO[Exception, Short] =
-    IO.effect(byteBuffer.getShort(index)).refineToOrDie[Exception]
+  def getInt(index: Int): IO[IndexOutOfBoundsException, Int] =
+    IO.effect(byteBuffer.getInt(index)).refineToOrDie[IndexOutOfBoundsException]
+
+  def getLong: IO[BufferUnderflowException, Long] =
+    IO.effect(byteBuffer.getLong()).refineToOrDie[BufferUnderflowException]
+
+  def getLong(index: Int): IO[IndexOutOfBoundsException, Long] =
+    IO.effect(byteBuffer.getLong(index)).refineToOrDie[IndexOutOfBoundsException]
+
+  def getShort: IO[BufferUnderflowException, Short] =
+    IO.effect(byteBuffer.getShort()).refineToOrDie[BufferUnderflowException]
+
+  def getShort(index: Int): IO[IndexOutOfBoundsException, Short] =
+    IO.effect(byteBuffer.getShort(index)).refineToOrDie[IndexOutOfBoundsException]
 }

@@ -1,114 +1,138 @@
 package zio.nio
 
-import java.nio.{
-  Buffer => JBuffer,
-  ByteBuffer => JByteBuffer,
-  CharBuffer => JCharBuffer,
-  FloatBuffer => JFloatBuffer,
-  DoubleBuffer => JDoubleBuffer,
-  IntBuffer => JIntBuffer,
-  LongBuffer => JLongBuffer,
-  ShortBuffer => JShortBuffer
-}
-import zio.{ Chunk, IO, UIO, ZIO }
+import java.nio.{BufferUnderflowException, ByteOrder, ReadOnlyBufferException, Buffer => JBuffer, ByteBuffer => JByteBuffer, CharBuffer => JCharBuffer, DoubleBuffer => JDoubleBuffer, FloatBuffer => JFloatBuffer, IntBuffer => JIntBuffer, LongBuffer => JLongBuffer, ShortBuffer => JShortBuffer}
+
+import zio.{Chunk, IO, UIO, ZIO}
 
 import scala.reflect.ClassTag
 
 @specialized // See if Specialized will work on return values, e.g. `get`
 abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffer) {
-  final val capacity: UIO[Int] = ZIO.succeed(buffer.capacity)
 
-  final val position: UIO[Int] = IO.effectTotal(buffer.position)
+  final def capacity: Int = buffer.capacity
+
+  def order: ByteOrder
+
+  final def position: UIO[Int] = IO.effectTotal(buffer.position)
 
   final def position(newPosition: Int): IO[Exception, Unit] =
     IO.effect(buffer.position(newPosition)).unit.refineToOrDie[Exception]
 
-  final val limit: UIO[Int] = IO.effectTotal(buffer.limit)
+  final def limit: UIO[Int] = IO.effectTotal(buffer.limit)
 
-  final val remaining: UIO[Int] = IO.effectTotal(buffer.remaining)
+  final def remaining: UIO[Int] = IO.effectTotal(buffer.remaining)
 
-  final val hasRemaining: UIO[Boolean] = IO.effectTotal(buffer.hasRemaining)
+  final def hasRemaining: UIO[Boolean] = IO.effectTotal(buffer.hasRemaining)
 
   final def limit(newLimit: Int): IO[Exception, Unit] =
     IO.effect(buffer.limit(newLimit)).unit.refineToOrDie[Exception]
 
-  final val mark: UIO[Unit] = IO.effectTotal(buffer.mark()).unit
+  final def mark: UIO[Unit] = IO.effectTotal(buffer.mark()).unit
 
-  final val reset: IO[Exception, Unit] =
+  final def reset: IO[Exception, Unit] =
     IO.effect(buffer.reset()).unit.refineToOrDie[Exception]
 
-  final val clear: UIO[Unit] = IO.effectTotal(buffer.clear()).unit
+  final def clear: UIO[Unit] = IO.effectTotal(buffer.clear()).unit
 
-  final val flip: UIO[Unit] = IO.effectTotal(buffer.flip()).unit
+  final def flip: UIO[Unit] = IO.effectTotal(buffer.flip()).unit
 
-  final val rewind: UIO[Unit] = IO.effectTotal(buffer.rewind()).unit
+  final def rewind: UIO[Unit] = IO.effectTotal(buffer.rewind()).unit
 
-  final val isReadOnly: UIO[Boolean] = IO.succeed(buffer.isReadOnly)
+  final def isReadOnly: Boolean = buffer.isReadOnly
 
-  final val hasArray: UIO[Boolean] = IO.succeed(buffer.hasArray)
+  final def hasArray: Boolean = buffer.hasArray
 
-  final def arrayOffset: IO[Exception, Int] =
-    IO.effect(buffer.arrayOffset).refineToOrDie[Exception]
+  final def isDirect: Boolean = buffer.isDirect
 
-  final val isDirect: UIO[Boolean] = IO.succeed(buffer.isDirect)
+  def slice: IO[Nothing, Buffer[A]]
 
-  val array: IO[Exception, Array[A]]
+  def compact: IO[ReadOnlyBufferException, Unit]
 
-  val get: IO[Exception, A]
+  def duplicate: IO[Nothing, Buffer[A]]
 
-  def get(i: Int): IO[Exception, A]
+  final def withArray[R, E, B](noArray: ZIO[R, E, B])(hasArray: (Array[A], Int) => ZIO[R, E, B]): ZIO[R, E, B] = {
+    if (buffer.hasArray) {
+      for {
+        a <- array.orDie
+        offset <- IO.effect(buffer.arrayOffset()).orDie
+        result <- hasArray(a, offset)
+      } yield {
+        result
+      }
+    } else {
+      noArray
+    }
+  }
 
-  def put(element: A): IO[Exception, Buffer[A]]
+  protected[nio] def array: IO[Exception, Array[A]]
 
-  def put(index: Int, element: A): IO[Exception, Buffer[A]]
+  def get: IO[BufferUnderflowException, A]
 
-  val asReadOnlyBuffer: IO[Exception, Buffer[A]]
+  def get(i: Int): IO[IndexOutOfBoundsException, A]
+
+  def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[A]]
+
+  def put(element: A): IO[Exception, Unit]
+
+  def put(index: Int, element: A): IO[Exception, Unit]
+
+  def putChunk(chunk: Chunk[A]): IO[Exception, Unit]
+
+  def asReadOnlyBuffer: IO[Nothing, Buffer[A]]
 
 }
 
 object Buffer {
 
-  def byte(capacity: Int): IO[Exception, Buffer[Byte]] =
-    IO.effect(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def byte(capacity: Int): IO[IllegalArgumentException, ByteBuffer] =
+    IO.effect(JByteBuffer.allocate(capacity)).map(new ByteBuffer(_)).refineToOrDie[IllegalArgumentException]
 
-  def byte(chunk: Chunk[Byte]): IO[Exception, Buffer[Byte]] =
-    IO.effect(JByteBuffer.wrap(chunk.toArray)).map(new ByteBuffer(_)).refineToOrDie[Exception]
+  def byte(chunk: Chunk[Byte]): IO[Nothing, Buffer[Byte]] =
+    IO.effectTotal(JByteBuffer.wrap(chunk.toArray)).map(new ByteBuffer(_))
 
-  def char(capacity: Int): IO[Exception, Buffer[Char]] =
-    IO.effect(JCharBuffer.allocate(capacity)).map(new CharBuffer(_)).refineToOrDie[Exception]
+  def byteDirect(capacity: Int): IO[IllegalArgumentException, ByteBuffer] =
+    IO.effect(new ByteBuffer(JByteBuffer.allocateDirect(capacity))).refineToOrDie[IllegalArgumentException]
 
-  def char(chunk: Chunk[Char]): IO[Exception, Buffer[Char]] =
-    IO.effect(JCharBuffer.wrap(chunk.toArray)).map(new CharBuffer(_)).refineToOrDie[Exception]
+  def char(capacity: Int): IO[IllegalArgumentException, CharBuffer] =
+    IO.effect(JCharBuffer.allocate(capacity)).map(new CharBuffer(_)).refineToOrDie[IllegalArgumentException]
 
-  def float(capacity: Int): IO[Exception, Buffer[Float]] =
-    IO.effect(JFloatBuffer.allocate(capacity)).map(new FloatBuffer(_)).refineToOrDie[Exception]
+  def char(chunk: Chunk[Char]): IO[Nothing, CharBuffer] =
+    IO.effectTotal(JCharBuffer.wrap(chunk.toArray)).map(new CharBuffer(_))
 
-  def float(chunk: Chunk[Float]): IO[Exception, Buffer[Float]] =
-    IO.effect(JFloatBuffer.wrap(chunk.toArray)).map(new FloatBuffer(_)).refineToOrDie[Exception]
+  def char(charSequence: CharSequence, start: Int, end: Int): IO[IndexOutOfBoundsException, CharBuffer] =
+    IO.effect(new CharBuffer(JCharBuffer.wrap(charSequence, start, end))).refineToOrDie[IndexOutOfBoundsException]
 
-  def double(capacity: Int): IO[Exception, Buffer[Double]] =
-    IO.effect(JDoubleBuffer.allocate(capacity)).map(new DoubleBuffer(_)).refineToOrDie[Exception]
+  def char(charSequence: CharSequence): IO[Nothing, CharBuffer] =
+    IO.effectTotal(new CharBuffer(JCharBuffer.wrap(charSequence)))
 
-  def double(chunk: Chunk[Double]): IO[Exception, Buffer[Double]] =
-    IO.effect(JDoubleBuffer.wrap(chunk.toArray))
-      .map(new DoubleBuffer(_))
-      .refineToOrDie[Exception]
+  def float(capacity: Int): IO[IllegalArgumentException, FloatBuffer] =
+    IO.effect(JFloatBuffer.allocate(capacity)).map(new FloatBuffer(_)).refineToOrDie[IllegalArgumentException]
 
-  def int(capacity: Int): IO[Exception, Buffer[Int]] =
-    IO.effect(JIntBuffer.allocate(capacity)).map(new IntBuffer(_)).refineToOrDie[Exception]
+  def float(chunk: Chunk[Float]): IO[Nothing, FloatBuffer] =
+    IO.effectTotal(JFloatBuffer.wrap(chunk.toArray)).map(new FloatBuffer(_))
 
-  def int(chunk: Chunk[Int]): IO[Exception, Buffer[Int]] =
-    IO.effect(JIntBuffer.wrap(chunk.toArray)).map(new IntBuffer(_)).refineToOrDie[Exception]
+  def double(capacity: Int): IO[IllegalArgumentException, DoubleBuffer] =
+    IO.effect(JDoubleBuffer.allocate(capacity)).map(new DoubleBuffer(_)).refineToOrDie[IllegalArgumentException]
 
-  def long(capacity: Int): IO[Exception, Buffer[Long]] =
-    IO.effect(JLongBuffer.allocate(capacity)).map(new LongBuffer(_)).refineToOrDie[Exception]
+  def double(chunk: Chunk[Double]): IO[Nothing, DoubleBuffer] =
+    IO.effectTotal(JDoubleBuffer.wrap(chunk.toArray)).map(new DoubleBuffer(_))
 
-  def long(chunk: Chunk[Long]): IO[Exception, Buffer[Long]] =
-    IO.effect(JLongBuffer.wrap(chunk.toArray)).map(new LongBuffer(_)).refineToOrDie[Exception]
+  def int(capacity: Int): IO[IllegalArgumentException, IntBuffer] =
+    IO.effect(JIntBuffer.allocate(capacity)).map(new IntBuffer(_)).refineToOrDie[IllegalArgumentException]
 
-  def short(capacity: Int): IO[Exception, Buffer[Short]] =
-    IO.effect(JShortBuffer.allocate(capacity)).map(new ShortBuffer(_)).refineToOrDie[Exception]
+  def int(chunk: Chunk[Int]): IO[Nothing, IntBuffer] =
+    IO.effectTotal(JIntBuffer.wrap(chunk.toArray)).map(new IntBuffer(_))
 
-  def short(chunk: Chunk[Short]): IO[Exception, Buffer[Short]] =
-    IO.effect(JShortBuffer.wrap(chunk.toArray)).map(new ShortBuffer(_)).refineToOrDie[Exception]
+  def long(capacity: Int): IO[IllegalArgumentException, LongBuffer] =
+    IO.effect(JLongBuffer.allocate(capacity)).map(new LongBuffer(_)).refineToOrDie[IllegalArgumentException]
+
+  def long(chunk: Chunk[Long]): IO[Nothing, LongBuffer] =
+    IO.effectTotal(JLongBuffer.wrap(chunk.toArray)).map(new LongBuffer(_))
+
+  def short(capacity: Int): IO[IllegalArgumentException, ShortBuffer] =
+    IO.effect(JShortBuffer.allocate(capacity)).map(new ShortBuffer(_)).refineToOrDie[IllegalArgumentException]
+
+  def short(chunk: Chunk[Short]): IO[Nothing, ShortBuffer] =
+    IO.effectTotal(JShortBuffer.wrap(chunk.toArray)).map(new ShortBuffer(_))
+
 }
