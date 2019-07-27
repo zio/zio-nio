@@ -1,6 +1,6 @@
 # zio-nio
 
-[![Gitter](https://badges.gitter.im/scalaz/scalaz-nio.svg)](https://gitter.im/scalaz/scalaz-nio?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Join the chat at https://gitter.im/ZIO/zio-nio](https://badges.gitter.im/ZIO/zio-nio.svg)](https://gitter.im/ZIO/zio-nio?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## Goal
 
