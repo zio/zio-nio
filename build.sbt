@@ -32,7 +32,6 @@ lazy val zioNio = project
       "org.scalaz"     %% "testz-core"       % "0.0.5" % Test,
       "org.scalaz"     %% "testz-stdlib"     % "0.0.5" % Test,
       "org.scalaz"     %% "testz-runner"     % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-scalaz"     % "0.0.5" % Test,
       "org.scalaz"     %% "testz-specs2"     % "0.0.5" % Test
     )
   )
