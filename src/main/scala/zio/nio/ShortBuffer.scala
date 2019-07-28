@@ -1,12 +1,7 @@
 package zio.nio
 
 import zio.{ Chunk, IO, ZIO }
-import java.nio.{
-  BufferUnderflowException,
-  ByteOrder,
-  ReadOnlyBufferException,
-  ShortBuffer => JShortBuffer
-}
+import java.nio.{ BufferUnderflowException, ByteOrder, ReadOnlyBufferException, ShortBuffer => JShortBuffer }
 
 final class ShortBuffer(val shortBuffer: JShortBuffer) extends Buffer[Short](shortBuffer) {
 

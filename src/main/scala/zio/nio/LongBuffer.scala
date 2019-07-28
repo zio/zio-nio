@@ -1,12 +1,7 @@
 package zio.nio
 
 import zio.{ Chunk, IO, ZIO }
-import java.nio.{
-  BufferUnderflowException,
-  ByteOrder,
-  ReadOnlyBufferException,
-  LongBuffer => JLongBuffer
-}
+import java.nio.{ BufferUnderflowException, ByteOrder, ReadOnlyBufferException, LongBuffer => JLongBuffer }
 
 final class LongBuffer(val longBuffer: JLongBuffer) extends Buffer[Long](longBuffer) {
 

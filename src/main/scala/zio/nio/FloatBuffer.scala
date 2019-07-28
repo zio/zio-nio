@@ -1,12 +1,7 @@
 package zio.nio
 
 import zio.{ Chunk, IO, ZIO }
-import java.nio.{
-  BufferUnderflowException,
-  ByteOrder,
-  ReadOnlyBufferException,
-  FloatBuffer => JFloatBuffer
-}
+import java.nio.{ BufferUnderflowException, ByteOrder, ReadOnlyBufferException, FloatBuffer => JFloatBuffer }
 
 final class FloatBuffer(floatBuffer: JFloatBuffer) extends Buffer[Float](floatBuffer) {
 
