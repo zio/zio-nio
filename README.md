@@ -1,8 +1,7 @@
 # zio-nio
 
-[![Join the chat at https://gitter.im/ZIO/zio-nio](https://badges.gitter.im/ZIO/zio-nio.svg)](https://gitter.im/ZIO/zio-nio?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-## Goal
+[![CircleCI][badge-ci]][link-ci]
+[![Gitter][badge-gitter]][link-gitter]
 
 Zio-nio provides performant, purely-functional, low-level, and unopinionated wrapping of Java NIO functionality.
 
@@ -47,3 +46,8 @@ Java NIO is unsafe, and can surprise you a lot with e.g. hiding actual error in 
 ## Client Server
 
 [Client Server](/src/main/tut/channel.md)
+
+[badge-ci]: https://circleci.com/gh/zio/zio-nio/tree/master.svg?style=svg
+[badge-gitter]: https://badges.gitter.im/ZIO/zio-nio.svg
+[link-ci]: https://circleci.com/gh/zio/zio-nio/tree/master
+[link-gitter]: https://gitter.im/ZIO/zio-nio?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
