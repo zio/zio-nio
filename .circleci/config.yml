@@ -63,7 +63,7 @@ test: &test
     - <<: *install_jdk
     - run:
         name: Run tests
-        command: ./sbt ++${SCALA_VERSION}! test
+        command: ./sbt ++${SCALA_VERSION}! test:run
     - <<: *save_cache
 
 release: &release
