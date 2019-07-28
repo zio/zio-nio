@@ -164,12 +164,12 @@ object BufferSuite extends DefaultRuntime {
       //   }
       // ),
       test("capacity") { () =>
-        val capacity = unsafeRun(allocate(initialCapacity).flatMap(_.capacity))
+        val capacity = unsafeRun(allocate(initialCapacity).map(_.capacity))
         assert(capacity == jAllocate(initialCapacity).capacity)
       },
       namedSection("allocate")(
         test("capacity initialized") { () =>
-          val capacity = unsafeRun(allocate(initialCapacity).flatMap(_.capacity))
+          val capacity = unsafeRun(allocate(initialCapacity).map(_.capacity))
           assert(capacity == initialCapacity)
         },
         test("position is 0") { () =>
@@ -291,9 +291,8 @@ object BufferSuite extends DefaultRuntime {
       test("heap buffers a backed by an array") { () =>
         val hasArray =
           for {
-            b        <- allocate(initialCapacity)
-            hasArray <- b.hasArray
-          } yield hasArray
+            b <- allocate(initialCapacity)
+          } yield b.hasArray
         assert(unsafeRun(hasArray))
       }, {
         namedSection("invariant")(

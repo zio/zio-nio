@@ -1,30 +1,60 @@
 package zio.nio
 
-import zio.IO
+import zio.{ Chunk, IO, ZIO }
+import java.nio.{
+  BufferUnderflowException,
+  ByteOrder,
+  ReadOnlyBufferException,
+  FloatBuffer => JFloatBuffer
+}
 
-import java.nio.{ ByteOrder, FloatBuffer => JFloatBuffer }
+final class FloatBuffer(floatBuffer: JFloatBuffer) extends Buffer[Float](floatBuffer) {
 
-private[nio] class FloatBuffer(val floatBuffer: JFloatBuffer) extends Buffer[Float](floatBuffer) {
-
-  override val array: IO[Exception, Array[Float]] =
+  override protected[nio] def array: IO[Exception, Array[Float]] =
     IO.effect(floatBuffer.array()).refineToOrDie[Exception]
 
-  def order: IO[Nothing, ByteOrder] = IO.succeed(floatBuffer.order())
+  override def order: ByteOrder = floatBuffer.order
 
-  def slice: IO[Exception, FloatBuffer] =
-    IO.effect(floatBuffer.slice()).map(new FloatBuffer(_)).refineToOrDie[Exception]
+  override def slice: IO[Nothing, FloatBuffer] =
+    IO.effectTotal(floatBuffer.slice()).map(new FloatBuffer(_))
 
-  override val get: IO[Exception, Float] = IO.effect(floatBuffer.get()).refineToOrDie[Exception]
+  override def compact: IO[ReadOnlyBufferException, Unit] =
+    IO.effect(floatBuffer.compact()).unit.refineToOrDie[ReadOnlyBufferException]
 
-  override def get(i: Int): IO[Exception, Float] =
-    IO.effect(floatBuffer.get(i)).refineToOrDie[Exception]
+  override def duplicate: IO[Nothing, FloatBuffer] =
+    IO.effectTotal(new FloatBuffer(floatBuffer.duplicate()))
 
-  override def put(element: Float): IO[Exception, FloatBuffer] =
-    IO.effect(floatBuffer.put(element)).map(new FloatBuffer(_)).refineToOrDie[Exception]
+  def withJavaBuffer[R, E, A](f: JFloatBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(floatBuffer)
 
-  override def put(index: Int, element: Float): IO[Exception, FloatBuffer] =
-    IO.effect(floatBuffer.put(index, element)).map(new FloatBuffer(_)).refineToOrDie[Exception]
+  override def get: IO[BufferUnderflowException, Float] =
+    IO.effect(floatBuffer.get()).refineToOrDie[BufferUnderflowException]
 
-  override val asReadOnlyBuffer: IO[Exception, FloatBuffer] =
-    IO.effect(floatBuffer.asReadOnlyBuffer()).map(new FloatBuffer(_)).refineToOrDie[Exception]
+  override def get(i: Int): IO[IndexOutOfBoundsException, Float] =
+    IO.effect(floatBuffer.get(i)).refineToOrDie[IndexOutOfBoundsException]
+
+  override def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[Float]] =
+    IO.effect {
+        val array = Array.ofDim[Float](math.min(maxLength, floatBuffer.remaining()))
+        floatBuffer.get(array)
+        Chunk.fromArray(array)
+      }
+      .refineToOrDie[BufferUnderflowException]
+
+  override def put(element: Float): IO[Exception, Unit] =
+    IO.effect(floatBuffer.put(element)).unit.refineToOrDie[Exception]
+
+  override def put(index: Int, element: Float): IO[Exception, Unit] =
+    IO.effect(floatBuffer.put(index, element)).unit.refineToOrDie[Exception]
+
+  override def putChunk(chunk: Chunk[Float]): IO[Exception, Unit] =
+    IO.effect {
+        val array = chunk.toArray
+        floatBuffer.put(array)
+      }
+      .unit
+      .refineToOrDie[Exception]
+
+  override def asReadOnlyBuffer: IO[Nothing, FloatBuffer] =
+    IO.effectTotal(floatBuffer.asReadOnlyBuffer()).map(new FloatBuffer(_))
+
 }
