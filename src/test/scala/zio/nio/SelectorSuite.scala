@@ -1,10 +1,6 @@
 package zio.nio
 
-import java.nio.channels.{
-  CancelledKeyException,
-  SelectionKey => JSelectionKey,
-  SocketChannel => JSocketChannel
-}
+import java.nio.channels.{ CancelledKeyException, SelectionKey => JSelectionKey, SocketChannel => JSocketChannel }
 
 import zio._
 import zio.clock.Clock
