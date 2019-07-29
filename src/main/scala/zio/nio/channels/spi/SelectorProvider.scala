@@ -10,8 +10,7 @@ import zio.IO
 
 class SelectorProvider(private val selectorProvider: JSelectorProvider) {
 
-  final val openDatagramChannel
-    : IO[IOException, JDatagramChannel] = // TODO: wrapper for DatagramChannel
+  final val openDatagramChannel: IO[IOException, JDatagramChannel] = // TODO: wrapper for DatagramChannel
     IO.effect(selectorProvider.openDatagramChannel()).refineToOrDie[IOException]
 
   // this can throw UnsupportedOperationException - doesn't seem like a recoverable exception

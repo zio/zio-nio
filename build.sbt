@@ -1,35 +1,37 @@
-import BuildHelper._
-
-organization in ThisBuild := "dev.zio"
-
-version in ThisBuild := "0.2.0-SNAPSHOT"
-
-publishTo in ThisBuild := {
-  val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value)
-    Some("snapshots".at(nexus + "content/repositories/snapshots"))
-  else
-    Some("releases".at(nexus + "service/local/staging/deploy/maven2"))
-}
-
-dynverSonatypeSnapshots in ThisBuild := true
-
-lazy val sonataCredentials = for {
-  username <- sys.env.get("SONATYPE_USERNAME")
-  password <- sys.env.get("SONATYPE_PASSWORD")
-} yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)
-
-credentials in ThisBuild ++= sonataCredentials.toSeq
+inThisBuild(
+  List(
+    organization := "dev.zio",
+    licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+    developers := List(
+      Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net"))
+    ),
+    pgpPublicRing := file("/tmp/public.asc"),
+    pgpSecretRing := file("/tmp/secret.asc"),
+    releaseEarlyWith := SonatypePublisher,
+    scmInfo := Some(
+      ScmInfo(
+        url("https://github.com/zio/zio-nio/"),
+        "scm:git:git@github.com:zio/zio-nio.git"
+      )
+    )
+  )
+)
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 
-lazy val root =
-  (project in file("."))
-    .settings(
-      stdSettings("nio")
+lazy val zioNio = project
+  .in(file("."))
+  .settings(
+    name := "zio-nio",
+    libraryDependencies ++= Seq(
+      "dev.zio"        %% "zio"              % "1.0.0-RC10-1",
+      "dev.zio"        %% "zio-streams"      % "1.0.0-RC10-1",
+      "dev.zio"        %% "zio-interop-java" % "1.1.0-RC1",
+      "org.scalacheck" %% "scalacheck"       % "1.14.0" % Test,
+      "org.scalaz"     %% "testz-core"       % "0.0.5" % Test,
+      "org.scalaz"     %% "testz-stdlib"     % "0.0.5" % Test,
+      "org.scalaz"     %% "testz-runner"     % "0.0.5" % Test,
+      "org.scalaz"     %% "testz-specs2"     % "0.0.5" % Test
     )
-    .enablePlugins(TutPlugin)
-
-resolvers +=
-  "Sonatype OSS Snapshots".at("https://oss.sonatype.org/content/repositories/snapshots")
+  )

@@ -1,12 +1,7 @@
 package zio.nio
 
 import zio.{ Chunk, IO, ZIO }
-import java.nio.{
-  BufferUnderflowException,
-  ByteOrder,
-  ReadOnlyBufferException,
-  DoubleBuffer => JDoubleBuffer
-}
+import java.nio.{ BufferUnderflowException, ByteOrder, ReadOnlyBufferException, DoubleBuffer => JDoubleBuffer }
 
 final class DoubleBuffer(doubleBuffer: JDoubleBuffer) extends Buffer[Double](doubleBuffer) {
 

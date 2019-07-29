@@ -1,12 +1,7 @@
 package zio.nio
 
 import zio.{ Chunk, IO, ZIO }
-import java.nio.{
-  BufferUnderflowException,
-  ByteOrder,
-  ReadOnlyBufferException,
-  ByteBuffer => JByteBuffer
-}
+import java.nio.{ BufferUnderflowException, ByteOrder, ReadOnlyBufferException, ByteBuffer => JByteBuffer }
 
 final class ByteBuffer(byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
 

@@ -108,8 +108,7 @@ object SocketChannel {
 
 }
 
-class ServerSocketChannel(private val channel: JServerSocketChannel)
-    extends SelectableChannel(channel) {
+class ServerSocketChannel(private val channel: JServerSocketChannel) extends SelectableChannel(channel) {
 
   final def bind(local: SocketAddress): IO[IOException, Unit] =
     IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
