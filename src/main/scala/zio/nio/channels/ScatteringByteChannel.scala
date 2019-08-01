@@ -1,12 +1,14 @@
 package zio.nio.channels
 
-import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
+import java.nio.{ ByteBuffer => JByteBuffer }
 
-import zio.{ Chunk, IO, UIO }
 import zio.nio.Buffer
+import zio.{ Chunk, IO }
 
-class ScatteringByteChannel(private val channel: JScatteringByteChannel) {
+trait ScatteringByteChannel extends Channel {
+
+  override protected[channels] val channel: JScatteringByteChannel
 
   final private[nio] def readBuffer(
     dsts: List[Buffer[Byte]],
@@ -29,12 +31,6 @@ class ScatteringByteChannel(private val channel: JScatteringByteChannel) {
       bs <- IO.collectAll(dsts.map(Buffer.byte(_)))
       r  <- readBuffer(bs)
     } yield r
-
-  final val close: IO[Exception, Unit] =
-    IO.effect(channel.close()).refineToOrDie[Exception]
-
-  final val isOpen: UIO[Boolean] =
-    IO.effectTotal(channel.isOpen)
 
   private def unwrap(dsts: List[Buffer[Byte]]): Array[JByteBuffer] =
     dsts.map(d => d.buffer.asInstanceOf[JByteBuffer]).toList.toArray

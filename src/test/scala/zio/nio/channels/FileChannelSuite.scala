@@ -1,10 +1,10 @@
-package zio.nio
+package zio.nio.channels
 
 import java.nio.file.{ Files, Paths, StandardOpenOption }
 
-import zio.{ Chunk, DefaultRuntime }
 import testz.{ Harness, assert }
-import zio.nio.channels.AsynchronousFileChannel
+import zio.nio.Buffer
+import zio.{ Chunk, DefaultRuntime }
 
 import scala.io.Source
 
@@ -18,7 +18,7 @@ object FileChannelSuite extends DefaultRuntime {
         val path = Paths.get("src/test/resources/async_file_read_test.txt")
 
         val testProgram = for {
-          channel <- AsynchronousFileChannel.open(path, Set(StandardOpenOption.READ))
+          channel <- AsynchronousFileChannel.open(path, StandardOpenOption.READ)
           buffer  <- Buffer.byte(16)
           _       <- channel.readBuffer(buffer, 0)
           _       <- buffer.flip
@@ -32,11 +32,10 @@ object FileChannelSuite extends DefaultRuntime {
         assert(result == "Hello World")
       },
       test("asynchronous file write") { () =>
-        val path    = Paths.get("src/test/resources/async_file_write_test.txt")
-        val options = Set(StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+        val path = Paths.get("src/test/resources/async_file_write_test.txt")
 
         val testProgram = for {
-          channel <- AsynchronousFileChannel.open(path, options)
+          channel <- AsynchronousFileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
           buffer  <- Buffer.byte(Chunk.fromArray("Hello World".getBytes))
           _       <- channel.writeBuffer(buffer, 0)
           _       <- channel.close

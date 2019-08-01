@@ -1,8 +1,10 @@
-package zio.nio
+package zio.nio.channels
 
 import zio.nio.channels.{ AsynchronousServerSocketChannel, AsynchronousSocketChannel }
 import zio._
 import testz.{ Harness, assert }
+import zio.nio.{ Buffer, InetAddress, SocketAddress }
+import zio.{ DefaultRuntime, IO }
 
 object ChannelSuite extends DefaultRuntime {
 

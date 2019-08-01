@@ -1,30 +1,26 @@
 package zio.nio.channels
 
 import java.io.IOException
-import java.nio.channels.{ FileLock, AsynchronousFileChannel => JAsynchronousFileChannel }
+import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock }
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.{ OpenOption, Path }
 import java.util.concurrent.ExecutorService
 
+import zio.blocking.Blocking
 import zio.nio.{ Buffer, ByteBuffer }
-import zio.{ Chunk, IO, UIO }
+import zio.{ Chunk, IO, ZIO }
 
 import scala.collection.JavaConverters._
 
-class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
+class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) extends Channel {
 
   import AsynchronousChannel.wrap
-
-  final def close: IO[Exception, Unit] =
-    IO.effect(channel.close()).refineToOrDie[Exception]
 
   final def force(metaData: Boolean): IO[IOException, Unit] =
     IO.effect(channel.force(metaData)).refineToOrDie[IOException]
 
-  final val lock: IO[Exception, FileLock] = wrap[FileLock](channel.lock((), _))
-
-  final def lock(position: Long, size: Long, shared: Boolean): IO[Exception, FileLock] =
-    wrap[FileLock](channel.lock(position, size, shared, (), _))
+  final def lock(position: Long = 0L, size: Long = Long.MaxValue, shared: Boolean = false): IO[Exception, FileLock] =
+    wrap[JFileLock](channel.lock(position, size, shared, (), _)).map(new FileLock(_))
 
   final private[nio] def readBuffer(dst: ByteBuffer, position: Long): IO[Exception, Int] =
     dst.withJavaBuffer { buf =>
@@ -46,11 +42,8 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
   final def truncate(size: Long): IO[Exception, Unit] =
     IO.effect(channel.truncate(size)).refineToOrDie[Exception].unit
 
-  final val tryLock: IO[Exception, FileLock] =
-    IO.effect(channel.tryLock()).refineToOrDie[Exception]
-
-  final def tryLock(position: Long, size: Long, shared: Boolean): IO[Exception, FileLock] =
-    IO.effect(channel.tryLock(position, size, shared)).refineToOrDie[Exception]
+  final def tryLock(position: Long = 0L, size: Long = Long.MaxValue, shared: Boolean = false): IO[Exception, FileLock] =
+    IO.effect(new FileLock(channel.tryLock(position, size, shared))).refineToOrDie[Exception]
 
   final private[nio] def writeBuffer(src: ByteBuffer, position: Long): IO[Exception, Int] =
     src.withJavaBuffer { buf =>
@@ -64,32 +57,31 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
       r <- writeBuffer(b, position)
     } yield r
 
-  /**
-   * Tells whether or not this channel is open.
-   */
-  final val isOpen: UIO[Boolean] =
-    IO.effectTotal(channel.isOpen)
 }
 
 object AsynchronousFileChannel {
 
-  def open[A <: OpenOption](file: Path, options: Set[A]): IO[Exception, AsynchronousFileChannel] =
-    IO.effect(
-        new AsynchronousFileChannel(JAsynchronousFileChannel.open(file, options.toSeq: _*))
-      )
+  def open(file: Path, options: OpenOption*): ZIO[Blocking, Exception, AsynchronousFileChannel] =
+    ZIO
+      .accessM[Blocking] {
+        _.blocking.effectBlocking(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file, options: _*)))
+      }
       .refineToOrDie[Exception]
 
   def open(
     file: Path,
-    options: Set[OpenOption],
-    executor: Option[ExecutorService],
-    attrs: Set[FileAttribute[_]]
-  ): IO[Exception, AsynchronousFileChannel] =
-    IO.effect(
-        new AsynchronousFileChannel(
-          JAsynchronousFileChannel.open(file, options.asJava, executor.orNull, attrs.toSeq: _*)
+    options: Set[_ <: OpenOption],
+    executor: Option[ExecutorService] = None,
+    attrs: Set[FileAttribute[_]] = Set.empty
+  ): ZIO[Blocking, Exception, AsynchronousFileChannel] =
+    ZIO
+      .accessM[Blocking] {
+        _.blocking.effectBlocking(
+          new AsynchronousFileChannel(
+            JAsynchronousFileChannel.open(file, options.asJava, executor.orNull, attrs.toSeq: _*)
+          )
         )
-      )
+      }
       .refineToOrDie[Exception]
 
 }
