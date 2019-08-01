@@ -1,5 +1,6 @@
 package zio.nio.channels
 
+import java.io.IOException
 import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
 import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{
@@ -27,9 +28,13 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
   final def read(capacity: Int): IO[Exception, Chunk[Byte]] =
     for {
       b <- Buffer.byte(capacity)
-      _ <- readBuffer(b)
+      l <- readBuffer(b)
       a <- b.array
-      r = Chunk.fromArray(a)
+      r <- if (l == -1) {
+            ZIO.fail(new IOException("Connection reset by peer"))
+          } else {
+            ZIO.succeed(Chunk.fromArray(a).take(l))
+          }
     } yield r
 
   /**
@@ -173,9 +178,13 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
   final def read[A](capacity: Int, timeout: Duration): IO[Exception, Chunk[Byte]] =
     for {
       b <- Buffer.byte(capacity)
-      _ <- readBuffer(b, timeout)
+      l <- readBuffer(b, timeout)
       a <- b.array
-      r = Chunk.fromArray(a)
+      r <- if (l == -1) {
+            ZIO.fail(new IOException("Connection reset by peer"))
+          } else {
+            ZIO.succeed(Chunk.fromArray(a).take(l))
+          }
     } yield r
 
   final private[nio] def readBuffer[A](
@@ -205,10 +214,14 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
   ): IO[Exception, List[Chunk[Byte]]] =
     for {
       bs <- IO.collectAll(capacities.map(Buffer.byte(_)))
-      _  <- readBuffer(bs, offset, length, timeout)
+      l  <- readBuffer(bs, offset, length, timeout)
       as <- IO.collectAll(bs.map(_.array))
-      ds = as.map(Chunk.fromArray(_))
-    } yield ds
+      r <- if (l == -1) {
+            ZIO.fail(new IOException("Connection reset by peer"))
+          } else {
+            ZIO.succeed(as.map(Chunk.fromArray))
+          }
+    } yield r
 
 }
 
