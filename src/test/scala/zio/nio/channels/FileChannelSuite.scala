@@ -1,5 +1,6 @@
 package zio.nio.channels
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.{ Files, Paths, StandardOpenOption }
 
 import testz.{ Harness, assert }
@@ -14,7 +15,7 @@ object FileChannelSuite extends DefaultRuntime {
     import harness._
 
     section(
-      test("asynchronous file read") { () =>
+      test("asynchronous file buffer read") { () =>
         val path = Paths.get("src/test/resources/async_file_read_test.txt")
 
         val testProgram = for {
@@ -30,6 +31,19 @@ object FileChannelSuite extends DefaultRuntime {
         val result = unsafeRun(testProgram)
 
         assert(result == "Hello World")
+      },
+      test("asynchronous file chunk read") { () =>
+        val path = Paths.get("src/test/resources/async_file_read_test.txt")
+
+        val testProgram = for {
+          channel <- AsynchronousFileChannel.open(path, StandardOpenOption.READ)
+          bytes   <- channel.read(500, 0L)
+          _       <- channel.close
+        } yield bytes
+
+        val result = unsafeRun(testProgram)
+
+        assert(result == Chunk.fromArray("Hello World".getBytes(StandardCharsets.UTF_8)))
       },
       test("asynchronous file write") { () =>
         val path = Paths.get("src/test/resources/async_file_write_test.txt")

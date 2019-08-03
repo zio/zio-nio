@@ -30,11 +30,10 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
 
   final def read(capacity: Int, position: Long): IO[Exception, Chunk[Byte]] =
     for {
-      b <- Buffer.byte(capacity)
-      _ <- readBuffer(b, position)
-      a <- b.array
-      r = Chunk.fromArray(a)
-    } yield r
+      b     <- Buffer.byte(capacity)
+      count <- readBuffer(b, position)
+      a     <- b.array
+    } yield Chunk.fromArray(a).take(math.max(count, 0))
 
   final val size: IO[IOException, Long] =
     IO.effect(channel.size()).refineToOrDie[IOException]
