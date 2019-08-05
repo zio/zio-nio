@@ -26,8 +26,8 @@ lazy val zioNio = project
   .settings(
     name := "zio-nio",
     libraryDependencies ++= Seq(
-      "dev.zio"        %% "zio"              % "1.0.0-RC10-1",
-      "dev.zio"        %% "zio-streams"      % "1.0.0-RC10-1",
+      "dev.zio"        %% "zio"              % "1.0.0-RC11",
+      "dev.zio"        %% "zio-streams"      % "1.0.0-RC11",
       "dev.zio"        %% "zio-interop-java" % "1.1.0.0-RC3",
       "org.scalacheck" %% "scalacheck"       % "1.14.0" % Test,
       "org.scalaz"     %% "testz-core"       % "0.0.5" % Test,
