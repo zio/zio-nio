@@ -1,6 +1,7 @@
 inThisBuild(
   List(
     organization := "dev.zio",
+    homepage := Some(url("https://github.com/zio/zio-nio/")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net"))
@@ -27,7 +28,7 @@ lazy val zioNio = project
     libraryDependencies ++= Seq(
       "dev.zio"        %% "zio"              % "1.0.0-RC10-1",
       "dev.zio"        %% "zio-streams"      % "1.0.0-RC10-1",
-      "dev.zio"        %% "zio-interop-java" % "1.1.0-RC1",
+      "dev.zio"        %% "zio-interop-java" % "1.1.0.0-RC3",
       "org.scalacheck" %% "scalacheck"       % "1.14.0" % Test,
       "org.scalaz"     %% "testz-core"       % "0.0.5" % Test,
       "org.scalaz"     %% "testz-stdlib"     % "0.0.5" % Test,

@@ -12,25 +12,25 @@ Java NIO is unsafe, and can surprise you a lot with e.g. hiding actual error in 
 ## Competition
 
 * Scala standard
-  * Cover File and Socket blocking/unblocking IO operations :negative_squared_cross_mark:
+  * Cover File and Socket blocking/unblocking IO operations :x:
   * Performant  :white_check_mark:
-  * Type-safe, pure FP :negative_squared_cross_mark:
-  * Scalaz compatibility :negative_squared_cross_mark:
+  * Type-safe, pure FP :x:
+  * Scalaz compatibility :x:
 * http4s blaze
-  * Cover File and Socket blocking/unblocking IO operations :negative_squared_cross_mark:
+  * Cover File and Socket blocking/unblocking IO operations :x:
   * Performant :white_check_mark:
-  * Type-safe, pure FP :negative_squared_cross_mark:
-  * Scalaz compatibility :negative_squared_cross_mark:
+  * Type-safe, pure FP :x:
+  * Scalaz compatibility :x:
 * ammonite-ops
-  * Cover File and Socket blocking/unblocking IO operations :negative_squared_cross_mark:
+  * Cover File and Socket blocking/unblocking IO operations :x:
   * Performant :white_check_mark:
-  * Type-safe, pure FP :negative_squared_cross_mark:
-  * Scalaz compatibility :negative_squared_cross_mark:
+  * Type-safe, pure FP :x:
+  * Scalaz compatibility :x:
 * Better files
-  * Cover File and Socket blocking/unblocking IO operations :negative_squared_cross_mark:
+  * Cover File and Socket blocking/unblocking IO operations :x:
   * Performant :white_check_mark:
-  * Type-safe, pure FP :negative_squared_cross_mark:
-  * Scalaz compatibility :negative_squared_cross_mark:
+  * Type-safe, pure FP :x:
+  * Scalaz compatibility :x:
 
 ## Background
 
