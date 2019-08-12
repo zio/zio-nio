@@ -104,7 +104,7 @@ object Buffer {
       .map(new ByteBuffer(_))
       .refineToOrDie[IllegalArgumentException]
 
-  def byte(chunk: Chunk[Byte]): IO[Nothing, Buffer[Byte]] =
+  def byte(chunk: Chunk[Byte]): IO[Nothing, ByteBuffer] =
     IO.effectTotal(JByteBuffer.wrap(chunk.toArray)).map(new ByteBuffer(_))
 
   def byteDirect(capacity: Int): IO[IllegalArgumentException, ByteBuffer] =
