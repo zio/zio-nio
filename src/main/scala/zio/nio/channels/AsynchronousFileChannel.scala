@@ -1,7 +1,7 @@
 package zio.nio.channels
 
 import java.io.IOException
-import java.nio.channels.{ FileLock, AsynchronousFileChannel => JAsynchronousFileChannel }
+import java.nio.channels.{ FileLock => JFileLock, AsynchronousFileChannel => JAsynchronousFileChannel }
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.{ OpenOption, Path }
 import java.util.concurrent.ExecutorService
@@ -21,10 +21,11 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
   final def force(metaData: Boolean): IO[IOException, Unit] =
     IO.effect(channel.force(metaData)).refineToOrDie[IOException]
 
-  final val lock: IO[Exception, FileLock] = wrap[FileLock](channel.lock((), _))
+  final def lock: IO[Exception, FileLock] =
+    wrap[JFileLock](channel.lock((), _)).map(FileLock.fromJFileLock(_, channel = this))
 
   final def lock(position: Long, size: Long, shared: Boolean): IO[Exception, FileLock] =
-    wrap[FileLock](channel.lock(position, size, shared, (), _))
+    wrap[JFileLock](channel.lock(position, size, shared, (), _)).map(FileLock.fromJFileLock(_, channel = this))
 
   final private[nio] def readBuffer(dst: ByteBuffer, position: Long): IO[Exception, Int] =
     dst.withJavaBuffer { buf =>
@@ -47,10 +48,12 @@ class AsynchronousFileChannel(private val channel: JAsynchronousFileChannel) {
     IO.effect(channel.truncate(size)).refineToOrDie[Exception].unit
 
   final val tryLock: IO[Exception, FileLock] =
-    IO.effect(channel.tryLock()).refineToOrDie[Exception]
+    IO.effect(channel.tryLock()).refineToOrDie[Exception].map(FileLock.fromJFileLock(_, channel = this))
 
   final def tryLock(position: Long, size: Long, shared: Boolean): IO[Exception, FileLock] =
-    IO.effect(channel.tryLock(position, size, shared)).refineToOrDie[Exception]
+    IO.effect(channel.tryLock(position, size, shared))
+      .refineToOrDie[Exception]
+      .map(FileLock.fromJFileLock(_, channel = this))
 
   final private[nio] def writeBuffer(src: ByteBuffer, position: Long): IO[Exception, Int] =
     src.withJavaBuffer { buf =>
