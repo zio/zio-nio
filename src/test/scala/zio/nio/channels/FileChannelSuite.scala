@@ -62,6 +62,22 @@ object FileChannelSuite extends DefaultRuntime {
 
         assert(result.size == 1)
         assert(result.head == "Hello World")
+      },
+      test("memory mapped buffer") { () =>
+        val path = Paths.get("src/test/resources/async_file_read_test.txt")
+
+        val testProgram = {
+          FileChannel.open(path, StandardOpenOption.READ).bracket(_.close.ignore) { channel =>
+            for {
+              buffer <- channel.map(FileChannel.MapMode.READ_ONLY, 0L, 6L)
+              bytes  <- buffer.getChunk()
+            } yield bytes
+          }
+        }
+
+        val result = unsafeRun(testProgram)
+
+        assert(result == Chunk.fromArray("Hello ".getBytes(StandardCharsets.UTF_8)))
       }
     )
   }

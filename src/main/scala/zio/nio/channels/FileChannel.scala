@@ -83,4 +83,11 @@ object FileChannel {
   def open(path: Path, options: OpenOption*): IO[Exception, FileChannel] =
     IO.effect(new FileChannel(JFileChannel.open(path, options: _*))).refineToOrDie[Exception]
 
+  type MapMode = JFileChannel.MapMode
+
+  object MapMode {
+    def READ_ONLY  = JFileChannel.MapMode.READ_ONLY
+    def READ_WRITE = JFileChannel.MapMode.READ_WRITE
+    def PRIVATE    = JFileChannel.MapMode.PRIVATE
+  }
 }
