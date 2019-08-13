@@ -19,7 +19,7 @@ class InetSocketAddress private[nio] (private val jInetSocketAddress: JInetSocke
   def isUnresolved: Boolean = jInetSocketAddress.isUnresolved
 
   override final def toString: String =
-    jSocketAddress.toString
+    jInetSocketAddress.toString
 }
 
 object SocketAddress {
