@@ -17,6 +17,9 @@ class InetSocketAddress private[nio] (private val jInetSocketAddress: JInetSocke
   def hostString: String = jInetSocketAddress.getHostString
 
   def isUnresolved: Boolean = jInetSocketAddress.isUnresolved
+
+  override final def toString: String =
+    jSocketAddress.toString
 }
 
 object SocketAddress {
