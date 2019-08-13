@@ -44,6 +44,9 @@ final class ByteBuffer(byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer)
   override def put(index: Int, element: Byte): IO[Exception, Unit] =
     IO.effect(byteBuffer.put(index, element)).unit.refineToOrDie[Exception]
 
+  def putByteBuffer(source: ByteBuffer): IO[Exception, Unit] =
+    IO.effect(byteBuffer.put(source.byteBuffer)).unit.refineToOrDie[Exception]
+
   override def putChunk(chunk: Chunk[Byte]): IO[Exception, Unit] =
     IO.effect {
         val array = chunk.toArray
