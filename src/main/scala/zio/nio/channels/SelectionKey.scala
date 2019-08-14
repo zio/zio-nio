@@ -15,22 +15,21 @@ object SelectionKey {
   }
 
   sealed abstract class Operation(val intVal: Int)
+
   object Operation {
 
-    final case object Read extends Operation(JSelectionKey.OP_READ)
-    final case object Write extends Operation(JSelectionKey.OP_WRITE)
+    final case object Read    extends Operation(JSelectionKey.OP_READ)
+    final case object Write   extends Operation(JSelectionKey.OP_WRITE)
     final case object Connect extends Operation(JSelectionKey.OP_CONNECT)
-    final case object Accept extends Operation(JSelectionKey.OP_ACCEPT)
+    final case object Accept  extends Operation(JSelectionKey.OP_ACCEPT)
 
     final val fullSet: Set[Operation] = Set(Read, Write, Connect, Accept)
 
-    def fromInt(ops: Int): Set[Operation] = {
-      fullSet.filter(op => (ops & op.intVal)  != 0)
-    }
+    final def fromInt(ops: Int): Set[Operation] =
+      fullSet.filter(op => (ops & op.intVal) != 0)
 
-    def toInt(set: Set[Operation]): Int = {
-      set.foldLeft(0) ((ops, op) => ops | op.intVal)
-    }
+    final def toInt(set: Set[Operation]): Int =
+      set.foldLeft(0)((ops, op) => ops | op.intVal)
   }
 }
 
@@ -57,8 +56,8 @@ class SelectionKey(private[nio] val selectionKey: JSelectionKey) {
 
   final def interestOps(ops: Set[Operation]): IO[CancelledKeyException, Unit] =
     IO.effect(selectionKey.interestOps(Operation.toInt(ops)))
-    .unit
-    .refineToOrDie[CancelledKeyException]
+      .unit
+      .refineToOrDie[CancelledKeyException]
 
   final val readyOps: IO[CancelledKeyException, Set[Operation]] =
     IO.effect(selectionKey.readyOps())

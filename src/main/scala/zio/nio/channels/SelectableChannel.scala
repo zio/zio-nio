@@ -19,8 +19,9 @@ class SelectableChannel(private val channel: JSelectableChannel) {
   final val provider: UIO[SelectorProvider] =
     IO.effectTotal(new SelectorProvider(channel.provider()))
 
-  final val validOps: UIO[Int] =
+  final val validOps: UIO[Set[Operation]] =
     IO.effectTotal(channel.validOps())
+      .map(Operation.fromInt(_))
 
   final val isRegistered: UIO[Boolean] =
     IO.effectTotal(channel.isRegistered())
@@ -36,11 +37,11 @@ class SelectableChannel(private val channel: JSelectableChannel) {
     IO.effect(new SelectionKey(channel.register(sel.selector, Operation.toInt(ops))))
       .refineToOrDie[IOException]
 
-  final def register(sel: Selector, op: Operation, att: Option[AnyRef]): IO[IOException, SelectionKey ] =
+  final def register(sel: Selector, op: Operation, att: Option[AnyRef]): IO[IOException, SelectionKey] =
     IO.effect(new SelectionKey(channel.register(sel.selector, op.intVal, att.orNull)))
-    .refineToOrDie[IOException]
+      .refineToOrDie[IOException]
 
-  final def register(sel: Selector, op: Operation): IO[IOException, SelectionKey ] =
+  final def register(sel: Selector, op: Operation): IO[IOException, SelectionKey] =
     IO.effect(new SelectionKey(channel.register(sel.selector, op.intVal)))
       .refineToOrDie[IOException]
 
