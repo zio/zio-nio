@@ -14,24 +14,6 @@ object SelectionKey {
     case e: CancelledKeyException => e
   }
 
-  sealed abstract class Operation(val intVal: Int)
-  object Operation {
-
-    final case object Read extends Operation(JSelectionKey.OP_READ)
-    final case object Write extends Operation(JSelectionKey.OP_WRITE)
-    final case object Connect extends Operation(JSelectionKey.OP_CONNECT)
-    final case object Accept extends Operation(JSelectionKey.OP_ACCEPT)
-
-    final val fullSet: Set[Operation] = Set(Read, Write, Connect, Accept)
-
-    def fromInt(ops: Int): Set[Operation] = {
-      fullSet.filter(op => (ops & op.intVal)  != 0)
-    }
-
-    def toInt(set: Set[Operation]): Int = {
-      set.foldLeft(0) ((ops, op) => ops | op.intVal)
-    }
-  }
 }
 
 class SelectionKey(private[nio] val selectionKey: JSelectionKey) {
@@ -50,20 +32,16 @@ class SelectionKey(private[nio] val selectionKey: JSelectionKey) {
   final val cancel: UIO[Unit] =
     IO.effectTotal(selectionKey.cancel())
 
-  final val interestOps: IO[CancelledKeyException, Set[Operation]] =
-    IO.effectTotal(selectionKey.interestOps())
-      .map(Operation.fromInt(_))
+  final val interestOps: IO[CancelledKeyException, Int] =
+    IO.effect(selectionKey.interestOps()).refineToOrDie[CancelledKeyException]
+
+  final def interestOps(ops: Int): IO[CancelledKeyException, SelectionKey] =
+    IO.effect(selectionKey.interestOps(ops))
+      .map(new SelectionKey(_))
       .refineToOrDie[CancelledKeyException]
 
-  final def interestOps(ops: Set[Operation]): IO[CancelledKeyException, Unit] =
-    IO.effect(selectionKey.interestOps(Operation.toInt(ops)))
-    .unit
-    .refineToOrDie[CancelledKeyException]
-
-  final val readyOps: IO[CancelledKeyException, Set[Operation]] =
-    IO.effect(selectionKey.readyOps())
-      .map(Operation.fromInt(_))
-      .refineToOrDie[CancelledKeyException]
+  final val readyOps: IO[CancelledKeyException, Int] =
+    IO.effect(selectionKey.readyOps()).refineToOrDie[CancelledKeyException]
 
   final def isReadable: IO[CancelledKeyException, Boolean] =
     IO.effect(selectionKey.isReadable()).refineOrDie(JustCancelledKeyException)

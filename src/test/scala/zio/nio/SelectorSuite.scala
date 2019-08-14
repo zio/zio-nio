@@ -1,12 +1,11 @@
 package zio.nio
 
-import java.nio.channels.{CancelledKeyException, SocketChannel => JSocketChannel}
+import java.nio.channels.{ CancelledKeyException, SelectionKey => JSelectionKey, SocketChannel => JSocketChannel }
 
-import testz.{Harness, assert}
 import zio._
 import zio.clock.Clock
-import zio.nio.channels.SelectionKey.Operation
-import zio.nio.channels.{Selector, ServerSocketChannel, SocketChannel}
+import testz.{ Harness, assert }
+import zio.nio.channels.{ Selector, ServerSocketChannel, SocketChannel }
 
 object SelectorSuite extends DefaultRuntime {
 
@@ -37,7 +36,7 @@ object SelectorSuite extends DefaultRuntime {
                         clientOpt <- channel.accept
                         client    = clientOpt.get
                         _         <- client.configureBlocking(false)
-                        _         <- client.register(selector, Operation.Read)
+                        _         <- client.register(selector, JSelectionKey.OP_READ)
                       } yield ()
                     } *>
                       IO.whenM(safeStatusCheck(key.isReadable)) {
@@ -63,7 +62,7 @@ object SelectorSuite extends DefaultRuntime {
           channel  <- ServerSocketChannel.open
           _        <- channel.bind(address)
           _        <- channel.configureBlocking(false)
-          _        <- channel.register(selector, Operation.Accept)
+          _        <- channel.register(selector, JSelectionKey.OP_ACCEPT)
           buffer   <- Buffer.byte(256)
           _        <- started.succeed(())
 
