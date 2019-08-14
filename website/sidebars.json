@@ -9,7 +9,6 @@
   "usecases-sidebar": {
     "Use Cases": [
       "usecases/usecases_index",
-      "usecases/usecases_actor_remoting",
       "usecases/usecases_client_server"
     ]
   }

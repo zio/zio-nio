@@ -40,7 +40,7 @@ val clientM = for {
 
 Reading and writing to socket:
 
-```scala
+```scala mdoc:silent
 for {
   server <- serverM
   client <- clientM
