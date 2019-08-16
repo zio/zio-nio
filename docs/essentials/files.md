@@ -50,8 +50,8 @@ for {
   _ <- putStrLn(isShared.toString)                                      // false
 
   managed = Managed.make(channel.lock(position = 0, size = 10, shared = false))(l => IO.effectTotal(l.release()))
-  isOverlaping <- managed.use(l => IO.effectTotal(l.overlaps(5, 20)))   // true
-
+  isOverlaping <- managed.use(l => IO.effectTotal(l.overlaps(5, 20)))
+  _ <- putStrLn(isOverlaping.toString)                                  // true
 } yield ()
 ```
 

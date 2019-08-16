@@ -7,7 +7,7 @@ Zio-nio provides performant, purely-functional, low-level, and unopinionated wra
 
 ## Introduction & Highlights
 
-Java NIO is unsafe, and can surprise you a lot with e.g. hiding actual error in IO operation and giving you only true/false values - IO was seccessful/not successful.
+Java NIO is unsafe, and can surprise you a lot with e.g. hiding actual error in IO operation and giving you only true/false values - IO was successful/not successful.
 
 ## Competition
 
@@ -38,14 +38,10 @@ Java NIO is unsafe, and can surprise you a lot with e.g. hiding actual error in 
 * [Http4s Blaze](https://github.com/http4s/blaze)
 * [Ammonite](https://github.com/lihaoyi/Ammonite/)
 * [Better Files](https://github.com/pathikrit/better-files)
-  * [Towards a safe, sane I O library in Scala](https://www.youtube.com/watch?feature=player_embedded&v=uaYKkpqs6CE)
+* [Towards a safe, sane I O library in Scala](https://www.youtube.com/watch?feature=player_embedded&v=uaYKkpqs6CE)
 * [Haskell NIO](https://wiki.haskell.org/NIO)
 * [Non Blocking IO](https://www.youtube.com/watch?v=uKc0Gx_lPsg)
 * [Blocking vs Non-blocking IO](http://tutorials.jenkov.com/java-nio/nio-vs-io.html)
-
-## Client Server
-
-[Client Server](/src/main/tut/channel.md)
 
 [badge-ci]: https://circleci.com/gh/zio/zio-nio/tree/master.svg?style=svg
 [badge-gitter]: https://badges.gitter.im/ZIO/zio-nio.svg
