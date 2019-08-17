@@ -17,31 +17,34 @@ object ChannelSuite extends DefaultRuntime {
           for {
             address <- inetAddress
             sink    <- Buffer.byte(3)
-            server  <- AsynchronousServerSocketChannel()
-            _       <- server.bind(address)
-            _ <- server.accept
-                  .bracket(_.close.ignore *> server.close.ignore) { worker =>
-                    worker.readBuffer(sink) *>
-                      sink.flip *>
-                      worker.writeBuffer(sink)
-                  }
-                  .fork
+            _ <- AsynchronousServerSocketChannel().use { server =>
+                  for {
+                    _ <- server.bind(address)
+                    _ <- server.accept.use { worker =>
+                          worker.readBuffer(sink) *>
+                            sink.flip *>
+                            worker.writeBuffer(sink)
+                        }
+                  } yield ()
+                }.fork
           } yield ()
 
         def echoClient: IO[Exception, Boolean] =
           for {
-            address  <- inetAddress
-            src      <- Buffer.byte(3)
-            client   <- AsynchronousSocketChannel()
-            _        <- client.connect(address)
-            sent     <- src.array
-            _        = sent.update(0, 1)
-            _        <- client.writeBuffer(src)
-            _        <- src.flip
-            _        <- client.readBuffer(src)
-            received <- src.array
-            _        <- client.close
-          } yield sent.sameElements(received)
+            address <- inetAddress
+            src     <- Buffer.byte(3)
+            result <- AsynchronousSocketChannel().use { client =>
+                       for {
+                         _        <- client.connect(address)
+                         sent     <- src.array
+                         _        = sent.update(0, 1)
+                         _        <- client.writeBuffer(src)
+                         _        <- src.flip
+                         _        <- client.readBuffer(src)
+                         received <- src.array
+                       } yield sent.sameElements(received)
+                     }
+          } yield result
 
         val testProgram: IO[Exception, Boolean] = for {
           _    <- echoServer
@@ -54,29 +57,33 @@ object ChannelSuite extends DefaultRuntime {
         val inetAddress = InetAddress.localHost
           .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13372))
 
-        def server: IO[Exception, Fiber[Nothing, Boolean]] =
+        def server: IO[Exception, Fiber[Exception, Boolean]] =
           for {
             address <- inetAddress
-            server  <- AsynchronousServerSocketChannel()
-            _       <- server.bind(address)
-            result <- server.accept
-                       .bracket(_.close.ignore *> server.close.ignore) { worker =>
-                         worker.read(3) *> worker.read(3) *> ZIO.succeed(false)
-                       }
-                       .catchAll {
-                         case ex: java.io.IOException if ex.getMessage == "Connection reset by peer" =>
-                           ZIO.succeed(true)
-                       }
-                       .fork
+            result <- AsynchronousServerSocketChannel().use { server =>
+                       for {
+                         _ <- server.bind(address)
+                         result <- server.accept
+                                    .use { worker =>
+                                      worker.read(3) *> worker.read(3) *> ZIO.succeed(false)
+                                    }
+                                    .catchAll {
+                                      case ex: java.io.IOException if ex.getMessage == "Connection reset by peer" =>
+                                        ZIO.succeed(true)
+                                    }
+                       } yield result
+                     }.fork
           } yield result
 
         def client: IO[Exception, Unit] =
           for {
             address <- inetAddress
-            client  <- AsynchronousSocketChannel()
-            _       <- client.connect(address)
-            _       = client.write(Chunk.fromArray(Array[Byte](1, 1, 1)))
-            _       <- client.close
+            _ <- AsynchronousSocketChannel().use { client =>
+                  for {
+                    _ <- client.connect(address)
+                    _ = client.write(Chunk.fromArray(Array[Byte](1, 1, 1)))
+                  } yield ()
+                }
           } yield ()
 
         val testProgram: IO[Exception, Boolean] = for {
@@ -94,22 +101,22 @@ object ChannelSuite extends DefaultRuntime {
         def client: IO[Exception, Unit] =
           for {
             address <- inetAddress
-            client  <- AsynchronousSocketChannel()
-            _       <- client.connect(address)
-            _       <- client.close
+            _ <- AsynchronousSocketChannel().use { client =>
+                  client.connect(address).unit
+                }
           } yield ()
 
         def server: IO[Exception, Fiber[Exception, Unit]] =
           for {
             address <- inetAddress
-            server  <- AsynchronousServerSocketChannel()
-            _       <- server.bind(address)
-            worker <- server.accept
-                       .bracket(_.close.ignore *> server.close.ignore) { _ =>
-                         ZIO.unit
-                       }
-                       .fork
-
+            worker <- AsynchronousServerSocketChannel().use { server =>
+                       for {
+                         _ <- server.bind(address)
+                         worker <- server.accept.use { _ =>
+                                    ZIO.unit
+                                  }
+                       } yield worker
+                     }.fork
           } yield worker
 
         def testProgram: IO[Exception, Boolean] =
