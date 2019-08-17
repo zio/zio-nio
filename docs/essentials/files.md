@@ -46,11 +46,11 @@ it's not in an effect. Apart from basic acquire/release actions Core API offers 
 for {
   channel <- channelM
 
-  isShared <- channel.lock.bracket(l => IO.effectTotal(l.release()))(l => IO.effectTotal(l.isShared))
+  isShared <- channel.lock().bracket(_.release.ignore)(l => IO.succeed(l.isShared))
   _ <- putStrLn(isShared.toString)                                      // false
 
-  managed = Managed.make(channel.lock(position = 0, size = 10, shared = false))(l => IO.effectTotal(l.release()))
-  isOverlaping <- managed.use(l => IO.effectTotal(l.overlaps(5, 20)))
+  managed = Managed.make(channel.lock(position = 0, size = 10, shared = false))(_.release.ignore)
+  isOverlaping <- managed.use(l => IO.succeed(l.overlaps(5, 20)))
   _ <- putStrLn(isOverlaping.toString)                                  // true
 } yield ()
 ```

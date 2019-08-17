@@ -1,12 +1,13 @@
-package zio.nio
+package zio.nio.channels
 
 import java.nio.channels.{CancelledKeyException, SocketChannel => JSocketChannel}
 
-import testz.{Harness, assert}
+import testz.{ Harness, assert }
 import zio._
 import zio.clock.Clock
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.channels.{Selector, ServerSocketChannel, SocketChannel}
+import zio.nio.{ Buffer, SocketAddress }
 
 object SelectorSuite extends DefaultRuntime {
 
