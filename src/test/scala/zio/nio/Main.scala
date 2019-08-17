@@ -2,6 +2,13 @@ package zio.nio
 
 import testz._
 import runner.TestOutput
+import zio.nio.channels.{
+  AsynchronousChannelGroupSuite,
+  ChannelSuite,
+  FileChannelSuite,
+  ScatterGatherChannelSuite,
+  SelectorSuite
+}
 
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import ExecutionContext.global

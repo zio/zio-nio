@@ -1,12 +1,14 @@
 package zio.nio.channels
 
-import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{ GatheringByteChannel => JGatheringByteChannel }
+import java.nio.{ ByteBuffer => JByteBuffer }
 
-import zio.{ Chunk, IO, UIO }
 import zio.nio.Buffer
+import zio.{ Chunk, IO }
 
-class GatheringByteChannel(private val channel: JGatheringByteChannel) {
+trait GatheringByteChannel extends Channel {
+
+  override protected[channels] val channel: JGatheringByteChannel
 
   final private[nio] def writeBuffer(
     srcs: List[Buffer[Byte]],
@@ -29,12 +31,6 @@ class GatheringByteChannel(private val channel: JGatheringByteChannel) {
       bs <- IO.collectAll(srcs.map(Buffer.byte(_)))
       r  <- writeBuffer(bs)
     } yield r
-
-  final val close: IO[Exception, Unit] =
-    IO.effect(channel.close()).refineToOrDie[Exception]
-
-  final val isOpen: UIO[Boolean] =
-    IO.effectTotal(channel.isOpen)
 
   private def unwrap(srcs: List[Buffer[Byte]]): Array[JByteBuffer] =
     srcs.map(d => d.buffer.asInstanceOf[JByteBuffer]).toList.toArray
