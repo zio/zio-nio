@@ -35,6 +35,26 @@ save_cache: &save_cache
           - "~/.m2"
           - "~/website/node_modules"
 
+install_yarn: &install_yarn
+  - run:
+      name: Install Yarn
+      command: |
+        curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+        sudo bash -c 'echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list'
+        sudo apt update && sudo apt install yarn -y
+        yarn policies set-version
+        yarn -v
+
+install_nodejs: &install_nodejs
+  - run:
+      name: Install node.js
+      command: |
+        export NVM_DIR="/opt/circleci/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install
+        nvm use
+        node -v
+
 compile: &compile
   steps:
     - checkout
