@@ -9,17 +9,21 @@ import java.nio.channels.{
   SocketChannel => JSocketChannel
 }
 
+import zio.nio.channels.SelectionKey.Operation
 import zio.nio.channels.spi.SelectorProvider
 import zio.nio.{ Buffer, SocketAddress, SocketOption }
 import zio.{ IO, UIO }
 
-class SelectableChannel(private val channel: JSelectableChannel) {
+trait SelectableChannel extends Channel {
+
+  protected val channel: JSelectableChannel
 
   final val provider: UIO[SelectorProvider] =
     IO.effectTotal(new SelectorProvider(channel.provider()))
 
-  final val validOps: UIO[Int] =
+  final val validOps: UIO[Set[Operation]] =
     IO.effectTotal(channel.validOps())
+      .map(Operation.fromInt(_))
 
   final val isRegistered: UIO[Boolean] =
     IO.effectTotal(channel.isRegistered())
@@ -27,15 +31,24 @@ class SelectableChannel(private val channel: JSelectableChannel) {
   final def keyFor(sel: Selector): UIO[Option[SelectionKey]] =
     IO.effectTotal(Option(channel.keyFor(sel.selector)).map(new SelectionKey(_)))
 
-  final def register(sel: Selector, ops: Int, att: Option[AnyRef]): IO[IOException, SelectionKey] =
-    IO.effect(new SelectionKey(channel.register(sel.selector, ops, att.orNull)))
+  final def register(sel: Selector, ops: Set[Operation], att: Option[AnyRef]): IO[IOException, SelectionKey] =
+    IO.effect(new SelectionKey(channel.register(sel.selector, Operation.toInt(ops), att.orNull)))
       .refineToOrDie[IOException]
 
-  final def register(sel: Selector, ops: Int): IO[IOException, SelectionKey] =
-    IO.effect(new SelectionKey(channel.register(sel.selector, ops))).refineToOrDie[IOException]
+  final def register(sel: Selector, ops: Set[Operation]): IO[IOException, SelectionKey] =
+    IO.effect(new SelectionKey(channel.register(sel.selector, Operation.toInt(ops))))
+      .refineToOrDie[IOException]
 
-  final def configureBlocking(block: Boolean): IO[IOException, SelectableChannel] =
-    IO.effect(new SelectableChannel(channel.configureBlocking(block))).refineToOrDie[IOException]
+  final def register(sel: Selector, op: Operation, att: Option[AnyRef]): IO[IOException, SelectionKey] =
+    IO.effect(new SelectionKey(channel.register(sel.selector, op.intVal, att.orNull)))
+      .refineToOrDie[IOException]
+
+  final def register(sel: Selector, op: Operation): IO[IOException, SelectionKey] =
+    IO.effect(new SelectionKey(channel.register(sel.selector, op.intVal)))
+      .refineToOrDie[IOException]
+
+  final def configureBlocking(block: Boolean): IO[IOException, Unit] =
+    IO.effect(channel.configureBlocking(block)).unit.refineToOrDie[IOException]
 
   final val isBlocking: UIO[Boolean] =
     IO.effectTotal(channel.isBlocking())
@@ -43,17 +56,12 @@ class SelectableChannel(private val channel: JSelectableChannel) {
   final val blockingLock: UIO[AnyRef] =
     IO.effectTotal(channel.blockingLock())
 
-  final val isOpen: UIO[Boolean] =
-    IO.effectTotal(channel.isOpen)
-
-  final def close: IO[Exception, Unit] =
-    IO.effect(channel.close()).refineOrDie {
-      case e: Exception => e
-    }
-
 }
 
-class SocketChannel(private val channel: JSocketChannel) extends SelectableChannel(channel) {
+final class SocketChannel(override protected[channels] val channel: JSocketChannel)
+    extends SelectableChannel
+    with GatheringByteChannel
+    with ScatteringByteChannel {
 
   final def bind(local: SocketAddress): IO[IOException, Unit] =
     IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
@@ -108,7 +116,7 @@ object SocketChannel {
 
 }
 
-class ServerSocketChannel(private val channel: JServerSocketChannel) extends SelectableChannel(channel) {
+final class ServerSocketChannel(override protected val channel: JServerSocketChannel) extends SelectableChannel {
 
   final def bind(local: SocketAddress): IO[IOException, Unit] =
     IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit

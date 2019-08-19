@@ -1,18 +1,15 @@
-package zio.nio
+package zio.nio.channels
 
 import java.nio.channels.{ AsynchronousChannelGroup => JAsynchronousChannelGroup }
-import java.util.concurrent.{ ExecutorService, TimeUnit }
+import java.util.concurrent.{ Executors, TimeUnit, ExecutorService => JExecutorService }
 
 import org.specs2.matcher.MustMatchers
+import testz.{ Result, _ }
 import zio.DefaultRuntime
 import zio.duration.Duration
-import testz.{ Result, _ }
-import java.util.concurrent.{ Executors, ExecutorService => JExecutorService }
-
-import zio.nio.channels.AsynchronousChannelGroup
 
 import scala.concurrent.Future
-import Future._
+import scala.concurrent.Future._
 
 object AsynchronousChannelGroupSuite extends DefaultRuntime with MustMatchers {
 
@@ -28,7 +25,7 @@ object AsynchronousChannelGroupSuite extends DefaultRuntime with MustMatchers {
 
     def apply(): Future[ClassFixture] = successful {
       new ClassFixture {
-        val jExecutor: ExecutorService = Executors.newFixedThreadPool(1)
+        val jExecutor: JExecutorService = Executors.newFixedThreadPool(1)
         val jChannelGroup: JAsynchronousChannelGroup =
           JAsynchronousChannelGroup.withThreadPool(jExecutor)
         val testObj = new AsynchronousChannelGroup(jChannelGroup)

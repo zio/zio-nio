@@ -24,11 +24,11 @@ install_jdk: &install_jdk
 
 load_cache: &load_cache
   - restore_cache:
-      key: sbt-actors-cache
+      key: sbt-nio-cache
 
 save_cache: &save_cache
   - save_cache:
-      key: sbt-actors-cache
+      key: sbt-nio-cache
       paths:
           - "~/.ivy2/cache"
           - "~/.sbt"
@@ -51,6 +51,17 @@ lint: &lint
     - run:
         name: Lint code
         command: ./sbt ++${SCALA_VERSION}! check
+    - <<: *save_cache
+
+mdoc: &mdoc
+  steps:
+    - checkout
+    - <<: *load_cache
+    - run:
+        name: Generate documentation
+        command: |
+          ./sbt doc
+          ./sbt ++${SCALA_VERSION}! docs/mdoc
     - <<: *save_cache
 
 test: &test
@@ -88,6 +99,13 @@ jobs:
       - <<: *scala_212
       - <<: *jdk_8
 
+  mdoc:
+    <<: *mdoc
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_212
+      - <<: *jdk_8
+
   test_212_jdk8:
     <<: *test
     <<: *machine_ubuntu
@@ -114,6 +132,12 @@ workflows:
   build:
     jobs:
       - lint:
+          filters:
+            tags:
+              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+      - mdoc:
+          requires:
+            - lint
           filters:
             tags:
               only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/

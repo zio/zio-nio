@@ -36,3 +36,17 @@ lazy val zioNio = project
       "org.scalaz"     %% "testz-specs2"     % "0.0.5" % Test
     )
   )
+
+lazy val docs = project
+  .in(file("zio-nio-docs"))
+  .settings(
+    skip.in(publish) := true,
+    moduleName := "zio-nio-docs",
+    scalacOptions -= "-Yno-imports",
+    scalacOptions -= "-Xfatal-warnings",
+    libraryDependencies ++= Seq(
+      "dev.zio" %% "zio" % "1.0.0-RC11-1"
+    )
+  )
+  .dependsOn(zioNio)
+  .enablePlugins(MdocPlugin, DocusaurusPlugin)

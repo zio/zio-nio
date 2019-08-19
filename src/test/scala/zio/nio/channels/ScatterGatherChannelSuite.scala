@@ -1,10 +1,10 @@
-package zio.nio
+package zio.nio.channels
 
 import java.io.{ File, RandomAccessFile }
 
-import zio.nio.channels.{ GatheringByteChannel, ScatteringByteChannel }
-import zio.{ Chunk, DefaultRuntime, IO }
 import testz.{ Harness, assert }
+import zio.nio.Buffer
+import zio.{ Chunk, DefaultRuntime, IO }
 
 import scala.io.Source
 
@@ -27,7 +27,7 @@ object ScatterGatherChannelSuite extends DefaultRuntime {
 
         val testProgram = for {
           buffs   <- IO.collectAll(Seq(Buffer.byte(5), Buffer.byte(5)))
-          channel = new ScatteringByteChannel(fileChannel)
+          channel = new FileChannel(fileChannel)
           _       <- channel.readBuffer(buffs)
           list    <- IO.collectAll(buffs.map(readLine))
           _       <- channel.close
@@ -50,7 +50,7 @@ object ScatterGatherChannelSuite extends DefaultRuntime {
                       Buffer.byte(Chunk.fromArray("World".getBytes))
                     )
                   )
-          channel = new GatheringByteChannel(fileChannel)
+          channel = new FileChannel(fileChannel)
           _       <- channel.writeBuffer(buffs)
           _       <- channel.close
         } yield ()
