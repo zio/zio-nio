@@ -80,8 +80,6 @@ const siteConfig = {
   scrollToTopOptions: {
     cornerOffset: 100,
   },
-
-  customDocsPath: 'zio-nio-docs/target/mdoc',
 };
 
 module.exports = siteConfig;
