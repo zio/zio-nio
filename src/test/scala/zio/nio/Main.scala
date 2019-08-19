@@ -19,7 +19,7 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     val printer: (Result, List[String]) => Unit =
-      (tr, ls) => runner.printStrs(runner.printTest(tr, ls), Console.print)
+      (tr, ls) => println(s"$tr $ls")
 
     val ec = global
 

@@ -1,17 +1,47 @@
 package zio.nio.channels
 
 import java.nio.channels.{ AsynchronousChannelGroup => JAsynchronousChannelGroup }
+import java.util.{ Collections, WeakHashMap }
 import java.util.concurrent.{ Executors, TimeUnit, ExecutorService => JExecutorService }
 
 import org.specs2.matcher.MustMatchers
 import testz.{ Result, _ }
-import zio.DefaultRuntime
+import zio.{ Cause, DefaultRuntime }
 import zio.duration.Duration
+import zio.internal.PlatformLive.ExecutorUtil
+import zio.internal.stacktracer.Tracer
+import zio.internal.stacktracer.impl.AkkaLineNumbersTracer
+import zio.internal.tracing.TracingConfig
+import zio.internal.{ Platform, Tracing }
 
 import scala.concurrent.Future
 import scala.concurrent.Future._
 
 object AsynchronousChannelGroupSuite extends DefaultRuntime with MustMatchers {
+
+  override val Platform: Platform = new Platform {
+    val executor = ExecutorUtil.makeDefault(2048)
+
+    val tracing = Tracing(Tracer.globallyCached(new AkkaLineNumbersTracer), TracingConfig.enabled)
+
+    def fatal(t: Throwable): Boolean =
+      t.isInstanceOf[VirtualMachineError]
+
+    def reportFatal(t: Throwable): Nothing =
+      try {
+        System.exit(-1)
+        throw t
+      } catch { case _: Throwable => throw t }
+
+    def reportFailure(cause: Cause[_]): Unit =
+      if (!cause.interrupted &&
+          !(cause.failures ++ cause.defects).exists(_.isInstanceOf[NullPointerException]))
+        System.err.println(cause.prettyPrint)
+
+    def newWeakHashMap[A, B](): java.util.Map[A, B] =
+      Collections.synchronizedMap(new WeakHashMap[A, B]())
+
+  }
 
   trait ClassFixture {
     def jExecutor: JExecutorService
