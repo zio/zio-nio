@@ -221,7 +221,9 @@ workflows:
       - microsite:
           context: Website
           requires:
-            - release_212
+            - test_212_jdk8
+            - test_212_jdk11
+            # - release_212
           filters:
             # branches:
             #   ignore: /.*/
