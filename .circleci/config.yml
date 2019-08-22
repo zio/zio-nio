@@ -35,6 +35,26 @@ save_cache: &save_cache
           - "~/.m2"
           - "~/website/node_modules"
 
+install_yarn: &install_yarn
+  - run:
+      name: Install Yarn
+      command: |
+        curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+        sudo bash -c 'echo "deb https://dl.yarnpkg.com/debian/ stable main" > /etc/apt/sources.list.d/yarn.list'
+        sudo apt update && sudo apt install yarn -y
+        yarn policies set-version
+        yarn -v
+
+install_nodejs: &install_nodejs
+  - run:
+      name: Install node.js
+      command: |
+        export NVM_DIR="/opt/circleci/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        nvm install
+        nvm use
+        node -v
+
 compile: &compile
   steps:
     - checkout
@@ -91,6 +111,34 @@ release: &release
           name: Release artifacts
           command: ./sbt ++${SCALA_VERSION}! releaseEarly
 
+microsite: &microsite
+  steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "6f:1b:b1:33:e8:4c:7d:38:fc:42:28:0b:5c:43:67:ae"
+      - checkout
+      - <<: *load_cache
+      - <<: *install_nodejs
+      - <<: *install_yarn
+      - run:
+          name: Publishing website
+          command: |
+            git config --global user.email "${GH_NAME}@users.noreply.github.com"
+            git config --global user.name "${GH_NAME}"
+            export GIT_USER=${GH_NAME}
+            export TRAVIS_BUILD_NUMBER="${CIRCLE_BUILD_NUM}"
+            export TRAVIS_COMMIT="${CIRCLE_SHA1}"
+            sudo chown -R $USER:$USER /tmp
+            export NVM_DIR="/opt/circleci/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm install
+            nvm use
+            node -v
+            ./sbt zioNio/doc
+            ./sbt docs/docusaurusCreateSite
+            ./sbt docs/docusaurusPublishGhpages
+      - <<: *save_cache
+
 jobs:
   lint:
     <<: *lint
@@ -127,6 +175,12 @@ jobs:
       - <<: *scala_212
       - <<: *jdk_8
 
+  microsite:
+    <<: *microsite
+    <<: *machine_ubuntu
+    environment:
+      - <<: *jdk_8
+
 workflows:
   version: 2
   build:
@@ -158,6 +212,15 @@ workflows:
           requires:
             - test_212_jdk8
             - test_212_jdk11
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+      - microsite:
+          context: Website
+          requires:
+            - release_212
           filters:
             branches:
               ignore: /.*/
