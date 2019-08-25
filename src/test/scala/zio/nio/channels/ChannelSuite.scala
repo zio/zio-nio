@@ -13,13 +13,14 @@ object ChannelSuite extends DefaultRuntime {
         val inetAddress = InetAddress.localHost
           .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13370))
 
-        def echoServer: IO[Exception, Unit] =
+        def echoServer(promise: Promise[Nothing, Unit]): IO[Exception, Unit] =
           for {
             address <- inetAddress
             sink    <- Buffer.byte(3)
             _ <- AsynchronousServerSocketChannel().use { server =>
                   for {
                     _ <- server.bind(address)
+                    _ <- promise.succeed(())
                     _ <- server.accept.use { worker =>
                           worker.readBuffer(sink) *>
                             sink.flip *>
@@ -47,8 +48,10 @@ object ChannelSuite extends DefaultRuntime {
           } yield result
 
         val testProgram: IO[Exception, Boolean] = for {
-          _    <- echoServer
-          same <- echoClient
+          serverStarted <- Promise.make[Nothing, Unit]
+          _             <- echoServer(serverStarted)
+          _             <- serverStarted.await
+          same          <- echoClient
         } yield same
 
         assert(unsafeRun(testProgram))
@@ -57,12 +60,13 @@ object ChannelSuite extends DefaultRuntime {
         val inetAddress = InetAddress.localHost
           .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13372))
 
-        def server: IO[Exception, Fiber[Exception, Boolean]] =
+        def server(started: Promise[Nothing, Unit]): IO[Exception, Fiber[Exception, Boolean]] =
           for {
             address <- inetAddress
             result <- AsynchronousServerSocketChannel().use { server =>
                        for {
                          _ <- server.bind(address)
+                         _ <- started.succeed(())
                          result <- server.accept
                                     .use { worker =>
                                       worker.read(3) *> worker.read(3) *> ZIO.succeed(false)
@@ -87,9 +91,11 @@ object ChannelSuite extends DefaultRuntime {
           } yield ()
 
         val testProgram: IO[Exception, Boolean] = for {
-          serverFiber <- server
-          _           <- client
-          same        <- serverFiber.join
+          serverStarted <- Promise.make[Nothing, Unit]
+          serverFiber   <- server(serverStarted)
+          _             <- serverStarted.await
+          _             <- client
+          same          <- serverFiber.join
         } yield same
 
         assert(unsafeRun(testProgram))
@@ -106,12 +112,13 @@ object ChannelSuite extends DefaultRuntime {
                 }
           } yield ()
 
-        def server: IO[Exception, Fiber[Exception, Unit]] =
+        def server(started: Promise[Nothing, Unit]): IO[Exception, Fiber[Exception, Unit]] =
           for {
             address <- inetAddress
             worker <- AsynchronousServerSocketChannel().use { server =>
                        for {
                          _ <- server.bind(address)
+                         _ <- started.succeed(())
                          worker <- server.accept.use { _ =>
                                     ZIO.unit
                                   }
@@ -121,12 +128,16 @@ object ChannelSuite extends DefaultRuntime {
 
         def testProgram: IO[Exception, Boolean] =
           for {
-            s1 <- server
-            _  <- client
-            _  <- s1.join
-            s2 <- server
-            _  <- client
-            _  <- s2.join
+            serverStarted  <- Promise.make[Nothing, Unit]
+            s1             <- server(serverStarted)
+            _              <- serverStarted.await
+            _              <- client
+            _              <- s1.join
+            serverStarted2 <- Promise.make[Nothing, Unit]
+            s2             <- server(serverStarted2)
+            _              <- serverStarted2.await
+            _              <- client
+            _              <- s2.join
           } yield true
 
         assert(unsafeRun(testProgram))
