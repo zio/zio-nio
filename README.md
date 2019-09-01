@@ -1,13 +1,15 @@
-# zio-nio
+# ZIO-NIO
 
 [![CircleCI][badge-ci]][link-ci]
 [![Gitter][badge-gitter]][link-gitter]
 
-Zio-nio provides performant, purely-functional, low-level, and unopinionated wrapping of Java NIO functionality.
+A small, unopinionated ZIO interface to Java NIO.
 
-## Introduction & Highlights
+Java NIO is unsafe, and can surprise you a lot with e.g. hiding actual error in IO operation and giving you only true/false values when IO was successful/not successful. ZIO-NIO on the other hand embraces the full power of ZIO effects, evironment, error and resource management to provide type-safe, performant, purely-functional, low-level, and unopinionated wrapping of Java NIO functionality.
 
-Java NIO is unsafe, and can surprise you a lot with e.g. hiding actual error in IO operation and giving you only true/false values - IO was successful/not successful.
+Learn more about ZIO-NIO at:
+
+ - [Homepage](https://zio.github.io/zio-nio/)
 
 ## Competition
 
