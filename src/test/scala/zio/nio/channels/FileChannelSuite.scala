@@ -18,15 +18,17 @@ object FileChannelSuite extends DefaultRuntime {
       test("asynchronous file buffer read") { () =>
         val path = Paths.get("src/test/resources/async_file_read_test.txt")
 
-        val testProgram = for {
-          channel <- AsynchronousFileChannel.open(path, StandardOpenOption.READ)
-          buffer  <- Buffer.byte(16)
-          _       <- channel.readBuffer(buffer, 0)
-          _       <- buffer.flip
-          array   <- buffer.array
-          text    = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
-          _       <- channel.close
-        } yield text
+        val testProgram =
+          AsynchronousFileChannel.open(path, StandardOpenOption.READ).use { channel =>
+            for {
+              buffer <- Buffer.byte(16)
+              _      <- channel.readBuffer(buffer, 0)
+              _      <- buffer.flip
+              array  <- buffer.array
+              text   = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
+              _      <- channel.close
+            } yield text
+          }
 
         val result = unsafeRun(testProgram)
 
@@ -35,11 +37,13 @@ object FileChannelSuite extends DefaultRuntime {
       test("asynchronous file chunk read") { () =>
         val path = Paths.get("src/test/resources/async_file_read_test.txt")
 
-        val testProgram = for {
-          channel <- AsynchronousFileChannel.open(path, StandardOpenOption.READ)
-          bytes   <- channel.read(500, 0L)
-          _       <- channel.close
-        } yield bytes
+        val testProgram =
+          AsynchronousFileChannel.open(path, StandardOpenOption.READ).use { channel =>
+            for {
+              bytes <- channel.read(500, 0L)
+              _     <- channel.close
+            } yield bytes
+          }
 
         val result = unsafeRun(testProgram)
 
@@ -48,12 +52,14 @@ object FileChannelSuite extends DefaultRuntime {
       test("asynchronous file write") { () =>
         val path = Paths.get("src/test/resources/async_file_write_test.txt")
 
-        val testProgram = for {
-          channel <- AsynchronousFileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
-          buffer  <- Buffer.byte(Chunk.fromArray("Hello World".getBytes))
-          _       <- channel.writeBuffer(buffer, 0)
-          _       <- channel.close
-        } yield ()
+        val testProgram =
+          AsynchronousFileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.WRITE).use { channel =>
+            for {
+              buffer <- Buffer.byte(Chunk.fromArray("Hello World".getBytes))
+              _      <- channel.writeBuffer(buffer, 0)
+              _      <- channel.close
+            } yield ()
+          }
 
         unsafeRun(testProgram)
 

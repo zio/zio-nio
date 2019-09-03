@@ -18,33 +18,42 @@ import zio.nio.channels._
 Creating server socket:
 
 ```scala mdoc:silent
-val serverM = for {
-  host <- InetAddress.localHost
-  address <- SocketAddress.inetSocketAddress(host, 2552)
-  server <- AsynchronousServerSocketChannel()
-  _ <- server.bind(address)
-  worker <- server.accept
-} yield worker
+val serverM: Managed[Exception, AsynchronousSocketChannel] =
+  AsynchronousServerSocketChannel()
+    .mapM { server =>
+      for {
+        host    <- InetAddress.localHost
+        address <- SocketAddress.inetSocketAddress(host, 2552)
+        _       <- server.bind(address)
+      } yield server
+    }
+    .flatMap(_.accept)
 ```
 
 Creating client socket:
 
 ```scala mdoc:silent
-val clientM = for {
-  host <- InetAddress.localHost
-  address <- SocketAddress.inetSocketAddress(host, 2552)
-  client <- AsynchronousSocketChannel()
-  _ <- client.connect(address)
-} yield client
+val clientM: Managed[Exception, AsynchronousSocketChannel] = AsynchronousSocketChannel()
+  .mapM { client =>
+    for {
+      host    <- InetAddress.localHost
+      address <- SocketAddress.inetSocketAddress(host, 2552)
+      _       <- client.connect(address)
+    } yield client
+  }
 ```
 
 Reading and writing to socket:
 
 ```scala mdoc:silent
 for {
-  server <- serverM
-  client <- clientM
-  _ <- client.write(Chunk.fromArray(Array(1,2,3).map(_.toByte)))
-  chunk <- server.read(3)
+  serverFiber <- serverM.use { server =>
+                  server.read(3)
+                }.fork
+  clientFiber <- clientM.use { client =>
+                  client.write(Chunk.fromArray(Array(1, 2, 3).map(_.toByte)))
+                }.fork
+  chunk <- serverFiber.join
+  _     <- clientFiber.join
 } yield chunk
 ```
