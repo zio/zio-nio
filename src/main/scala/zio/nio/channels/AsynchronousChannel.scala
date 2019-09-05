@@ -269,7 +269,7 @@ object AsynchronousChannel {
     ZIO.effectAsync[Any, Exception, T] { k =>
       val handler = new JCompletionHandler[T, Unit] {
         def completed(result: T, u: Unit): Unit =
-          k(IO.succeedLazy(result))
+          k(IO.effectTotal(result))
 
         def failed(t: Throwable, u: Unit): Unit =
           t match {
