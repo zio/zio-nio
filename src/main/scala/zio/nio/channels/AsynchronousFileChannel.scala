@@ -8,7 +8,7 @@ import java.util.concurrent.ExecutorService
 
 import zio.blocking.Blocking
 import zio.nio.{ Buffer, ByteBuffer }
-import zio.{ Chunk, IO, ZIO }
+import zio.{ Chunk, IO, ZIO, ZManaged }
 
 import scala.collection.JavaConverters._
 
@@ -60,20 +60,23 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
 
 object AsynchronousFileChannel {
 
-  def open(file: Path, options: OpenOption*): ZIO[Blocking, Exception, AsynchronousFileChannel] =
-    ZIO
+  def open(file: Path, options: OpenOption*): ZManaged[Blocking, Exception, AsynchronousFileChannel] = {
+    val open = ZIO
       .accessM[Blocking] {
         _.blocking.effectBlocking(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file, options: _*)))
       }
       .refineToOrDie[Exception]
+
+    ZManaged.make(open)(_.close.orDie)
+  }
 
   def open(
     file: Path,
     options: Set[_ <: OpenOption],
     executor: Option[ExecutorService] = None,
     attrs: Set[FileAttribute[_]] = Set.empty
-  ): ZIO[Blocking, Exception, AsynchronousFileChannel] =
-    ZIO
+  ): ZManaged[Blocking, Exception, AsynchronousFileChannel] = {
+    val open = ZIO
       .accessM[Blocking] {
         _.blocking.effectBlocking(
           new AsynchronousFileChannel(
@@ -82,5 +85,8 @@ object AsynchronousFileChannel {
         )
       }
       .refineToOrDie[Exception]
+
+    ZManaged.make(open)(_.close.orDie)
+  }
 
 }
