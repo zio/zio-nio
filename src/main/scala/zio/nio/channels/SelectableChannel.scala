@@ -113,7 +113,8 @@ object SocketChannel {
   }
 
   final def open(remote: SocketAddress): Managed[IOException, SocketChannel] = {
-    val open = IO.effect(new SocketChannel(JSocketChannel.open(remote.jSocketAddress)))
+    val open = IO
+      .effect(new SocketChannel(JSocketChannel.open(remote.jSocketAddress)))
       .refineToOrDie[IOException]
     Managed.make(open)(_.close.orDie)
   }

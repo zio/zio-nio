@@ -58,25 +58,27 @@ object SelectorSuite extends DefaultRuntime {
           } yield ()
 
         for {
-          address  <- addressIo
-          _        <- Selector.make.use { selector =>
-                        ServerSocketChannel.open.use { channel =>
-                          for {
-                            _        <- channel.bind(address)
-                            _        <- channel.configureBlocking(false)
-                            _        <- channel.register(selector, Operation.Accept)
-                            buffer   <- Buffer.byte(256)
-                            _        <- started.succeed(())
-                              
-                            /*
-                             *  we need to run the server loop twice:
-                             *  1. to accept the client request
-                             *  2. to read from the client channel
-                             */
-                            _ <- serverLoop(selector, channel, buffer).repeat(Schedule.once)
-                          } yield ()
-                        }
-                      }
+          address <- addressIo
+          _ <- Selector.make.use {
+                selector =>
+                  ServerSocketChannel.open.use {
+                    channel =>
+                      for {
+                        _      <- channel.bind(address)
+                        _      <- channel.configureBlocking(false)
+                        _      <- channel.register(selector, Operation.Accept)
+                        buffer <- Buffer.byte(256)
+                        _      <- started.succeed(())
+
+                        /*
+                         *  we need to run the server loop twice:
+                         *  1. to accept the client request
+                         *  2. to read from the client channel
+                         */
+                        _ <- serverLoop(selector, channel, buffer).repeat(Schedule.once)
+                      } yield ()
+                  }
+              }
         } yield ()
       }
 
@@ -85,16 +87,16 @@ object SelectorSuite extends DefaultRuntime {
           address <- addressIo
           bytes   = Chunk.fromArray("Hello world".getBytes)
           buffer  <- Buffer.byte(bytes)
-          text    <- SocketChannel.open(address).use { client =>
-                       for {
-                         _       <- client.write(buffer)
-                         _       <- buffer.clear
-                         _       <- client.read(buffer)
-                         array   <- buffer.array
-                         text    = byteArrayToString(array)
-                         _ <- buffer.clear
-                       } yield text
-                     }
+          text <- SocketChannel.open(address).use { client =>
+                   for {
+                     _     <- client.write(buffer)
+                     _     <- buffer.clear
+                     _     <- client.read(buffer)
+                     array <- buffer.array
+                     text  = byteArrayToString(array)
+                     _     <- buffer.clear
+                   } yield text
+                 }
         } yield text
 
       import zio.console._
