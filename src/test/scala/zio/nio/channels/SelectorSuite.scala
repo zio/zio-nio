@@ -58,46 +58,60 @@ object SelectorSuite extends DefaultRuntime {
           } yield ()
 
         for {
-          address  <- addressIo
-          selector <- Selector.make
-          channel  <- ServerSocketChannel.open
-          _        <- channel.bind(address)
-          _        <- channel.configureBlocking(false)
-          _        <- channel.register(selector, Operation.Accept)
-          buffer   <- Buffer.byte(256)
-          _        <- started.succeed(())
+          address <- addressIo
+          _ <- Selector.make.use {
+                selector =>
+                  ServerSocketChannel.open.use {
+                    channel =>
+                      for {
+                        _      <- channel.bind(address)
+                        _      <- channel.configureBlocking(false)
+                        _      <- channel.register(selector, Operation.Accept)
+                        buffer <- Buffer.byte(256)
+                        _      <- started.succeed(())
 
-          /*
-           *  we need to run the server loop twice:
-           *  1. to accept the client request
-           *  2. to read from the client channel
-           */
-          _ <- serverLoop(selector, channel, buffer).repeat(Schedule.once)
-          _ <- channel.close
+                        /*
+                         *  we need to run the server loop twice:
+                         *  1. to accept the client request
+                         *  2. to read from the client channel
+                         */
+                        _ <- serverLoop(selector, channel, buffer).repeat(Schedule.once)
+                      } yield ()
+                  }
+              }
         } yield ()
       }
 
       def client: IO[Exception, String] =
         for {
           address <- addressIo
-          client  <- SocketChannel.open(address)
           bytes   = Chunk.fromArray("Hello world".getBytes)
           buffer  <- Buffer.byte(bytes)
-          _       <- client.write(buffer)
-          _       <- buffer.clear
-          _       <- client.read(buffer)
-          array   <- buffer.array
-          text    = byteArrayToString(array)
-
-          _ <- buffer.clear
+          text <- SocketChannel.open(address).use { client =>
+                   for {
+                     _     <- client.write(buffer)
+                     _     <- buffer.clear
+                     _     <- client.read(buffer)
+                     array <- buffer.array
+                     text  = byteArrayToString(array)
+                     _     <- buffer.clear
+                   } yield text
+                 }
         } yield text
 
-      val testProgram: ZIO[Clock, Exception, Boolean] = for {
+      import zio.console._
+
+      val testProgram: ZIO[Clock with Console, Exception, Boolean] = for {
         started     <- Promise.make[Nothing, Unit]
+        _           <- putStrLn("*****")
         serverFiber <- server(started).fork
+        _           <- putStrLn("****")
         _           <- started.await
+        _           <- putStrLn("***")
         clientFiber <- client.fork
+        _           <- putStrLn("**")
         _           <- serverFiber.join
+        _           <- putStrLn("*")
         message     <- clientFiber.join
       } yield message == "Hello world"
 
