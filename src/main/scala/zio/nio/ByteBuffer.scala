@@ -1,14 +1,16 @@
 package zio.nio
 
-import zio.{ Chunk, IO, ZIO }
+import zio.{ Chunk, IO, UIO, ZIO }
 import java.nio.{ BufferUnderflowException, ByteOrder, ReadOnlyBufferException, ByteBuffer => JByteBuffer }
 
-class ByteBuffer protected[nio] (byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
-
+class ByteBuffer protected[nio] (private val byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
   final override protected[nio] def array: IO[UnsupportedOperationException, Array[Byte]] =
     IO.effect(byteBuffer.array()).refineToOrDie[UnsupportedOperationException]
 
   final def order: ByteOrder = byteBuffer.order()
+
+  def order(o: ByteOrder): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.order(o)).unit
 
   final override def slice: IO[Nothing, ByteBuffer] =
     IO.effectTotal(byteBuffer.slice()).map(new ByteBuffer(_))
@@ -40,6 +42,9 @@ class ByteBuffer protected[nio] (byteBuffer: JByteBuffer) extends Buffer[Byte](b
 
   final override def put(index: Int, element: Byte): IO[Exception, Unit] =
     IO.effect(byteBuffer.put(index, element)).unit.refineToOrDie[Exception]
+
+  def putByteBuffer(source: ByteBuffer): IO[Exception, Unit] =
+    IO.effect(byteBuffer.put(source.byteBuffer)).unit.refineToOrDie[Exception]
 
   final override def putChunk(chunk: Chunk[Byte]): IO[Exception, Unit] =
     IO.effect {
