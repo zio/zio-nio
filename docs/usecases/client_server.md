@@ -25,20 +25,19 @@ given amount of bytes as a chunk and print them:
 ```scala mdoc:silent
 def server(address: SocketAddress): ZIO[Console, Exception, Unit] = {
   def log(str: String): ZIO[Console, IOException, Unit] = putStrLn("[Server] " + str)
-    for {
-      server <- AsynchronousServerSocketChannel()
-      _      <- log(s"Listening on $address")
-      _      <- server.bind(address)
-      worker <- server.accept
-
-      chunkDest <- worker.read(8)
-      arr        = chunkDest.toArray
-
-      _ <- log(
-            "Content: " + arr.mkString
-          )
-      _ <- server.close
-    } yield ()
+  for {
+    _ <- AsynchronousServerSocketChannel().use { server =>
+          for {
+            _ <- log(s"Listening on $address")
+            _ <- server.bind(address)
+            chunkDest <- server.accept.use { worker =>
+                          worker.read(8)
+                        }
+            arr = chunkDest.toArray
+            _   <- log("Content: " + arr.mkString)
+          } yield ()
+        }
+  } yield ()
 }
 ```
 
@@ -49,16 +48,18 @@ def client(address: SocketAddress): ZIO[Clock with Console, Exception, Unit] = {
   def log(str: String): ZIO[Console, IOException, Unit] = putStrLn("[Client] " + str)
 
   for {
-    _      <- ZIO.sleep(1.second)
-    client <- AsynchronousSocketChannel()
-    _      <- client.connect(address)
-    _      <- log("Connected.")
+    _ <- ZIO.sleep(1.second)
+    _ <- AsynchronousSocketChannel().use { client =>
+          for {
+            _ <- client.connect(address)
+            _ <- log("Connected.")
 
-    chunkSrc  <- IO.succeed(Chunk.fromArray(Array[Byte](1)))
+            chunkSrc <- IO.succeed(Chunk.fromArray(Array[Byte](1)))
 
-    _ <- log("Gonna write: " + chunkSrc.mkString)
-    _ <- client.write(chunkSrc)
-    _ <- client.close
+            _ <- log("Gonna write: " + chunkSrc.mkString)
+            _ <- client.write(chunkSrc)
+          } yield ()
+        }
   } yield ()
 }
 ```
@@ -88,8 +89,8 @@ Let's run it as `ZIO` App:
 object ClientServer extends App {
   override def run(args: List[String]): ZIO[Environment, Nothing, Int] =
     myAppLogic
-      .either
-      .map(_.fold(e => { e.printStackTrace(); 1 }, _ => 0))
+      .orDie
+      .fold(_ => 1, _ => 0)
 }
 ```
 
