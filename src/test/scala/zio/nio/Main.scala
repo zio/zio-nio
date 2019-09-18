@@ -3,11 +3,12 @@ package zio.nio
 import testz._
 import runner.TestOutput
 import zio.nio.channels.{
-  AsynchronousChannelGroupSuite,
-  ChannelSuite,
-  FileChannelSuite,
-  ScatterGatherChannelSuite,
-  SelectorSuite
+  //AsynchronousChannelGroupSuite,
+  //ChannelSuite,
+  TlsChannelSuite,
+  //FileChannelSuite,
+  //ScatterGatherChannelSuite,
+  //SelectorSuite
 }
 
 import scala.concurrent.{ Await, ExecutionContext, Future }
@@ -24,27 +25,28 @@ object Main {
     val ec = global
 
     val pureHarness   = PureHarness.makeFromPrinter(printer)
-    val effectHarness = FutureHarness.makeFromPrinterEffR(printer)(ec)
+    //val effectHarness = FutureHarness.makeFromPrinterEffR(printer)(ec)
 
     def unitTests =
       TestOutput.combineAll1(
-        BufferSuite.tests(pureHarness)((), List("Buffer tests")),
-        ChannelSuite.tests(pureHarness)((), List("Channel tests")),
-        FileChannelSuite.tests(pureHarness)((), List("FileChannel tests")),
-        ScatterGatherChannelSuite
-          .tests(pureHarness)((), List("Scattering and Gathering Channel tests")),
-        SelectorSuite.tests(pureHarness)((), List("Selector tests"))
+        //BufferSuite.tests(pureHarness)((), List("Buffer tests")),
+        //ChannelSuite.tests(pureHarness)((), List("Channel tests")),
+        TlsChannelSuite.tests(pureHarness)((), List("TLS Channel tests")),
+        //FileChannelSuite.tests(pureHarness)((), List("FileChannel tests")),
+        //ScatterGatherChannelSuite
+        //  .tests(pureHarness)((), List("Scattering and Gathering Channel tests")),
+        //SelectorSuite.tests(pureHarness)((), List("Selector tests"))
       )
 
-    def asyncChannelGroupSuite =
-      AsynchronousChannelGroupSuite
-        .tests(effectHarness)((), List("Asynchronous Channel Group tests"))
+    //def asyncChannelGroupSuite =
+    //  AsynchronousChannelGroupSuite
+    //    .tests(effectHarness)((), List("Asynchronous Channel Group tests"))
 
     // Evaluate tests before the runner expects,
     // for parallelism.
     val testOutputs: List[() => Future[TestOutput]] = List(
-      Future(unitTests)(ec),
-      asyncChannelGroupSuite
+      Future(unitTests)(ec)
+      //asyncChannelGroupSuite
     ).map(s => () => s)
 
     val runSuites = runner(testOutputs, Console.print, global)
