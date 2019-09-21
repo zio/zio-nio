@@ -28,12 +28,7 @@ lazy val zioNio = project
     libraryDependencies ++= Seq(
       "dev.zio"        %% "zio"              % "1.0.0-RC12-1",
       "dev.zio"        %% "zio-streams"      % "1.0.0-RC12-1",
-      "dev.zio"        %% "zio-interop-java" % "1.1.0.0-RC4",
-      "org.scalacheck" %% "scalacheck"       % "1.14.0" % Test,
-      "org.scalaz"     %% "testz-core"       % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-stdlib"     % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-runner"     % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-specs2"     % "0.0.5" % Test
+      "dev.zio"        %% "zio-interop-java" % "1.1.0.0-RC4"
     )
   )
   .settings(BuildHelper.stdSettings("zio-nio"))
