@@ -2,20 +2,20 @@ package zio.nio.channels
 
 import java.io.{ File, RandomAccessFile }
 
-import zio.test._
-import zio.test.Assertion._
-import zio.nio.Buffer
-import zio.{ Chunk, IO, ZIO }
-
 import scala.io.Source
 
+import zio.test._
+import zio.test.Assertion._
+import zio.nio.{ BaseSpec, Buffer }
+import zio.{ Chunk, IO, ZIO }
+
 object ScatterGatherChannelSpec
-    extends ZIOBaseSpec(
+    extends BaseSpec(
       suite("ScatterGatherChannelSpec")(
         testM("scattering read") {
           for {
             raf         <- ZIO.effectTotal(new RandomAccessFile("src/test/resources/scattering_read_test.txt", "r"))
-            fileChannel = raf.getChannel()
+            fileChannel = raf.getChannel
             readLine = (buffer: Buffer[Byte]) =>
               for {
                 _     <- buffer.flip
@@ -34,7 +34,7 @@ object ScatterGatherChannelSpec
 
             file        <- ZIO.effect(new File("src/test/resources/gathering_write_test.txt"))
             raf         = new RandomAccessFile(file, "rw")
-            fileChannel = raf.getChannel()
+            fileChannel = raf.getChannel
 
             buffs <- IO.collectAll(
                       Seq(

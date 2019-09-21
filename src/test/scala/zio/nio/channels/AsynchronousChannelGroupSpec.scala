@@ -5,6 +5,7 @@ import java.util.concurrent.{ Executors, TimeUnit, ExecutorService => JExecutorS
 
 import zio.ZIO
 import zio.duration.Duration
+import zio.nio.BaseSpec
 import zio.test._
 import zio.test.Assertion._
 
@@ -34,14 +35,14 @@ object ClassFixture {
       }
     }
 
-  def providedFixture(xd: ClassFixture => ZIO[Any, Throwable, TestResult]): ZIO[Any, Throwable, TestResult] =
-    ZIO(ClassFixture()).bracket(x => ZIO.effectTotal(x.cleanFixture())) { fa =>
-      xd(fa)
+  def providedFixture(f: ClassFixture => ZIO[Any, Throwable, TestResult]): ZIO[Any, Throwable, TestResult] =
+    ZIO(ClassFixture()).bracket(fixture => ZIO.effectTotal(fixture.cleanFixture())) { fixture =>
+      f(fixture)
     }
 }
 
 object AsynchronousChannelGroupSpec
-    extends ZIOBaseSpec(
+    extends BaseSpec(
       suite("AsynchronousChannelGroupSpec")(
         testM("awaitTermination") {
           ClassFixture.providedFixture { fa =>
@@ -87,7 +88,8 @@ object AsynchronousChannelGroupSpec
         },
         testM("failing shutdownNow") {
           for {
-            result <- new AsynchronousChannelGroup(null).shutdownNow.run
+            channel <- ZIO.effect(new AsynchronousChannelGroup(null))
+            result  <- channel.shutdownNow.run
           } yield assert(result, fails(anything))
         },
         testM("companion object create instance using executor and initial size") {

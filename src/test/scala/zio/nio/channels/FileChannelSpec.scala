@@ -5,14 +5,14 @@ import java.nio.file.{ Files, Paths, StandardOpenOption }
 
 import zio.test._
 import zio.test.Assertion._
-import zio.nio.Buffer
+import zio.nio.{ BaseSpec, Buffer }
 import zio.test.mock.MockEnvironment
 import zio.{ Chunk, ZIO }
 
 import scala.io.Source
 
 object FileChannelSpec
-    extends ZIOBaseSpec(
+    extends BaseSpec(
       suite("FileChannelSpec")(
         testM[MockEnvironment, Exception, String]("asynchronous file buffer read") {
           AsynchronousFileChannel

@@ -6,13 +6,13 @@ import zio._
 import zio.clock.Clock
 import zio.console.putStrLn
 import zio.nio.channels.SelectionKey.Operation
-import zio.nio.{ Buffer, SocketAddress }
+import zio.nio.{ BaseSpec, Buffer, SocketAddress }
 import zio.test._
 import zio.test.Assertion._
 import SelectorSpecUtils._
 
 object SelectorSpec
-    extends ZIOBaseSpec(
+    extends BaseSpec(
       suite("SelectorSpec")(
         testM("read/write") {
           for {

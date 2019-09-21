@@ -26,12 +26,11 @@ lazy val zioNio = project
   .settings(
     name := "zio-nio",
     libraryDependencies ++= Seq(
-      "dev.zio"        %% "zio"              % "1.0.0-RC12-1+98-b2065aa3",
-      "dev.zio"        %% "zio-streams"      % "1.0.0-RC12-1",
-      "dev.zio"        %% "zio-interop-java" % "1.1.0.0-RC3",
-      "dev.zio"        %% "zio-test"         % "1.0.0-RC12-1+98-b2065aa3" % "test",
-      "dev.zio"        %% "zio-test-sbt"     % "1.0.0-RC12-1+98-b2065aa3" % "test",
-      "org.scalacheck" %% "scalacheck"       % "1.14.0" % Test
+      "dev.zio" %% "zio"              % "1.0.0-RC12-1+98-b2065aa3",
+      "dev.zio" %% "zio-streams"      % "1.0.0-RC12-1",
+      "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC3",
+      "dev.zio" %% "zio-test"         % "1.0.0-RC12-1+98-b2065aa3" % "test",
+      "dev.zio" %% "zio-test-sbt"     % "1.0.0-RC12-1+98-b2065aa3" % "test"
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
