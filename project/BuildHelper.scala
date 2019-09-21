@@ -18,7 +18,7 @@ object BuildHelper {
     "org.scalaz"     %% "testz-scalaz" % testz    % "test",
     "org.scalaz"     %% "testz-specs2" % testz    % "test"
   )
-  val compileOnlyDeps = Seq( "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full)
+  val compileOnlyDeps = Seq("com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full)
 
   val compileAndTest = Seq(
     "dev.zio" %% "zio-streams"      % zioCoreVersion,
