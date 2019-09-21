@@ -3,7 +3,7 @@ package zio.nio.channels
 import java.nio.charset.StandardCharsets
 import java.nio.file.{ Files, Paths, StandardOpenOption }
 
-import testz.{ Harness, assert }
+import testz.{ PureHarness, assert }
 import zio.nio.Buffer
 import zio.{ Chunk, DefaultRuntime }
 
