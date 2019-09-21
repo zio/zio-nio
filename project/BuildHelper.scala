@@ -5,9 +5,9 @@ object BuildHelper {
 
   lazy val zioCoreVersion = "1.0.0-RC10-1"
 
-  def testz           = "0.0.5"
+  def testz           = "0.0.6"
   def silencerVersion = "1.4.1"
-  def Scala212        = "2.12.8"
+  def Scala212        = "2.13.1"
 
   val testDeps = Seq(
     "org.scalacheck" %% "scalacheck"   % "1.14.0" % "test",

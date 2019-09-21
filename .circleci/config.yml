@@ -3,6 +3,9 @@ version: 2.1
 scala_212: &scala_212
   SCALA_VERSION: 2.12.8
 
+scala_213: &scala_213
+  SCALA_VERSION: 2.13.0  
+
 jdk_8: &jdk_8
   JDK_VERSION: 8
 
@@ -174,7 +177,28 @@ jobs:
     environment:
       - <<: *scala_212
       - <<: *jdk_8
+        
+  test_213_jdk8:
+    <<: *test
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_213
+      - <<: *jdk_8
 
+  test_213_jdk11:
+    <<: *test
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_213
+      - <<: *jdk_11
+
+  release_213:
+    <<: *release
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_213
+      - <<: *jdk_8
+  
   microsite:
     <<: *microsite
     <<: *machine_ubuntu
@@ -212,6 +236,16 @@ workflows:
           requires:
             - test_212_jdk8
             - test_212_jdk11
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+      - release_213:
+          context: Sonatype
+          requires:
+            - test_213_jdk8
+            - test_213_jdk11
           filters:
             branches:
               ignore: /.*/
