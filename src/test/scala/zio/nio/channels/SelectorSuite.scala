@@ -2,120 +2,118 @@ package zio.nio.channels
 
 import java.nio.channels.{ CancelledKeyException, SocketChannel => JSocketChannel }
 
-import testz.{ Harness, assert }
 import zio._
 import zio.clock.Clock
+import zio.console.putStrLn
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.{ Buffer, SocketAddress }
+import zio.test._
+import zio.test.Assertion._
+import SelectorSpecUtils._
 
-object SelectorSuite extends DefaultRuntime {
-
-  def tests[T](harness: Harness[T]): T = {
-    import harness._
-    section(test("read/write") { () =>
-      def byteArrayToString(array: Array[Byte]): String =
-        array.takeWhile(_ != 10).map(_.toChar).mkString.trim
-
-      val addressIo = SocketAddress.inetSocketAddress("0.0.0.0", 1111)
-
-      def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
-        statusCheck.either.map(_.getOrElse(false))
-
-      def server(started: Promise[Nothing, Unit]): ZIO[Clock, Exception, Unit] = {
-        def serverLoop(
-          selector: Selector,
-          channel: ServerSocketChannel,
-          buffer: Buffer[Byte]
-        ): IO[Exception, Unit] =
+object SelectorSpec
+    extends ZIOBaseSpec(
+      suite("SelectorSpec")(
+        testM("read/write") {
           for {
-            _            <- selector.select
-            selectedKeys <- selector.selectedKeys
-            _ <- IO.foreach(selectedKeys) {
-                  key =>
-                    IO.whenM(safeStatusCheck(key.isAcceptable)) {
-                      for {
-                        clientOpt <- channel.accept
-                        client    = clientOpt.get
-                        _         <- client.configureBlocking(false)
-                        _         <- client.register(selector, Operation.Read)
-                      } yield ()
-                    } *>
-                      IO.whenM(safeStatusCheck(key.isReadable)) {
-                        for {
-                          sClient <- key.channel
-                          client  = new SocketChannel(sClient.asInstanceOf[JSocketChannel])
-                          _       <- client.read(buffer)
-                          array   <- buffer.array
-                          text    = byteArrayToString(array)
-                          _       <- buffer.flip
-                          _       <- client.write(buffer)
-                          _       <- buffer.clear
-                          _       <- client.close
-                        } yield ()
-                      } *>
-                      selector.removeKey(key)
-                }
-          } yield ()
+            started     <- Promise.make[Nothing, Unit]
+            _           <- putStrLn("*****")
+            serverFiber <- server(started).fork
+            _           <- putStrLn("****")
+            _           <- started.await
+            _           <- putStrLn("***")
+            clientFiber <- client.fork
+            _           <- putStrLn("**")
+            _           <- serverFiber.join
+            _           <- putStrLn("*")
+            message     <- clientFiber.join
+          } yield assert(message == "Hello world", isTrue)
+        }
+      )
+    )
 
-        for {
-          address <- addressIo
-          _ <- Selector.make.use {
-                selector =>
-                  ServerSocketChannel.open.use {
-                    channel =>
-                      for {
-                        _      <- channel.bind(address)
-                        _      <- channel.configureBlocking(false)
-                        _      <- channel.register(selector, Operation.Accept)
-                        buffer <- Buffer.byte(256)
-                        _      <- started.succeed(())
+object SelectorSpecUtils {
 
-                        /*
-                         *  we need to run the server loop twice:
-                         *  1. to accept the client request
-                         *  2. to read from the client channel
-                         */
-                        _ <- serverLoop(selector, channel, buffer).repeat(Schedule.once)
-                      } yield ()
-                  }
-              }
-        } yield ()
-      }
+  def byteArrayToString(array: Array[Byte]): String =
+    array.takeWhile(_ != 10).map(_.toChar).mkString.trim
 
-      def client: IO[Exception, String] =
-        for {
-          address <- addressIo
-          bytes   = Chunk.fromArray("Hello world".getBytes)
-          buffer  <- Buffer.byte(bytes)
-          text <- SocketChannel.open(address).use { client =>
-                   for {
-                     _     <- client.write(buffer)
-                     _     <- buffer.clear
-                     _     <- client.read(buffer)
-                     array <- buffer.array
-                     text  = byteArrayToString(array)
-                     _     <- buffer.clear
-                   } yield text
-                 }
-        } yield text
+  val addressIo = SocketAddress.inetSocketAddress("0.0.0.0", 1111)
 
-      import zio.console._
+  def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
+    statusCheck.either.map(_.getOrElse(false))
 
-      val testProgram: ZIO[Clock with Console, Exception, Boolean] = for {
-        started     <- Promise.make[Nothing, Unit]
-        _           <- putStrLn("*****")
-        serverFiber <- server(started).fork
-        _           <- putStrLn("****")
-        _           <- started.await
-        _           <- putStrLn("***")
-        clientFiber <- client.fork
-        _           <- putStrLn("**")
-        _           <- serverFiber.join
-        _           <- putStrLn("*")
-        message     <- clientFiber.join
-      } yield message == "Hello world"
+  def server(started: Promise[Nothing, Unit]): ZIO[Clock, Exception, Unit] = {
+    def serverLoop(
+      selector: Selector,
+      channel: ServerSocketChannel,
+      buffer: Buffer[Byte]
+    ): IO[Exception, Unit] =
+      for {
+        _            <- selector.select
+        selectedKeys <- selector.selectedKeys
+        _ <- IO.foreach(selectedKeys) { key =>
+              IO.whenM(safeStatusCheck(key.isAcceptable)) {
+                for {
+                  clientOpt <- channel.accept
+                  client    = clientOpt.get
+                  _         <- client.configureBlocking(false)
+                  _         <- client.register(selector, Operation.Read)
+                } yield ()
+              } *>
+                IO.whenM(safeStatusCheck(key.isReadable)) {
+                  for {
+                    sClient <- key.channel
+                    client  = new SocketChannel(sClient.asInstanceOf[JSocketChannel])
+                    _       <- client.read(buffer)
+                    array   <- buffer.array
+                    text    = byteArrayToString(array)
+                    _       <- buffer.flip
+                    _       <- client.write(buffer)
+                    _       <- buffer.clear
+                    _       <- client.close
+                  } yield ()
+                } *>
+                selector.removeKey(key)
+            }
+      } yield ()
 
-      assert(unsafeRun(testProgram))
-    })
+    for {
+      address <- addressIo
+      _ <- Selector.make.use { selector =>
+            ServerSocketChannel.open.use { channel =>
+              for {
+                _      <- channel.bind(address)
+                _      <- channel.configureBlocking(false)
+                _      <- channel.register(selector, Operation.Accept)
+                buffer <- Buffer.byte(256)
+                _      <- started.succeed(())
+
+                /*
+                 *  we need to run the server loop twice:
+                 *  1. to accept the client request
+                 *  2. to read from the client channel
+                 */
+                _ <- serverLoop(selector, channel, buffer).repeat(Schedule.once)
+              } yield ()
+            }
+          }
+    } yield ()
   }
+
+  def client: IO[Exception, String] =
+    for {
+      address <- addressIo
+      bytes   = Chunk.fromArray("Hello world".getBytes)
+      buffer  <- Buffer.byte(bytes)
+      text <- SocketChannel.open(address).use { client =>
+               for {
+                 _     <- client.write(buffer)
+                 _     <- buffer.clear
+                 _     <- client.read(buffer)
+                 array <- buffer.array
+                 text  = byteArrayToString(array)
+                 _     <- buffer.clear
+               } yield text
+             }
+    } yield text
 }
