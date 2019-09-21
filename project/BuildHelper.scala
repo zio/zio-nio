@@ -18,7 +18,7 @@ object BuildHelper {
     "org.scalaz"     %% "testz-scalaz" % testz    % "test",
     "org.scalaz"     %% "testz-specs2" % testz    % "test"
   )
-  val compileOnlyDeps = Seq("com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full)
+  val compileOnlyDeps = Seq(("com.github.ghik" % "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.full))
 
   val compileAndTest = Seq(
     "dev.zio" %% "zio-streams"      % zioCoreVersion,
@@ -41,7 +41,6 @@ object BuildHelper {
     "-unchecked",
     "-deprecation",
     "-Xfatal-warnings"
-
   )
 
   val stdOpts213 = Seq(
@@ -53,7 +52,7 @@ object BuildHelper {
     "-Wvalue-discard",
     "-Wdead-code"
   )
-  
+
   val stdOptsUpto212 = Seq(
     "-Xfuture",
     "-Ypartial-unification",
@@ -64,7 +63,7 @@ object BuildHelper {
     "-Ywarn-nullary-unit",
     "-Ywarn-unused-import"
   )
-  
+
   def extraOptions(scalaVersion: String) =
     CrossVersion.partialVersion(scalaVersion) match {
       case Some((2, 13)) =>
@@ -91,8 +90,8 @@ object BuildHelper {
     scalaVersion in ThisBuild := Scala212,
     scalacOptions := stdOptions ++ extraOptions(scalaVersion.value),
     libraryDependencies ++= compileOnlyDeps ++ testDeps ++ compileAndTest ++ Seq(
-      compilerPlugin("org.typelevel"   %% "kind-projector"  % "0.10.3"),
-      compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full) 
+      compilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
+      compilerPlugin(("com.github.ghik" % "silencer-plugin" % silencerVersion).cross(CrossVersion.full))
     ),
     incOptions ~= (_.withLogRecompileOnMacro(false))
   )
