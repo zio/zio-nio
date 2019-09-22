@@ -13,7 +13,7 @@ ZIO-NIO is a small, unopinionated ZIO interface to NIO.
 `ZIO-NIO` is available via maven repo so import in `build.sbt` is sufficient:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-nio" % "0.1.1"
+libraryDependencies += "dev.zio" %% "zio-nio" % "0.1.3"
 ```
 
 ## References
