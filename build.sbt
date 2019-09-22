@@ -26,15 +26,13 @@ lazy val zioNio = project
   .settings(
     name := "zio-nio",
     libraryDependencies ++= Seq(
-      "dev.zio"        %% "zio"              % "1.0.0-RC12-1",
-      "dev.zio"        %% "zio-streams"      % "1.0.0-RC12-1",
-      "dev.zio"        %% "zio-interop-java" % "1.1.0.0-RC3",
-      "org.scalacheck" %% "scalacheck"       % "1.14.1" % Test,
-      "org.scalaz"     %% "testz-core"       % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-stdlib"     % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-runner"     % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-specs2"     % "0.0.5" % Test
-    )
+      "dev.zio" %% "zio"              % "1.0.0-RC13",
+      "dev.zio" %% "zio-streams"      % "1.0.0-RC13",
+      "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC5",
+      "dev.zio" %% "zio-test"         % "1.0.0-RC13" % "test",
+      "dev.zio" %% "zio-test-sbt"     % "1.0.0-RC13" % "test"
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
 lazy val docs = project
@@ -45,7 +43,7 @@ lazy val docs = project
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % "1.0.0-RC12-1"
+      "dev.zio" %% "zio" % "1.0.0-RC13"
     )
   )
   .dependsOn(zioNio)
