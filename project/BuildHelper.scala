@@ -5,22 +5,24 @@ object BuildHelper {
 
   lazy val zioCoreVersion = "1.0.0-RC13"
 
-  def testz = "0.0.6"
+  def testz           = "0.0.6"
   def silencerVersion = "1.4.3"
-  def Scala212 = "2.12.10"
-  def Scala213 = "2.13.0"
+  def Scala212        = "2.12.10"
+  def Scala213        = "2.13.0"
 
   val testDeps = Seq(
-    "org.scalacheck" %% "scalacheck" % "1.14.1" % "test",
-    "dev.zio" %% "zio-test" % zioCoreVersion % "test",
-    "dev.zio" %% "zio-test-sbt" % zioCoreVersion % "test"
+    "org.scalacheck" %% "scalacheck"   % "1.14.1"       % "test",
+    "dev.zio"        %% "zio-test"     % zioCoreVersion % "test",
+    "dev.zio"        %% "zio-test-sbt" % zioCoreVersion % "test"
   )
+
   val compileOnlyDeps = Seq(
     ("com.github.ghik" % "silencer-lib" % silencerVersion % Provided)
-      .cross(CrossVersion.full))
+      .cross(CrossVersion.full)
+  )
 
   val compileAndTest = Seq(
-    "dev.zio" %% "zio-streams" % zioCoreVersion,
+    "dev.zio" %% "zio-streams"      % zioCoreVersion,
     "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC2"
   )
 
@@ -92,7 +94,8 @@ object BuildHelper {
       compilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
       compilerPlugin(
         ("com.github.ghik" % "silencer-plugin" % silencerVersion)
-          .cross(CrossVersion.full))
+          .cross(CrossVersion.full)
+      )
     ),
     incOptions ~= (_.withLogRecompileOnMacro(false))
   )
