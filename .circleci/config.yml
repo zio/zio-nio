@@ -3,6 +3,9 @@ version: 2.1
 scala_212: &scala_212
   SCALA_VERSION: 2.12.8
 
+scala_213: &scala_213
+  SCALA_VERSION: 2.13.0
+
 jdk_8: &jdk_8
   JDK_VERSION: 8
 
@@ -30,10 +33,10 @@ save_cache: &save_cache
   - save_cache:
       key: sbt-nio-cache
       paths:
-          - "~/.ivy2/cache"
-          - "~/.sbt"
-          - "~/.m2"
-          - "~/website/node_modules"
+        - "~/.ivy2/cache"
+        - "~/.sbt"
+        - "~/.m2"
+        - "~/website/node_modules"
 
 install_yarn: &install_yarn
   - run:
@@ -96,48 +99,48 @@ test: &test
 
 release: &release
   steps:
-      - checkout
-      - run:
-          name: Fetch git tags
-          command: git fetch --tags
-      - <<: *load_cache
-      - run:
-          name: Write PGP public key
-          command: echo -n "${PGP_PUBLIC}" | base64 -d > /tmp/public.asc
-      - run:
-          name: Write PGP secret key
-          command: echo -n "${PGP_SECRET}" | base64 -d > /tmp/secret.asc
-      - run:
-          name: Release artifacts
-          command: ./sbt ++${SCALA_VERSION}! releaseEarly
+    - checkout
+    - run:
+        name: Fetch git tags
+        command: git fetch --tags
+    - <<: *load_cache
+    - run:
+        name: Write PGP public key
+        command: echo -n "${PGP_PUBLIC}" | base64 -d > /tmp/public.asc
+    - run:
+        name: Write PGP secret key
+        command: echo -n "${PGP_SECRET}" | base64 -d > /tmp/secret.asc
+    - run:
+        name: Release artifacts
+        command: ./sbt ++${SCALA_VERSION}! releaseEarly
 
 microsite: &microsite
   steps:
-      - add_ssh_keys:
-          fingerprints:
-            - "6f:1b:b1:33:e8:4c:7d:38:fc:42:28:0b:5c:43:67:ae"
-      - checkout
-      - <<: *load_cache
-      - <<: *install_nodejs
-      - <<: *install_yarn
-      - run:
-          name: Publishing website
-          command: |
-            git config --global user.email "${GH_NAME}@users.noreply.github.com"
-            git config --global user.name "${GH_NAME}"
-            export GIT_USER=${GH_NAME}
-            export TRAVIS_BUILD_NUMBER="${CIRCLE_BUILD_NUM}"
-            export TRAVIS_COMMIT="${CIRCLE_SHA1}"
-            sudo chown -R $USER:$USER /tmp
-            export NVM_DIR="/opt/circleci/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm install
-            nvm use
-            node -v
-            ./sbt zioNio/doc
-            ./sbt docs/docusaurusCreateSite
-            ./sbt docs/docusaurusPublishGhpages
-      - <<: *save_cache
+    - add_ssh_keys:
+        fingerprints:
+          - "6f:1b:b1:33:e8:4c:7d:38:fc:42:28:0b:5c:43:67:ae"
+    - checkout
+    - <<: *load_cache
+    - <<: *install_nodejs
+    - <<: *install_yarn
+    - run:
+        name: Publishing website
+        command: |
+          git config --global user.email "${GH_NAME}@users.noreply.github.com"
+          git config --global user.name "${GH_NAME}"
+          export GIT_USER=${GH_NAME}
+          export TRAVIS_BUILD_NUMBER="${CIRCLE_BUILD_NUM}"
+          export TRAVIS_COMMIT="${CIRCLE_SHA1}"
+          sudo chown -R $USER:$USER /tmp
+          export NVM_DIR="/opt/circleci/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install
+          nvm use
+          node -v
+          ./sbt zioNio/doc
+          ./sbt docs/docusaurusCreateSite
+          ./sbt docs/docusaurusPublishGhpages
+    - <<: *save_cache
 
 jobs:
   lint:
@@ -173,6 +176,27 @@ jobs:
     <<: *machine_ubuntu
     environment:
       - <<: *scala_212
+      - <<: *jdk_8
+
+  test_213_jdk8:
+    <<: *test
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_213
+      - <<: *jdk_8
+
+  test_213_jdk11:
+    <<: *test
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_213
+      - <<: *jdk_11
+
+  release_213:
+    <<: *release
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_213
       - <<: *jdk_8
 
   microsite:
@@ -217,10 +241,33 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+      - test_213_jdk8:
+          requires:
+            - lint
+          filters:
+            tags:
+              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+      - test_213_jdk11:
+          requires:
+            - lint
+          filters:
+            tags:
+              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+      - release_213:
+          context: Sonatype
+          requires:
+            - test_213_jdk8
+            - test_213_jdk11
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
       - microsite:
           context: Website
           requires:
             - release_212
+            - release_213
           filters:
             branches:
               ignore: /.*/
