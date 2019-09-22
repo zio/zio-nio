@@ -5,6 +5,8 @@ import java.nio.channels.{ FileChannel => JFileChannel }
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.{ OpenOption, Path }
 
+import com.github.ghik.silencer.silent
+
 import scala.collection.JavaConverters._
 import zio.{ IO, ZIO }
 import zio.blocking.Blocking
@@ -83,6 +85,7 @@ object FileChannel {
     Managed.make(ch)(_.close.orDie)
   }
 
+  @silent
   def open(path: Path, options: Set[_ <: OpenOption], attrs: FileAttribute[_]*): Managed[Exception, FileChannel] = {
     val open = IO.effect(new FileChannel(JFileChannel.open(path, options.asJava, attrs: _*))).refineToOrDie[Exception]
     Managed.make(open)(_.close.orDie)

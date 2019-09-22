@@ -4,8 +4,10 @@ import java.io.IOException
 import java.nio.channels.{ ClosedSelectorException, Selector => JSelector }
 
 import zio.{ IO, Managed, UIO }
+import com.github.ghik.silencer.silent
 import zio.duration.Duration
 import zio.nio.channels.spi.SelectorProvider
+import zio.{ IO, Managed, UIO }
 
 import scala.collection.JavaConverters
 
@@ -14,6 +16,7 @@ class Selector(private[nio] val selector: JSelector) {
   final val provider: UIO[SelectorProvider] =
     IO.effectTotal(selector.provider()).map(new SelectorProvider(_))
 
+  @silent
   final val keys: IO[ClosedSelectorException, Set[SelectionKey]] =
     IO.effect(selector.keys())
       .map { keys =>
@@ -21,6 +24,7 @@ class Selector(private[nio] val selector: JSelector) {
       }
       .refineToOrDie[ClosedSelectorException]
 
+  @silent
   final val selectedKeys: IO[ClosedSelectorException, Set[SelectionKey]] =
     IO.effect(selector.selectedKeys())
       .map { keys =>

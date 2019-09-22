@@ -9,7 +9,7 @@ import java.nio.channels.{
   SocketChannel => JSocketChannel
 }
 
-import zio.{ IO, Managed, UIO, ZManaged }
+import zio.{ IO, Managed, UIO }
 import zio.nio.{ Buffer, SocketAddress, SocketOption }
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.channels.spi.SelectorProvider
@@ -117,17 +117,11 @@ object SocketChannel {
     Managed.make(open)(_.close.orDie)
   }
 
-  import zio.console._
-
-  final def open(remote: SocketAddress): ZManaged[Console, IOException, SocketChannel] = {
+  final def open(remote: SocketAddress): Managed[IOException, SocketChannel] = {
     val open = IO
       .effect(new SocketChannel(JSocketChannel.open(remote.jSocketAddress)))
       .refineToOrDie[IOException]
-    Managed.make(open)(c => {
-      for {
-        _ <- c.close.orDie
-      } yield ()
-    })
+    Managed.make(open)(_.close.orDie)
   }
 
 }

@@ -1,3 +1,5 @@
+import BuildHelper._
+
 inThisBuild(
   List(
     organization := "dev.zio",
@@ -26,16 +28,13 @@ lazy val zioNio = project
   .settings(
     name := "zio-nio",
     libraryDependencies ++= Seq(
-      "dev.zio"        %% "zio"              % "1.0.0-RC12-1",
-      "dev.zio"        %% "zio-streams"      % "1.0.0-RC12-1",
-      "dev.zio"        %% "zio-interop-java" % "1.1.0.0-RC3",
-      "org.scalacheck" %% "scalacheck"       % "1.14.0" % Test,
-      "org.scalaz"     %% "testz-core"       % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-stdlib"     % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-runner"     % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-specs2"     % "0.0.5" % Test
-    )
+      "dev.zio" %% "zio"              % zioCoreVersion,
+      "dev.zio" %% "zio-streams"      % zioCoreVersion,
+      "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC5"
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
+  .settings(stdSettings("zio-nio"))
 
 lazy val docs = project
   .in(file("zio-nio-docs"))
@@ -45,7 +44,7 @@ lazy val docs = project
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % "1.0.0-RC12-1"
+      "dev.zio" %% "zio" % "1.0.0-RC13"
     )
   )
   .dependsOn(zioNio)
