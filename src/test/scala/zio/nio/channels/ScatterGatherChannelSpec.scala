@@ -31,7 +31,6 @@ object ScatterGatherChannelSpec
         },
         testM("gathering write") {
           for {
-
             file        <- ZIO.effect(new File("src/test/resources/gathering_write_test.txt"))
             raf         = new RandomAccessFile(file, "rw")
             fileChannel = raf.getChannel

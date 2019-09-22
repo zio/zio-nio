@@ -48,42 +48,37 @@ object AsynchronousChannelGroupSpec
           ClassFixture.providedFixture { fixture =>
             fixture.testObj
               .awaitTermination(Duration.apply(1, TimeUnit.SECONDS))
-              .map(result => assert(!result, isTrue))
+              .map(result => assert(result, isFalse))
           }
         },
         testM("failing awaitTermination") {
-          for {
-            result <- new AsynchronousChannelGroup(null)
-                       .awaitTermination(Duration.apply(1, TimeUnit.SECONDS))
-                       .run
-          } yield assert(result, fails(anything))
+          new AsynchronousChannelGroup(null)
+            .awaitTermination(Duration.apply(1, TimeUnit.SECONDS))
+            .run
+            .map(result => assert(result, fails(anything)))
         },
         testM("isShutdown") {
           ClassFixture.providedFixture { fixture =>
-            for {
-              result <- fixture.testObj.isShutdown
-            } yield assert(result, isFalse)
+            fixture.testObj.isShutdown
+              .map(result => assert(result, isFalse))
           }
         },
         testM("isTerminated") {
           ClassFixture.providedFixture { fixture =>
-            for {
-              result <- fixture.testObj.isTerminated
-            } yield assert(result, isFalse)
+            fixture.testObj.isTerminated
+              .map(result => assert(result, isFalse))
           }
         },
         testM("shutdown") {
           ClassFixture.providedFixture { fixture =>
-            for {
-              _ <- fixture.testObj.shutdown
-            } yield assert(true, isTrue)
+            fixture.testObj.shutdown
+              .map(_ => assert(true, isTrue))
           }
         },
         testM("shutdownNow") {
           ClassFixture.providedFixture { fixture =>
-            for {
-              _ <- fixture.testObj.shutdownNow
-            } yield assert(true, isTrue)
+            fixture.testObj.shutdownNow
+              .map(_ => assert(true, isTrue))
           }
         },
         testM("failing shutdownNow") {

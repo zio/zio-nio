@@ -85,10 +85,8 @@ object BufferSpecUtils {
   ): Spec[String, ZTest[MockEnvironment, Exception, Unit]] = {
 
     val initialCapacity = 10
-
-    def initialValues = Array(1, 2, 3).map(f)
-
-    def zeroValues = Array(0, 0, 0).map(f)
+    def initialValues   = Array(1, 2, 3).map(f)
+    def zeroValues      = Array(0, 0, 0).map(f)
 
     suite(suiteName)(
       testM("apply") {
@@ -133,7 +131,6 @@ object BufferSpecUtils {
           _        <- buffer.position(3)
           position <- buffer.position
         } yield assert(position == 3, isTrue)
-
       },
       testM("limit set") {
         for {
@@ -151,7 +148,6 @@ object BufferSpecUtils {
           _        <- buffer.limit(newLimit)
           position <- buffer.position
         } yield assert(position == newLimit, isTrue)
-
       },
       testM("reset to marked position") {
         for {
@@ -162,7 +158,6 @@ object BufferSpecUtils {
           _           <- b.reset
           newPosition <- b.position
         } yield assert(newPosition == 1, isTrue)
-
       },
       testM("clear") {
         for {
