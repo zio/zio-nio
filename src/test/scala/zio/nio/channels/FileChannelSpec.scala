@@ -6,7 +6,6 @@ import java.nio.file.{ Files, Paths, StandardOpenOption }
 import zio.test._
 import zio.test.Assertion._
 import zio.nio.{ BaseSpec, Buffer }
-import zio.test.mock.MockEnvironment
 import zio.{ Chunk, ZIO }
 
 import scala.io.Source
@@ -14,7 +13,7 @@ import scala.io.Source
 object FileChannelSpec
     extends BaseSpec(
       suite("FileChannelSpec")(
-        testM[MockEnvironment, Exception, String]("asynchronous file buffer read") {
+        testM("asynchronous file buffer read") {
           AsynchronousFileChannel
             .open(Paths.get("src/test/resources/async_file_read_test.txt"), StandardOpenOption.READ)
             .use { channel =>
@@ -28,7 +27,7 @@ object FileChannelSpec
               } yield assert(text == "Hello World", isTrue)
             }
         },
-        testM[MockEnvironment, Exception, String]("asynchronous file chunk read") {
+        testM("asynchronous file chunk read") {
           AsynchronousFileChannel
             .open(Paths.get("src/test/resources/async_file_read_test.txt"), StandardOpenOption.READ)
             .use { channel =>
@@ -38,7 +37,7 @@ object FileChannelSpec
               } yield assert(bytes == Chunk.fromArray("Hello World".getBytes(StandardCharsets.UTF_8)), isTrue)
             }
         },
-        testM[MockEnvironment, Throwable, String]("asynchronous file write") {
+        testM("asynchronous file write") {
           AsynchronousFileChannel
             .open(
               Paths.get("src/test/resources/async_file_write_test.txt"),
@@ -57,7 +56,7 @@ object FileChannelSpec
                 } yield assert(result.size == 1 && result.head == "Hello World", isTrue)
             }
         },
-        testM[MockEnvironment, Exception, String]("memory mapped buffer") {
+        testM("memory mapped buffer") {
           FileChannel
             .open(Paths.get("src/test/resources/async_file_read_test.txt"), StandardOpenOption.READ)
             .bracket(_.close.ignore) { channel =>

@@ -45,10 +45,9 @@ object AsynchronousChannelGroupSpec
     extends BaseSpec(
       suite("AsynchronousChannelGroupSpec")(
         testM("awaitTermination") {
-          ClassFixture.providedFixture { fa =>
-            for {
-              result <- fa.testObj.awaitTermination(Duration.apply(1, TimeUnit.SECONDS))
-            } yield assert(!result, isTrue)
+          ClassFixture.providedFixture { fixture =>
+            fixture.testObj.awaitTermination(Duration.apply(1, TimeUnit.SECONDS))
+              .map(result => assert(!result, isTrue))
           }
         },
         testM("failing awaitTermination") {
@@ -90,7 +89,7 @@ object AsynchronousChannelGroupSpec
           for {
             channel <- ZIO.effect(new AsynchronousChannelGroup(null))
             result  <- channel.shutdownNow.run
-          } yield assert(result, fails(anything))
+          } yield assert(result, dies(anything))
         },
         testM("companion object create instance using executor and initial size") {
           for {

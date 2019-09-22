@@ -1,7 +1,6 @@
 package zio.nio.channels
 
 import zio.nio.{ BaseSpec, Buffer, InetAddress, InetSocketAddress, SocketAddress }
-import zio.test.mock._
 import zio.test.{ suite, testM }
 import zio.{ IO, _ }
 import zio.test._
@@ -55,7 +54,7 @@ object ChannelSpec
             same          <- echoClient
           } yield assert(same, isTrue)
         },
-        testM[MockEnvironment, Exception, String]("read should fail when connection close") {
+        testM("read should fail when connection close") {
           val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
             .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13372))
 
@@ -97,7 +96,7 @@ object ChannelSpec
             same          <- serverFiber.join
           } yield assert(same, isTrue)
         },
-        testM[MockEnvironment, Exception, String]("close channel unbind port") {
+        testM("close channel unbind port") {
           val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
             .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13376))
 
