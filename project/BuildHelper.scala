@@ -11,7 +11,7 @@ object BuildHelper {
   def Scala213        = "2.13.0"
 
   val testDeps = Seq(
-    "org.scalacheck" %% "scalacheck"   % "1.14.0" % "test",
+    "org.scalacheck" %% "scalacheck"   % "1.14.1" % "test",
     "org.scalaz"     %% "testz-core"   % testz    % "test",
     "org.scalaz"     %% "testz-stdlib" % testz    % "test",
     "org.scalaz"     %% "testz-runner" % testz    % "test",
