@@ -4,11 +4,9 @@ import java.io.IOException
 import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock }
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.{ OpenOption, Path }
-import java.util.concurrent.ExecutorService
 
-import zio.blocking.Blocking
 import zio.nio.{ Buffer, ByteBuffer }
-import zio.{ Chunk, IO, ZIO, ZManaged }
+import zio.{ Chunk, IO, Managed, ZIO }
 
 import scala.collection.JavaConverters._
 
@@ -60,33 +58,31 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
 
 object AsynchronousFileChannel {
 
-  def open(file: Path, options: OpenOption*): ZManaged[Blocking, Exception, AsynchronousFileChannel] = {
+  def open(file: Path, options: OpenOption*): Managed[Exception, AsynchronousFileChannel] = {
     val open = ZIO
-      .accessM[Blocking] {
-        _.blocking.effectBlocking(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file, options: _*)))
-      }
+      .effect(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file, options: _*)))
       .refineToOrDie[Exception]
 
-    ZManaged.make(open)(_.close.orDie)
+    Managed.make(open)(_.close.orDie)
   }
 
-  def open(
+  def openWithExecutor(
     file: Path,
     options: Set[_ <: OpenOption],
-    executor: Option[ExecutorService] = None,
     attrs: Set[FileAttribute[_]] = Set.empty
-  ): ZManaged[Blocking, Exception, AsynchronousFileChannel] = {
-    val open = ZIO
-      .accessM[Blocking] {
-        _.blocking.effectBlocking(
-          new AsynchronousFileChannel(
-            JAsynchronousFileChannel.open(file, options.asJava, executor.orNull, attrs.toSeq: _*)
-          )
-        )
-      }
-      .refineToOrDie[Exception]
+  ): Managed[Exception, AsynchronousFileChannel] = {
+    val open = for {
+      eces <- ZIO.runtime.map((runtime: zio.Runtime[Any]) => runtime.Platform.executor.asECES)
+      channel <- ZIO
+                  .effect(
+                    new AsynchronousFileChannel(
+                      JAsynchronousFileChannel.open(file, options.asJava, eces, attrs.toSeq: _*)
+                    )
+                  )
+                  .refineToOrDie[Exception]
+    } yield channel
 
-    ZManaged.make(open)(_.close.orDie)
+    Managed.make(open)(_.close.orDie)
   }
 
 }

@@ -126,53 +126,11 @@ object AsynchronousChannelGroupSuite extends DefaultRuntime with MustMatchers {
           }
         )
       ),
-      namedSection("companion object create instance using executor and initial size")(
-        bracket(() => successful(Executors.newCachedThreadPool())) { executor =>
-          successful(executor.shutdown())
-        } {
+      namedSection("companion object create instance")(
+        noResBracket(
           test("successfully") {
-            case (executor: JExecutorService, _) =>
-              assert(unsafeRunSync(AsynchronousChannelGroup(executor, 1)).toEither must beRight)
-          }
-        },
-        noResBracket(
-          test("fails") {
             case (_, _) =>
-              assert(unsafeRunSync(AsynchronousChannelGroup(null, 1)).toEither must beLeft)
-          }
-        )
-      ),
-      namedSection("companion object create instance using threads no and threads factory")(
-        // bracket(() => successful(())) { _ =>
-        //   successful(())
-        // } {
-        //   test("successfully") {
-        //     case (_, _) =>
-        //       assert(
-        //         unsafeRunSync(AsynchronousChannelGroup(1, Executors.defaultThreadFactory())).toEither must beRight
-        //       )
-        //   }
-        // },
-        noResBracket(
-          test("fails") {
-            case (_, _) =>
-              assert(unsafeRunSync(AsynchronousChannelGroup(1, null)).toEither must beLeft)
-          }
-        )
-      ),
-      namedSection("companion object create instance using executor service")(
-        bracket(() => successful(Executors.newCachedThreadPool())) { executor =>
-          successful(executor.shutdown())
-        } {
-          test("successfully") {
-            case (executor: JExecutorService, _) =>
-              assert(unsafeRunSync(AsynchronousChannelGroup(executor)).toEither must beRight)
-          }
-        },
-        noResBracket(
-          test("fails") {
-            case (_, _) =>
-              assert(unsafeRunSync(AsynchronousChannelGroup(null)).toEither must beLeft)
+              assert(unsafeRunSync(AsynchronousChannelGroup.apply).toEither must beRight)
           }
         )
       )
