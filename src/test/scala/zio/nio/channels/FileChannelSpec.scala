@@ -14,8 +14,9 @@ object FileChannelSpec
     extends BaseSpec(
       suite("FileChannelSpec")(
         testM("asynchronous file buffer read") {
+          val path = Paths.get("src/test/resources/async_file_read_test.txt")
           AsynchronousFileChannel
-            .open(Paths.get("src/test/resources/async_file_read_test.txt"), StandardOpenOption.READ)
+            .open(path, StandardOpenOption.READ)
             .use { channel =>
               for {
                 buffer <- Buffer.byte(16)
@@ -28,8 +29,9 @@ object FileChannelSpec
             }
         },
         testM("asynchronous file chunk read") {
+          val path = Paths.get("src/test/resources/async_file_read_test.txt")
           AsynchronousFileChannel
-            .open(Paths.get("src/test/resources/async_file_read_test.txt"), StandardOpenOption.READ)
+            .open(path, StandardOpenOption.READ)
             .use { channel =>
               for {
                 bytes <- channel.read(500, 0L)
@@ -38,9 +40,10 @@ object FileChannelSpec
             }
         },
         testM("asynchronous file write") {
+          val path = Paths.get("src/test/resources/async_file_write_test.txt")
           AsynchronousFileChannel
             .open(
-              Paths.get("src/test/resources/async_file_write_test.txt"),
+              path,
               StandardOpenOption.CREATE,
               StandardOpenOption.WRITE
             )
@@ -57,8 +60,9 @@ object FileChannelSpec
             }
         },
         testM("memory mapped buffer") {
+          val path = Paths.get("src/test/resources/async_file_read_test.txt")
           FileChannel
-            .open(Paths.get("src/test/resources/async_file_read_test.txt"), StandardOpenOption.READ)
+            .open(path, StandardOpenOption.READ)
             .bracket(_.close.ignore) { channel =>
               for {
                 buffer <- channel.map(FileChannel.MapMode.READ_ONLY, 0L, 6L)

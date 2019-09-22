@@ -46,7 +46,8 @@ object AsynchronousChannelGroupSpec
       suite("AsynchronousChannelGroupSpec")(
         testM("awaitTermination") {
           ClassFixture.providedFixture { fixture =>
-            fixture.testObj.awaitTermination(Duration.apply(1, TimeUnit.SECONDS))
+            fixture.testObj
+              .awaitTermination(Duration.apply(1, TimeUnit.SECONDS))
               .map(result => assert(!result, isTrue))
           }
         },
@@ -58,30 +59,30 @@ object AsynchronousChannelGroupSpec
           } yield assert(result, fails(anything))
         },
         testM("isShutdown") {
-          ZIO(ClassFixture()).bracket(x => ZIO.effectTotal(x.cleanFixture())) { fa =>
+          ClassFixture.providedFixture { fixture =>
             for {
-              result <- fa.testObj.isShutdown
+              result <- fixture.testObj.isShutdown
             } yield assert(result, isFalse)
           }
         },
         testM("isTerminated") {
-          ZIO(ClassFixture()).bracket(x => ZIO.effectTotal(x.cleanFixture())) { fa =>
+          ClassFixture.providedFixture { fixture =>
             for {
-              result <- fa.testObj.isTerminated
+              result <- fixture.testObj.isTerminated
             } yield assert(result, isFalse)
           }
         },
         testM("shutdown") {
-          ClassFixture.providedFixture { fa =>
+          ClassFixture.providedFixture { fixture =>
             for {
-              _ <- fa.testObj.shutdown
+              _ <- fixture.testObj.shutdown
             } yield assert(true, isTrue)
           }
         },
         testM("shutdownNow") {
-          ClassFixture.providedFixture { fa =>
+          ClassFixture.providedFixture { fixture =>
             for {
-              _ <- fa.testObj.shutdownNow
+              _ <- fixture.testObj.shutdownNow
             } yield assert(true, isTrue)
           }
         },
@@ -107,10 +108,10 @@ object AsynchronousChannelGroupSpec
           } yield assert(result, fails(anything))
         },
         testM("companion object create instance using executor service") {
-          for {
-            result <- AsynchronousChannelGroup(1, null).run
-          } yield assert(result, fails(anything))
-
+          ZIO(Executors.newCachedThreadPool()).bracket(executor => ZIO.effectTotal(executor.shutdown())) { executor =>
+            AsynchronousChannelGroup(executor).run.map(result =>
+            assert(result.toEither, isRight(anything)))
+          }
         }
       )
     )
