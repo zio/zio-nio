@@ -9,7 +9,7 @@ import java.nio.channels.{
   SocketChannel => JSocketChannel
 }
 
-import zio.{ IO, Managed, UIO }
+import zio.{ IO, Managed, UIO, ZManaged }
 import zio.nio.{ Buffer, SocketAddress, SocketOption }
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.channels.spi.SelectorProvider
@@ -58,7 +58,7 @@ trait SelectableChannel extends Channel {
 
 }
 
-final class SocketChannel(override protected[channels] val channel: JSocketChannel)
+final class SocketChannel private[channels] (override protected[channels] val channel: JSocketChannel)
     extends SelectableChannel
     with GatheringByteChannel
     with ScatteringByteChannel {
@@ -107,21 +107,33 @@ final class SocketChannel(override protected[channels] val channel: JSocketChann
 
 object SocketChannel {
 
+  final def apply(channel: JSocketChannel): Managed[IOException, SocketChannel] = {
+    val open = IO.effect(new SocketChannel(channel)).refineToOrDie[IOException]
+    Managed.make(open)(_.close.orDie)
+  }
+
   final val open: Managed[IOException, SocketChannel] = {
     val open = IO.effect(new SocketChannel(JSocketChannel.open())).refineToOrDie[IOException]
     Managed.make(open)(_.close.orDie)
   }
 
-  final def open(remote: SocketAddress): Managed[IOException, SocketChannel] = {
+  import zio.console._
+
+  final def open(remote: SocketAddress): ZManaged[Console, IOException, SocketChannel] = {
     val open = IO
       .effect(new SocketChannel(JSocketChannel.open(remote.jSocketAddress)))
       .refineToOrDie[IOException]
-    Managed.make(open)(_.close.orDie)
+    Managed.make(open)(c => {
+      for {
+        _ <- c.close.orDie
+      } yield ()
+    })
   }
 
 }
 
-final class ServerSocketChannel(override protected val channel: JServerSocketChannel) extends SelectableChannel {
+final class ServerSocketChannel private (override protected val channel: JServerSocketChannel)
+    extends SelectableChannel {
 
   final def bind(local: SocketAddress): IO[IOException, Unit] =
     IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
@@ -144,6 +156,11 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
 }
 
 object ServerSocketChannel {
+
+  final def apply(channel: JServerSocketChannel): Managed[IOException, ServerSocketChannel] = {
+    val open = IO.effect(new ServerSocketChannel(channel)).refineToOrDie[IOException]
+    Managed.make(open)(_.close.orDie)
+  }
 
   final val open: Managed[IOException, ServerSocketChannel] = {
     val open = IO.effect(new ServerSocketChannel(JServerSocketChannel.open())).refineToOrDie[IOException]

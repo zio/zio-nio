@@ -26,7 +26,6 @@ object FileChannelSuite extends DefaultRuntime {
               _      <- buffer.flip
               array  <- buffer.array
               text   = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
-              _      <- channel.close
             } yield text
           }
 
@@ -41,7 +40,6 @@ object FileChannelSuite extends DefaultRuntime {
           AsynchronousFileChannel.open(path, StandardOpenOption.READ).use { channel =>
             for {
               bytes <- channel.read(500, 0L)
-              _     <- channel.close
             } yield bytes
           }
 
@@ -57,7 +55,6 @@ object FileChannelSuite extends DefaultRuntime {
             for {
               buffer <- Buffer.byte(Chunk.fromArray("Hello World".getBytes))
               _      <- channel.writeBuffer(buffer, 0)
-              _      <- channel.close
             } yield ()
           }
 
@@ -73,7 +70,7 @@ object FileChannelSuite extends DefaultRuntime {
         val path = Paths.get("src/test/resources/async_file_read_test.txt")
 
         val testProgram = {
-          FileChannel.open(path, StandardOpenOption.READ).bracket(_.close.ignore) { channel =>
+          FileChannel.open(path, StandardOpenOption.READ).use { channel =>
             for {
               buffer <- channel.map(FileChannel.MapMode.READ_ONLY, 0L, 6L)
               bytes  <- buffer.getChunk()

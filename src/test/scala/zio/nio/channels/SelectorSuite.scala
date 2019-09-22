@@ -4,6 +4,7 @@ import java.nio.channels.{ CancelledKeyException, SocketChannel => JSocketChanne
 
 import testz.{ Harness, assert }
 import zio._
+import zio.console._
 import zio.clock.Clock
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.{ Buffer, SocketAddress }
@@ -21,18 +22,19 @@ object SelectorSuite extends DefaultRuntime {
       def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
         statusCheck.either.map(_.getOrElse(false))
 
-      def server(started: Promise[Nothing, Unit]): ZIO[Clock, Exception, Unit] = {
+      def server(started: Promise[Nothing, Unit]): ZIO[Clock with Console, Exception, Unit] = {
         def serverLoop(
           selector: Selector,
           channel: ServerSocketChannel,
           buffer: Buffer[Byte]
-        ): IO[Exception, Unit] =
+        ): ZIO[Console, Exception, Unit] =
           for {
+            _            <- putStrLn("server loop")
             _            <- selector.select
             selectedKeys <- selector.selectedKeys
-            _ <- IO.foreach(selectedKeys) {
+            _ <- ZIO.foreach(selectedKeys) {
                   key =>
-                    IO.whenM(safeStatusCheck(key.isAcceptable)) {
+                    ZIO.whenM(safeStatusCheck(key.isAcceptable)) {
                       for {
                         clientOpt <- channel.accept
                         client    = clientOpt.get
@@ -40,7 +42,7 @@ object SelectorSuite extends DefaultRuntime {
                         _         <- client.register(selector, Operation.Read)
                       } yield ()
                     } *>
-                      IO.whenM(safeStatusCheck(key.isReadable)) {
+                      ZIO.whenM(safeStatusCheck(key.isReadable)) {
                         for {
                           sClient <- key.channel
                           client  = new SocketChannel(sClient.asInstanceOf[JSocketChannel])
@@ -58,6 +60,7 @@ object SelectorSuite extends DefaultRuntime {
           } yield ()
 
         for {
+          _       <- putStrLn("starting server")
           address <- addressIo
           _ <- Selector.make.use {
                 selector =>
@@ -65,6 +68,7 @@ object SelectorSuite extends DefaultRuntime {
                     channel =>
                       for {
                         _      <- channel.bind(address)
+                        _      <- putStrLn(s"bound to $address")
                         _      <- channel.configureBlocking(false)
                         _      <- channel.register(selector, Operation.Accept)
                         buffer <- Buffer.byte(256)
@@ -82,13 +86,15 @@ object SelectorSuite extends DefaultRuntime {
         } yield ()
       }
 
-      def client: IO[Exception, String] =
+      def client: ZIO[Console, Exception, String] =
         for {
+          _       <- putStrLn("starting client")
           address <- addressIo
           bytes   = Chunk.fromArray("Hello world".getBytes)
           buffer  <- Buffer.byte(bytes)
           text <- SocketChannel.open(address).use { client =>
                    for {
+                     _     <- putStrLn("client socket open")
                      _     <- client.write(buffer)
                      _     <- buffer.clear
                      _     <- client.read(buffer)
@@ -97,21 +103,15 @@ object SelectorSuite extends DefaultRuntime {
                      _     <- buffer.clear
                    } yield text
                  }
+          _ <- putStrLn("client finished")
         } yield text
-
-      import zio.console._
 
       val testProgram: ZIO[Clock with Console, Exception, Boolean] = for {
         started     <- Promise.make[Nothing, Unit]
-        _           <- putStrLn("*****")
         serverFiber <- server(started).fork
-        _           <- putStrLn("****")
         _           <- started.await
-        _           <- putStrLn("***")
         clientFiber <- client.fork
-        _           <- putStrLn("**")
         _           <- serverFiber.join
-        _           <- putStrLn("*")
         message     <- clientFiber.join
       } yield message == "Hello world"
 

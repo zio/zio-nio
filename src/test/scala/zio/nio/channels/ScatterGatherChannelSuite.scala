@@ -26,11 +26,13 @@ object ScatterGatherChannelSuite extends DefaultRuntime {
           } yield text
 
         val testProgram = for {
-          buffs   <- IO.collectAll(Seq(Buffer.byte(5), Buffer.byte(5)))
-          channel = new FileChannel(fileChannel)
-          _       <- channel.readBuffer(buffs)
-          list    <- IO.collectAll(buffs.map(readLine))
-          _       <- channel.close
+          buffs <- IO.collectAll(Seq(Buffer.byte(5), Buffer.byte(5)))
+          list <- FileChannel(fileChannel).use { channel =>
+                   for {
+                     _    <- channel.readBuffer(buffs)
+                     list <- IO.collectAll(buffs.map(readLine))
+                   } yield list
+                 }
         } yield list
 
         val t1 :: t2 :: Nil = unsafeRun(testProgram)
@@ -50,9 +52,12 @@ object ScatterGatherChannelSuite extends DefaultRuntime {
                       Buffer.byte(Chunk.fromArray("World".getBytes))
                     )
                   )
-          channel = new FileChannel(fileChannel)
-          _       <- channel.writeBuffer(buffs)
-          _       <- channel.close
+          _ <- FileChannel(fileChannel).use { channel =>
+                for {
+                  _ <- channel.writeBuffer(buffs)
+                } yield ()
+
+              }
         } yield ()
 
         unsafeRun(testProgram)
