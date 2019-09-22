@@ -11,7 +11,6 @@ object BuildHelper {
   def Scala213        = "2.13.0"
 
   val testDeps = Seq(
-    "org.scalacheck" %% "scalacheck"   % "1.14.1"       % "test",
     "dev.zio"        %% "zio-test"     % zioCoreVersion % "test",
     "dev.zio"        %% "zio-test-sbt" % zioCoreVersion % "test"
   )
