@@ -30,7 +30,7 @@ lazy val zioNio = project
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio"              % zioCoreVersion,
       "dev.zio" %% "zio-streams"      % zioCoreVersion,
-      "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC4"
+      "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC5"
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
