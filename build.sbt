@@ -27,16 +27,17 @@ addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck"
 
 lazy val zioNio = project
   .in(file("."))
+  .settings(stdSettings("zio-nio"))
   .settings(
-    name := "zio-nio",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"              % zioCoreVersion,
-      "dev.zio" %% "zio-streams"      % zioCoreVersion,
-      "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC5"
+      "dev.zio" %% "zio"              % ZioCoreVersion,
+      "dev.zio" %% "zio-streams"      % ZioCoreVersion,
+      "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC5",
+      "dev.zio" %% "zio-test"         % ZioCoreVersion % Test,
+      "dev.zio" %% "zio-test-sbt"     % ZioCoreVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
-  .settings(stdSettings("zio-nio"))
 
 lazy val docs = project
   .in(file("zio-nio-docs"))
