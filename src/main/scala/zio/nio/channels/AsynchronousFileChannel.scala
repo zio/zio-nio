@@ -6,6 +6,7 @@ import java.nio.file.attribute.FileAttribute
 import java.nio.file.{ OpenOption, Path }
 import java.util.concurrent.ExecutorService
 
+import com.github.ghik.silencer.silent
 import zio.blocking.Blocking
 import zio.nio.{ Buffer, ByteBuffer }
 import zio.{ Chunk, IO, ZIO, ZManaged }
@@ -76,6 +77,7 @@ object AsynchronousFileChannel {
     executor: Option[ExecutorService] = None,
     attrs: Set[FileAttribute[_]] = Set.empty
   ): ZManaged[Blocking, Exception, AsynchronousFileChannel] = {
+    @silent
     val open = ZIO
       .accessM[Blocking] {
         _.blocking.effectBlocking(
