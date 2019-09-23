@@ -104,15 +104,10 @@ release: &release
         name: Fetch git tags
         command: git fetch --tags
     - <<: *load_cache
-    - run:
-        name: Write PGP public key
-        command: echo -n "${PGP_PUBLIC}" | base64 -d > /tmp/public.asc
-    - run:
-        name: Write PGP secret key
-        command: echo -n "${PGP_SECRET}" | base64 -d > /tmp/secret.asc
-    - run:
-        name: Release artifacts
-        command: ./sbt ++${SCALA_VERSION}! releaseEarly
+    - run: echo -n "${PGP_PUBLIC}" | base64 -d > /tmp/public.asc
+    - run: echo -n "${PGP_SECRET}" | base64 -d > /tmp/secret.asc
+    - run: echo "credentials += Credentials(\"Sonatype Nexus Repository Manager\", \"oss.sonatype.org\", \"$SONATYPE_USER\", \"$SONATYPE_PASSWORD\")" > ~/.sbt/1.0/sonatype.sbt
+    - run: ./sbt ++${SCALA_VERSION}! clean sonatypeBundleClean +publishSigned sonatypeBundleRelease
 
 microsite: &microsite
   steps:
@@ -171,13 +166,6 @@ jobs:
       - <<: *scala_212
       - <<: *jdk_11
 
-  release_212:
-    <<: *release
-    <<: *machine_ubuntu
-    environment:
-      - <<: *scala_212
-      - <<: *jdk_8
-
   test_213_jdk8:
     <<: *test
     <<: *machine_ubuntu
@@ -192,7 +180,7 @@ jobs:
       - <<: *scala_213
       - <<: *jdk_11
 
-  release_213:
+  release:
     <<: *release
     <<: *machine_ubuntu
     environment:
@@ -231,16 +219,6 @@ workflows:
           filters:
             tags:
               only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
-      - release_212:
-          context: Sonatype
-          requires:
-            - test_212_jdk8
-            - test_212_jdk11
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
       - test_213_jdk8:
           requires:
             - lint
@@ -253,9 +231,12 @@ workflows:
           filters:
             tags:
               only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
-      - release_213:
+      - release:
           context: Sonatype
           requires:
+            - mdoc
+            - test_212_jdk8
+            - test_212_jdk11
             - test_213_jdk8
             - test_213_jdk11
           filters:
@@ -266,8 +247,7 @@ workflows:
       - microsite:
           context: Website
           requires:
-            - release_212
-            - release_213
+            - release
           filters:
             branches:
               ignore: /.*/
