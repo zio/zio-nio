@@ -8,9 +8,9 @@ inThisBuild(
     developers := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net"))
     ),
+    pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toArray),
     pgpPublicRing := file("/tmp/public.asc"),
     pgpSecretRing := file("/tmp/secret.asc"),
-    releaseEarlyWith := SonatypePublisher,
     scmInfo := Some(
       ScmInfo(
         url("https://github.com/zio/zio-nio/"),
@@ -19,6 +19,8 @@ inThisBuild(
     )
   )
 )
+
+ThisBuild / publishTo := sonatypePublishToBundle.value
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
