@@ -89,8 +89,8 @@ object FileChannel {
   type MapMode = JFileChannel.MapMode
 
   object MapMode {
-    def READ_ONLY  = JFileChannel.MapMode.READ_ONLY
-    def READ_WRITE = JFileChannel.MapMode.READ_WRITE
-    def PRIVATE    = JFileChannel.MapMode.PRIVATE
+    def READ_ONLY: FileChannel.MapMode  = JFileChannel.MapMode.READ_ONLY
+    def READ_WRITE: FileChannel.MapMode = JFileChannel.MapMode.READ_WRITE
+    def PRIVATE: FileChannel.MapMode    = JFileChannel.MapMode.PRIVATE
   }
 }
