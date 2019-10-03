@@ -127,9 +127,6 @@ class AsynchronousTlsByteChannel(private val channel: AsynchronousSocketChannel,
 
       _ <- in.flip
 
-      pos <- in.position
-      lim <- in.limit
-
       loop = for {
         res  <- sslEngine.unwrap(in, out)
         stat <- IO.effect(res.getStatus())
@@ -141,7 +138,7 @@ class AsynchronousTlsByteChannel(private val channel: AsynchronousSocketChannel,
                     Duration(READ_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
                   ) *> in.flip
               } else
-                IO.fail(new Exception("AsynchronousTlsByteChannel#read() " + pos + " " + lim + " " + res.toString()))
+                IO.fail(new Exception("AsynchronousTlsByteChannel#read() " + res.toString()))
             } else IO.unit
         rem <- in.remaining
       } yield (rem)
