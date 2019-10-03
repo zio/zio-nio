@@ -5,8 +5,8 @@ import java.net.ProtocolFamily
 import java.nio.channels.{ Channel => JChannel, DatagramChannel => JDatagramChannel }
 import java.nio.channels.spi.{ SelectorProvider => JSelectorProvider }
 
+import zio.{ IO, Managed }
 import zio.nio.channels.{ Pipe, Selector, ServerSocketChannel, SocketChannel }
-import zio.IO
 
 class SelectorProvider(private val selectorProvider: JSelectorProvider) {
 
@@ -25,9 +25,8 @@ class SelectorProvider(private val selectorProvider: JSelectorProvider) {
   final val openSelector: IO[IOException, Selector] =
     IO.effect(new Selector(selectorProvider.openSelector())).refineToOrDie[IOException]
 
-  final val openServerSocketChannel: IO[IOException, ServerSocketChannel] =
-    IO.effect(new ServerSocketChannel(selectorProvider.openServerSocketChannel()))
-      .refineToOrDie[IOException]
+  final val openServerSocketChannel: Managed[IOException, ServerSocketChannel] =
+    ServerSocketChannel(selectorProvider.openServerSocketChannel())
 
   final val openSocketChannel: IO[IOException, SocketChannel] =
     IO.effect(new SocketChannel(selectorProvider.openSocketChannel())).refineToOrDie[IOException]

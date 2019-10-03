@@ -11,6 +11,7 @@ import scala.collection.JavaConverters._
 import zio.{ IO, ZIO }
 import zio.blocking.Blocking
 import zio.nio.{ ByteBuffer, MappedByteBuffer }
+import zio.Managed
 
 final class FileChannel private[channels] (override protected[channels] val channel: JFileChannel)
     extends GatheringByteChannel
@@ -79,12 +80,21 @@ final class FileChannel private[channels] (override protected[channels] val chan
 
 object FileChannel {
 
-  @silent
-  def open(path: Path, options: Set[_ <: OpenOption], attrs: FileAttribute[_]*): IO[Exception, FileChannel] =
-    IO.effect(new FileChannel(JFileChannel.open(path, options.asJava, attrs: _*))).refineToOrDie[Exception]
+  def apply(channel: JFileChannel): Managed[Exception, FileChannel] = {
+    val ch = IO.effect(new FileChannel(channel)).refineToOrDie[Exception]
+    Managed.make(ch)(_.close.orDie)
+  }
 
-  def open(path: Path, options: OpenOption*): IO[Exception, FileChannel] =
-    IO.effect(new FileChannel(JFileChannel.open(path, options: _*))).refineToOrDie[Exception]
+  @silent
+  def open(path: Path, options: Set[_ <: OpenOption], attrs: FileAttribute[_]*): Managed[Exception, FileChannel] = {
+    val open = IO.effect(new FileChannel(JFileChannel.open(path, options.asJava, attrs: _*))).refineToOrDie[Exception]
+    Managed.make(open)(_.close.orDie)
+  }
+
+  def open(path: Path, options: OpenOption*): Managed[Exception, FileChannel] = {
+    val open = IO.effect(new FileChannel(JFileChannel.open(path, options: _*))).refineToOrDie[Exception]
+    Managed.make(open)(_.close.orDie)
+  }
 
   type MapMode = JFileChannel.MapMode
 

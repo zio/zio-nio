@@ -63,7 +63,7 @@ object FileChannelSpec
           val path = Paths.get("src/test/resources/async_file_read_test.txt")
           FileChannel
             .open(path, StandardOpenOption.READ)
-            .bracket(_.close.ignore) { channel =>
+            .use { channel =>
               for {
                 buffer <- channel.map(FileChannel.MapMode.READ_ONLY, 0L, 6L)
                 bytes  <- buffer.getChunk()
