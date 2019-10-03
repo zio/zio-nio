@@ -4,7 +4,6 @@ import java.nio.channels.{ CancelledKeyException, SocketChannel => JSocketChanne
 
 import zio._
 import zio.clock.Clock
-import zio.console.putStrLn
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.{ BaseSpec, Buffer, SocketAddress }
 import zio.test._
@@ -17,15 +16,10 @@ object SelectorSpec
         testM("read/write") {
           for {
             started     <- Promise.make[Nothing, Unit]
-            _           <- putStrLn("*****")
             serverFiber <- server(started).fork
-            _           <- putStrLn("****")
             _           <- started.await
-            _           <- putStrLn("***")
             clientFiber <- client.fork
-            _           <- putStrLn("**")
             _           <- serverFiber.join
-            _           <- putStrLn("*")
             message     <- clientFiber.join
           } yield assert(message == "Hello world", isTrue)
         }
