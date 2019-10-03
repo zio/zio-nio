@@ -22,11 +22,13 @@ object ScatterGatherChannelSpec
                 array <- buffer.array
                 text  = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
               } yield text
-            buffs   <- IO.collectAll(Seq(Buffer.byte(5), Buffer.byte(5)))
-            channel = new FileChannel(fileChannel)
-            _       <- channel.readBuffer(buffs)
-            list    <- IO.collectAll(buffs.map(readLine))
-            _       <- channel.close
+            buffs <- IO.collectAll(Seq(Buffer.byte(5), Buffer.byte(5)))
+            list <- FileChannel(fileChannel).use { channel =>
+                     for {
+                       _    <- channel.readBuffer(buffs)
+                       list <- IO.collectAll(buffs.map(readLine))
+                     } yield list
+                   }
           } yield assert(list == "Hello" :: "World" :: Nil, isTrue)
         },
         testM("gathering write") {
@@ -41,11 +43,14 @@ object ScatterGatherChannelSpec
                         Buffer.byte(Chunk.fromArray("World".getBytes))
                       )
                     )
-            channel = new FileChannel(fileChannel)
-            _       <- channel.writeBuffer(buffs)
-            _       <- channel.close
-            result  = Source.fromFile(file).getLines.toSeq
-            _       = file.delete()
+            _ <- FileChannel(fileChannel).use { channel =>
+                  for {
+                    _ <- channel.writeBuffer(buffs)
+                  } yield ()
+                }
+
+            result = Source.fromFile(file).getLines.toSeq
+            _      = file.delete()
           } yield assert(result == Seq("HelloWorld"), isTrue)
         }
       )
