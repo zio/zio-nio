@@ -3,26 +3,27 @@ import sbt.Keys._
 
 object BuildHelper {
 
-  lazy val zioCoreVersion = "1.0.0-RC13"
-
-  def silencerVersion = "1.4.3"
-  def Scala212        = "2.12.10"
-  def Scala213        = "2.13.0"
-
-  val testDeps = Seq(
-    "dev.zio" %% "zio-test"     % zioCoreVersion % "test",
-    "dev.zio" %% "zio-test-sbt" % zioCoreVersion % "test"
+  def stdSettings(prjName: String) = Seq(
+    name := s"$prjName",
+    scalacOptions := stdOptions,
+    crossScalaVersions := Seq(Scala212, Scala213),
+    scalaVersion in ThisBuild := Scala212,
+    scalacOptions := stdOptions ++ extraOptions(scalaVersion.value),
+    libraryDependencies ++=
+      Seq(
+        ("com.github.ghik" % "silencer-lib" % SilencerVersion % Provided)
+          .cross(CrossVersion.full),
+        compilerPlugin(("com.github.ghik" % "silencer-plugin" % SilencerVersion).cross(CrossVersion.full)),
+        compilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3")
+      ),
+    incOptions ~= (_.withLogRecompileOnMacro(false))
   )
 
-  val compileOnlyDeps = Seq(
-    ("com.github.ghik" % "silencer-lib" % silencerVersion % Provided)
-      .cross(CrossVersion.full)
-  )
+  val ZioCoreVersion = "1.0.0-RC13"
 
-  val compileAndTest = Seq(
-    "dev.zio" %% "zio-streams"      % zioCoreVersion,
-    "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC2"
-  )
+  private val SilencerVersion = "1.4.3"
+  private val Scala212        = "2.12.10"
+  private val Scala213        = "2.13.0"
 
   private val stdOptions = Seq(
     "-encoding",
@@ -42,7 +43,7 @@ object BuildHelper {
     "-Xfatal-warnings"
   )
 
-  val stdOpts213 = Seq(
+  private val stdOpts213 = Seq(
     "-Wunused:imports",
     "-Wvalue-discard",
     "-Wunused:patvars",
@@ -52,7 +53,7 @@ object BuildHelper {
     "-Wdead-code"
   )
 
-  val stdOptsUpto212 = Seq(
+  private val stdOptsUpto212 = Seq(
     "-Xfuture",
     "-Ypartial-unification",
     "-Ywarn-nullary-override",
@@ -63,7 +64,7 @@ object BuildHelper {
     "-Ywarn-unused-import"
   )
 
-  def extraOptions(scalaVersion: String) =
+  private def extraOptions(scalaVersion: String) =
     CrossVersion.partialVersion(scalaVersion) match {
       case Some((2, 13)) =>
         stdOpts213
@@ -77,24 +78,6 @@ object BuildHelper {
           "-opt-inline-from:<source>"
         ) ++ stdOptsUpto212
       case _ =>
-        Seq(
-          "-Xexperimental"
-        ) ++ stdOptsUpto212
+        Seq("-Xexperimental") ++ stdOptsUpto212
     }
-
-  def stdSettings(prjName: String) = Seq(
-    name := s"zio-$prjName",
-    scalacOptions := stdOptions,
-    crossScalaVersions := Seq(Scala212, Scala213),
-    scalaVersion in ThisBuild := Scala212,
-    scalacOptions := stdOptions ++ extraOptions(scalaVersion.value),
-    libraryDependencies ++= compileOnlyDeps ++ testDeps ++ compileAndTest ++ Seq(
-      compilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
-      compilerPlugin(
-        ("com.github.ghik" % "silencer-plugin" % silencerVersion)
-          .cross(CrossVersion.full)
-      )
-    ),
-    incOptions ~= (_.withLogRecompileOnMacro(false))
-  )
 }
