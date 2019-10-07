@@ -47,7 +47,7 @@ lazy val docs = project
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % "1.0.0-RC13"
+      "dev.zio" %% "zio" % "1.0.0-RC14"
     )
   )
   .dependsOn(zioNio)
