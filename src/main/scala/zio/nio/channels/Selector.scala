@@ -3,19 +3,20 @@ package zio.nio.channels
 import java.io.IOException
 import java.nio.channels.{ ClosedSelectorException, Selector => JSelector }
 
-import zio.{ IO, UIO }
+import zio.{ IO, Managed, UIO }
+import com.github.ghik.silencer.silent
 import zio.duration.Duration
 import zio.nio.channels.spi.SelectorProvider
+import zio.{ IO, Managed, UIO }
 
 import scala.collection.JavaConverters
 
 class Selector(private[nio] val selector: JSelector) {
 
-  final val isOpen: UIO[Boolean] = IO.effectTotal(selector.isOpen)
-
   final val provider: UIO[SelectorProvider] =
     IO.effectTotal(selector.provider()).map(new SelectorProvider(_))
 
+  @silent
   final val keys: IO[ClosedSelectorException, Set[SelectionKey]] =
     IO.effect(selector.keys())
       .map { keys =>
@@ -23,6 +24,7 @@ class Selector(private[nio] val selector: JSelector) {
       }
       .refineToOrDie[ClosedSelectorException]
 
+  @silent
   final val selectedKeys: IO[ClosedSelectorException, Set[SelectionKey]] =
     IO.effect(selector.selectedKeys())
       .map { keys =>
@@ -56,13 +58,15 @@ class Selector(private[nio] val selector: JSelector) {
   final val wakeup: IO[Nothing, Selector] =
     IO.effectTotal(selector.wakeup()).map(new Selector(_))
 
-  final val close: IO[IOException, Unit] =
+  final private[channels] val close: IO[IOException, Unit] =
     IO.effect(selector.close()).refineToOrDie[IOException].unit
 }
 
 object Selector {
 
-  final val make: IO[IOException, Selector] =
-    IO.effect(new Selector(JSelector.open())).refineToOrDie[IOException]
+  final val make: Managed[IOException, Selector] = {
+    val open = IO.effect(new Selector(JSelector.open())).refineToOrDie[IOException]
+    Managed.make(open)(_.close.orDie)
+  }
 
 }

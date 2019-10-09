@@ -3,7 +3,8 @@ package zio.nio
 import zio.{ Chunk, IO, UIO, ZIO }
 import java.nio.{ BufferUnderflowException, ByteOrder, ReadOnlyBufferException, ByteBuffer => JByteBuffer }
 
-class ByteBuffer protected[nio] (private val byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
+class ByteBuffer protected[nio] (protected[nio] val byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
+
   final override protected[nio] def array: IO[UnsupportedOperationException, Array[Byte]] =
     IO.effect(byteBuffer.array()).refineToOrDie[UnsupportedOperationException]
 

@@ -1,7 +1,8 @@
 package zio.nio
 
-import java.net.{ NetworkInterface => JNetworkInterface, SocketException }
+import java.net.{ SocketException, NetworkInterface => JNetworkInterface }
 
+import com.github.ghik.silencer.silent
 import zio.IO
 
 import scala.collection.JavaConverters._
@@ -12,12 +13,15 @@ class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetwor
 
   def name: String = jNetworkInterface.getName
 
+  @silent
   def inetAddresses: Iterator[InetAddress] =
     jNetworkInterface.getInetAddresses.asScala.map(new InetAddress(_))
 
+  @silent
   def interfaceAddresses: List[InterfaceAddress] =
     jNetworkInterface.getInterfaceAddresses.asScala.map(new InterfaceAddress(_)).toList
 
+  @silent
   def subInterfaces: Iterator[NetworkInterface] =
     jNetworkInterface.getSubInterfaces.asScala.map(new NetworkInterface(_))
 
@@ -70,6 +74,7 @@ object NetworkInterface {
       .refineOrDie(JustSocketException)
       .map(new NetworkInterface(_))
 
+  @silent
   def networkInterfaces: IO[SocketException, Iterator[NetworkInterface]] =
     IO.effect(JNetworkInterface.getNetworkInterfaces.asScala)
       .refineOrDie(JustSocketException)

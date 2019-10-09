@@ -5,6 +5,7 @@ import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, 
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.{ OpenOption, Path }
 
+import com.github.ghik.silencer.silent
 import zio.nio.{ Buffer, ByteBuffer }
 import zio.{ Chunk, IO, Managed, ZIO }
 
@@ -71,6 +72,7 @@ object AsynchronousFileChannel {
     options: Set[_ <: OpenOption],
     attrs: Set[FileAttribute[_]] = Set.empty
   ): Managed[Exception, AsynchronousFileChannel] = {
+    @silent
     val open = for {
       eces <- ZIO.runtime.map((runtime: zio.Runtime[Any]) => runtime.Platform.executor.asECES)
       channel <- ZIO

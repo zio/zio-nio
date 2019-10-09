@@ -1,3 +1,5 @@
+import BuildHelper._
+
 inThisBuild(
   List(
     organization := "dev.zio",
@@ -6,9 +8,9 @@ inThisBuild(
     developers := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net"))
     ),
+    pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toArray),
     pgpPublicRing := file("/tmp/public.asc"),
     pgpSecretRing := file("/tmp/secret.asc"),
-    releaseEarlyWith := SonatypePublisher,
     scmInfo := Some(
       ScmInfo(
         url("https://github.com/zio/zio-nio/"),
@@ -18,23 +20,23 @@ inThisBuild(
   )
 )
 
+ThisBuild / publishTo := sonatypePublishToBundle.value
+
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 
 lazy val zioNio = project
   .in(file("."))
+  .settings(stdSettings("zio-nio"))
   .settings(
-    name := "zio-nio",
     libraryDependencies ++= Seq(
-      "dev.zio"        %% "zio"              % "1.0.0-RC14",
-      "dev.zio"        %% "zio-streams"      % "1.0.0-RC14",
-      "dev.zio"        %% "zio-interop-java" % "1.1.0.0-RC3",
-      "org.scalacheck" %% "scalacheck"       % "1.14.0" % Test,
-      "org.scalaz"     %% "testz-core"       % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-stdlib"     % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-runner"     % "0.0.5" % Test,
-      "org.scalaz"     %% "testz-specs2"     % "0.0.5" % Test
-    )
+      "dev.zio" %% "zio"              % ZioCoreVersion,
+      "dev.zio" %% "zio-streams"      % ZioCoreVersion,
+      "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC5",
+      "dev.zio" %% "zio-test"         % ZioCoreVersion % Test,
+      "dev.zio" %% "zio-test-sbt"     % ZioCoreVersion % Test
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
 
 lazy val docs = project
