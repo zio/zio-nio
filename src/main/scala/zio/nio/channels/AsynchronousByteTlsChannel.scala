@@ -107,6 +107,9 @@ class AsynchronousTlsByteChannel(private val channel: AsynchronousSocketChannel,
   val TLS_PACKET_SZ = sslEngine.engine.getSession().getPacketBufferSize()
   val APP_PACKET_SZ = sslEngine.engine.getSession().getApplicationBufferSize()
 
+  //prealoc carryover buffer, position getting saved between calls
+  val IN_J_BUFFER = java.nio.ByteBuffer.allocate(TLS_PACKET_SZ * 2)
+
   //used for Keep-Alive, if HTTPS
   var READ_TIMEOUT_MS: Long = 5000
 
@@ -117,8 +120,9 @@ class AsynchronousTlsByteChannel(private val channel: AsynchronousSocketChannel,
 
   def read(expected_size: Int): ZIO[Any with Clock, Exception, Chunk[Byte]] = {
     val result = for {
-      in  <- Buffer.byte(expected_size * 2) //more space for encrypted data
+
       out <- Buffer.byte(expected_size * 2)
+      in  <- IO.effectTotal(new zio.nio.ByteBuffer(IN_J_BUFFER)) //reuse carryover buffer from previous read(), buffer was compacted with compact(), only non-processed data left
 
       nb <- channel.readBuffer(in, Duration(READ_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS))
 
@@ -130,20 +134,17 @@ class AsynchronousTlsByteChannel(private val channel: AsynchronousSocketChannel,
       loop = for {
         res  <- sslEngine.unwrap(in, out)
         stat <- IO.effect(res.getStatus())
-        _ <- if (stat != SSLEngineResult.Status.OK) {
-              if (stat == SSLEngineResult.Status.BUFFER_UNDERFLOW) {
-                in.compact *>
-                  channel.readBuffer(
-                    in,
-                    Duration(READ_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
-                  ) *> in.flip
-              } else
-                IO.fail(new Exception("AsynchronousTlsByteChannel#read() " + res.toString()))
-            } else IO.unit
-        rem <- in.remaining
+        rem <- if (stat != SSLEngineResult.Status.OK) {
+                if (stat == SSLEngineResult.Status.BUFFER_UNDERFLOW)
+                  IO.succeed(0)
+                else
+                  IO.fail(new Exception("AsynchronousTlsByteChannel#read() " + res.toString()))
+              } else in.remaining
       } yield (rem)
       _ <- loop.repeat(zio.Schedule.doWhile(_ != 0))
       _ <- out.flip
+      //****compact, some data may be carried over for next read call
+      _ <- in.compact
 
       limit <- out.limit
       array <- out.array
