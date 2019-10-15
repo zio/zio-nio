@@ -90,7 +90,8 @@ object TlsChannelSpec
                 .read(maxChunkSize)
                 .flatMap { chunk =>
                   {
-                    effectBlocking(fp.write(chunk.toArray)) *> IO.succeed(1)
+                    if ( chunk.isEmpty == false ) effectBlocking(fp.write(chunk.toArray)) *> IO.succeed(1)
+                    else IO.succeed( 1 )
                   }
                 }
                 .catchAll(e => { println(e.toString); IO.succeed(0) }) //no content size - just timeout when over

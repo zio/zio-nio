@@ -88,6 +88,8 @@ object AsynchronousTlsByteChannel {
 
           case FINISHED => IO.succeed(FINISHED)
 
+          case _ => IO.fail(new Exception("unknown: getHandshakeStatus() - possible SSLEngine commpatibility problem"))
+
         }
       }
 
@@ -276,6 +278,8 @@ object AsynchronousServerTlsByteChannel {
           case NOT_HANDSHAKING => IO.succeed(NOT_HANDSHAKING)
 
           case FINISHED => IO.succeed(FINISHED)
+
+          case _ => IO.fail(new Exception("unknown: getHandshakeStatus() - possible SSLEngine commpatibility problem"))
 
         }
       }
