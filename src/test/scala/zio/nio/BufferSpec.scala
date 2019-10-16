@@ -16,7 +16,7 @@ import scala.reflect.ClassTag
 import zio.{ Chunk, IO }
 import zio.test._
 import zio.test.Assertion._
-import zio.test.mock.MockEnvironment
+import zio.test.environment.TestEnvironment
 import BufferSpecUtils._
 
 object BufferSpec
@@ -82,7 +82,7 @@ object BufferSpecUtils {
     wrap: Chunk[A] => IO[Exception, C],
     jAllocate: Int => B,
     f: Int => A
-  ): Spec[String, ZTest[MockEnvironment, Exception, Unit]] = {
+  ): Spec[TestEnvironment, Exception, String, Either[TestFailure[Nothing], TestSuccess[Unit]]] = {
 
     val initialCapacity = 10
     def initialValues   = Array(1, 2, 3).map(f)
@@ -191,7 +191,7 @@ object BufferSpecUtils {
           b <- allocate(initialCapacity)
         } yield assert(b.hasArray, isTrue)
       },
-      testM[MockEnvironment, Exception, String]("0 <= mark <= position <= limit <= capacity") {
+      testM[TestEnvironment, Exception, String]("0 <= mark <= position <= limit <= capacity") {
         checkM(Gen.int(-1, 10), Gen.int(-1, 10), Gen.int(-1, 10), Gen.int(-1, 10)) {
           (markedPosition: Int, position: Int, limit: Int, capacity: Int) =>
             (for {

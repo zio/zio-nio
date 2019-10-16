@@ -14,7 +14,7 @@ import zio.nio.channels.{ AsynchronousServerSocketChannel, AsynchronousSocketCha
 import zio.clock.Clock
 import zio.console._
 import zio.duration._
-import zio.{ App, Chunk, IO, ZIO }
+import zio.{ App, Chunk, IO, ZIO, ZEnv }
 ```
 
 ## Client & Server
@@ -87,7 +87,7 @@ Let's run it as `ZIO` App:
 
 ```scala mdoc:silent
 object ClientServer extends App {
-  override def run(args: List[String]): ZIO[Environment, Nothing, Int] =
+  override def run(args: List[String]): ZIO[ZEnv, Nothing, Int] =
     myAppLogic
       .orDie
       .fold(_ => 1, _ => 0)
