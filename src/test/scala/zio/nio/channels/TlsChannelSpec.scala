@@ -30,15 +30,15 @@ object TlsChannelSpec
         testM("TLS handshake, TLS channel read/write tests") {
 
           val INFILE   = "src/test/resources/ZIO.png"
-          val OUTFILE1 = "src/test/resources/ZIO2.png" 
+          val OUTFILE1 = "src/test/resources/ZIO2.png"
 
-          val PORT     = (() => {
-                                   val rnd = new java.util.Random( new java.util.Date().getTime )
-                                   val t = 8800 + rnd.nextInt( 1000 ) 
-                                   println( t )
-                                   t 
-   
-                                })()
+          val PORT = (() => {
+            val rnd = new java.util.Random(new java.util.Date().getTime)
+            val t   = 8800 + rnd.nextInt(1000)
+            println(t)
+            t
+
+          })()
 
           def buildSSLContext(
             protocol: String,
