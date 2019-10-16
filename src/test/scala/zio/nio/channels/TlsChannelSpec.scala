@@ -30,7 +30,15 @@ object TlsChannelSpec
         testM("TLS handshake, TLS channel read/write tests") {
 
           val INFILE   = "src/test/resources/ZIO.png"
-          val OUTFILE1 = "src/test/resources/ZIO2.png"
+          val OUTFILE1 = "src/test/resources/ZIO2.png" 
+
+          val PORT     = (() => {
+                                   val rnd = new java.util.Random( new java.util.Date().getTime )
+                                   val t = 8800 + rnd.nextInt( 1000 ) 
+                                   println( t )
+                                   t 
+   
+                                })()
 
           def buildSSLContext(
             protocol: String,
@@ -113,7 +121,7 @@ object TlsChannelSpec
             for {
 
               ssl_context <- buildSSLContext("TLS", "src/test/resources/keystore.jks", "password")
-              address     <- SocketAddress.inetSocketAddress("127.0.0.1", 8090)
+              address     <- SocketAddress.inetSocketAddress("127.0.0.1", PORT)
 
               _ <- AsynchronousServerSocketChannel().use {
                     server =>
@@ -146,7 +154,7 @@ object TlsChannelSpec
           def client(CHUNK_SZ: Int, filePath: String, clientDone: Promise[Exception, Boolean]) =
             for {
               ssl_context <- buildSSLContext("TLS", "src/test/resources/keystore.jks", "password")
-              address     <- SocketAddress.inetSocketAddress("127.0.0.1", 8090)
+              address     <- SocketAddress.inetSocketAddress("127.0.0.1", PORT)
               chunk <- AsynchronousSocketChannel().use { client =>
                         for {
                           _ <- client.connect(address)
