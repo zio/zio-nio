@@ -214,6 +214,7 @@ object TlsChannelSpec
 
           } yield (assert(same, isTrue))
 
+          /*
           val r1 = for {
 
             serverReady <- Promise.make[Exception, Boolean]
@@ -232,9 +233,9 @@ object TlsChannelSpec
 
             _ <- IO.effect(new java.io.File(OUTFILE1).delete())
 
-          } yield (assert(same, isTrue))
+          } yield (assert(same, isTrue))*/
 
-          r *> r1
+          r
 
         }
       )
