@@ -199,11 +199,11 @@ object TlsChannelSpec
             serverReady <- Promise.make[Exception, Boolean]
             clientDone  <- Promise.make[Exception, Boolean]
 
-            fib1 <- server(4096, INFILE, clientDone, serverReady).fork
+            fib1 <- server(8096, INFILE, clientDone, serverReady).fork
 
             _ <- serverReady.await
 
-            fib2 <- client(4096, OUTFILE1, clientDone).fork
+            fib2 <- client(8096, OUTFILE1, clientDone).fork
 
             _ <- fib1.join
             _ <- fib2.join
