@@ -110,7 +110,7 @@ class AsynchronousTlsByteChannel(private val channel: AsynchronousSocketChannel,
   val APP_PACKET_SZ = sslEngine.engine.getSession().getApplicationBufferSize()
 
   //prealoc carryover buffer, position getting saved between calls
-  val IN_J_BUFFER = java.nio.ByteBuffer.allocate(TLS_PACKET_SZ * 15)
+  val IN_J_BUFFER = java.nio.ByteBuffer.allocate(TLS_PACKET_SZ * 3) //was 2: trying 3 times for performance to grab more data ahead
 
   //used for Keep-Alive, if HTTPS
   var READ_TIMEOUT_MS: Long = 5000
