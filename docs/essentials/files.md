@@ -21,7 +21,7 @@ Opening file for given path (with no additional open attributes) returns a `ZMan
 ```scala mdoc:silent
 val channelM = for {
   path    <- ZIO.effectTotal(Paths.get("./file.txt"))
-  channel <- AsynchronousFileChannel.open(path, Set.empty).use { channel => 
+  channel <- AsynchronousFileChannel.open(path).use { channel => 
     readWriteOp(channel) *> lockOp(channel)
   }
 } yield channel
