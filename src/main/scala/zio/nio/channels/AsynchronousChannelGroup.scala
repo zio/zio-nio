@@ -10,7 +10,7 @@ import zio.duration.Duration
 
 object AsynchronousChannelGroup {
 
-  def apply: IO[Exception, AsynchronousChannelGroup] =
+  def apply(): IO[Exception, AsynchronousChannelGroup] =
     for {
       eces <- ZIO.runtime.map((runtime: zio.Runtime[Any]) => runtime.Platform.executor.asECES)
       channel <- IO
