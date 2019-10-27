@@ -4,7 +4,7 @@ import zio.nio.BaseSpec
 import zio.test.Assertion._
 import zio.test._
 
-object PathSuite
+object PathSpec
     extends BaseSpec(
       suite("PathSpec")(
         test("Path construction") {
