@@ -8,9 +8,9 @@ A `AsynchronousFileChannel` provides API for handling files in non-blocking way.
 Required imports for presented snippets:
 
 ```scala mdoc:silent
-import java.nio.file.Paths
 import zio._
 import zio.nio.channels._
+import zio.nio.file._
 import zio.console._
 ```
 
@@ -19,12 +19,10 @@ import zio.console._
 Opening file for given path (with no additional open attributes) returns a `ZManaged` instance on which we're running the intended operations. `ZManaged` makes sure that the channel gets closed afterwards:
 
 ```scala mdoc:silent
-val channelM = for {
-  path    <- ZIO.effectTotal(Paths.get("./file.txt"))
-  channel <- AsynchronousFileChannel.open(path).use { channel => 
-    readWriteOp(channel) *> lockOp(channel)
-  }
-} yield channel
+val path = Path("file.txt")
+val channelM = AsynchronousFileChannel.open(path).use { channel => 
+  readWriteOp(channel) *> lockOp(channel)
+}
 ```
 
 Reading and writing is performed as effects where raw `Byte` content is wrapped in `Chunk`:
