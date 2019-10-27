@@ -87,30 +87,8 @@ object AsynchronousChannelGroupSpec
             result  <- channel.shutdownNow.run
           } yield assert(result, dies(anything))
         },
-        testM("companion object create instance using executor and initial size") {
-          ZIO(Executors.newCachedThreadPool()).bracket(executor => ZIO.effectTotal(executor.shutdown())) { executor =>
-            AsynchronousChannelGroup(executor, 1).run.map(result => assert(result.toEither, isRight(anything)))
-          }
-        },
-        testM("failing companion object create instance using executor and initial size") {
-          for {
-            result <- AsynchronousChannelGroup(null, 1).run
-          } yield assert(result, fails(anything))
-        },
-        testM("failing companion object create instance using threads no and threads factory") {
-          for {
-            result <- AsynchronousChannelGroup(1, null).run
-          } yield assert(result, fails(anything))
-        },
-        testM("companion object create instance using executor service") {
-          ZIO(Executors.newCachedThreadPool()).bracket(executor => ZIO.effectTotal(executor.shutdown())) { executor =>
-            AsynchronousChannelGroup(executor).run.map(result => assert(result.toEither, isRight(anything)))
-          }
-        },
-        testM("failing companion object create instance using executor service") {
-          for {
-            result <- AsynchronousChannelGroup(null).run
-          } yield assert(result, fails(anything))
+        testM("companion object create instance") {
+          AsynchronousChannelGroup.apply.run.map(result => assert(result.toEither, isRight(anything)))
         }
       )
     )

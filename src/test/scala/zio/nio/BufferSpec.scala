@@ -82,7 +82,7 @@ object BufferSpecUtils {
     wrap: Chunk[A] => IO[Exception, C],
     jAllocate: Int => B,
     f: Int => A
-  ): Spec[TestEnvironment, Exception, String, Either[TestFailure[Nothing], TestSuccess[Unit]]] = {
+  ): ZSpec[TestEnvironment, Exception, String, Unit] = {
 
     val initialCapacity = 10
     def initialValues   = Array(1, 2, 3).map(f)
