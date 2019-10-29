@@ -2,17 +2,17 @@ package zio.nio.channels
 
 import java.io.IOException
 import java.net.{ ServerSocket => JServerSocket, Socket => JSocket }
-import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{
   SelectableChannel => JSelectableChannel,
   ServerSocketChannel => JServerSocketChannel,
   SocketChannel => JSocketChannel
 }
+import java.nio.{ ByteBuffer => JByteBuffer }
 
-import zio.{ IO, Managed, UIO }
-import zio.nio.{ Buffer, SocketAddress, SocketOption }
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.channels.spi.SelectorProvider
+import zio.nio.{ Buffer, SocketAddress, SocketOption }
+import zio.{ IO, Managed, UIO }
 
 trait SelectableChannel extends Channel {
 
@@ -124,6 +124,9 @@ object SocketChannel {
     Managed.make(open)(_.close.orDie)
   }
 
+  def fromJava(javaSocketChannel: JSocketChannel): Managed[Nothing, SocketChannel] =
+    IO.effectTotal(new SocketChannel(javaSocketChannel)).toManaged(_.close.orDie)
+
 }
 
 final class ServerSocketChannel private (override protected val channel: JServerSocketChannel)
@@ -141,6 +144,13 @@ final class ServerSocketChannel private (override protected val channel: JServer
   final val socket: UIO[JServerSocket] =
     IO.effectTotal(channel.socket())
 
+  /**
+   * Accepts a socket connection.
+   *
+   * Not you must manually manage the lifecyle of the returned socket, calling `close` when you're finished with it.
+   *
+   * @return None if this socket is in non-blocking mode and no connection is currently available to be accepted.
+   */
   final def accept: IO[IOException, Option[SocketChannel]] =
     IO.effect(Option(channel.accept()).map(new SocketChannel(_))).refineToOrDie[IOException]
 
@@ -160,5 +170,8 @@ object ServerSocketChannel {
     val open = IO.effect(new ServerSocketChannel(JServerSocketChannel.open())).refineToOrDie[IOException]
     Managed.make(open)(_.close.orDie)
   }
+
+  def fromJava(javaChannel: JServerSocketChannel): Managed[IOException, ServerSocketChannel] =
+    IO.effectTotal(new ServerSocketChannel(javaChannel)).toManaged(_.close.orDie)
 
 }

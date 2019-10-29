@@ -89,8 +89,8 @@ Let's run it as `ZIO` App:
 object ClientServer extends App {
   override def run(args: List[String]): ZIO[ZEnv, Nothing, Int] =
     myAppLogic
-      .orDie
-      .fold(_ => 1, _ => 0)
+      .either
+      .map(_.fold(_ => 1, _ => 0))
 }
 ```
 

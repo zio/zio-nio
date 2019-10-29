@@ -1,36 +1,30 @@
-package zio.nio.channels
+package zio.nio
+
+package channels
 
 import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
 import java.nio.{ ByteBuffer => JByteBuffer }
 
-import zio.nio.Buffer
 import zio.{ Chunk, IO }
 
 trait ScatteringByteChannel extends Channel {
 
   override protected[channels] val channel: JScatteringByteChannel
 
-  final private[nio] def readBuffer(
-    dsts: List[Buffer[Byte]],
-    offset: Int,
-    length: Int
-  ): IO[Exception, Long] =
-    IO.effect(channel.read(unwrap(dsts), offset, length)).refineToOrDie[Exception]
+  final def readBuffer(dsts: List[Buffer[Byte]]): IO[Exception, Option[Long]] =
+    IO.effect(channel.read(unwrap(dsts)).eofCheck).refineToOrDie[Exception]
 
-  final def read(dsts: List[Chunk[Byte]], offset: Int, length: Int): IO[Exception, Long] =
+  final def readBuffer(dst: Buffer[Byte]): IO[Exception, Option[Long]] = readBuffer(List(dst))
+
+  final def read(capacity: Int): IO[Exception, Option[Chunk[Byte]]] = {
+    require(capacity > 0)
     for {
-      bs <- IO.collectAll(dsts.map(Buffer.byte(_)))
-      r  <- readBuffer(bs, offset, length)
-    } yield r
-
-  final private[nio] def readBuffer(dsts: List[Buffer[Byte]]): IO[Exception, Long] =
-    IO.effect(channel.read(unwrap(dsts))).refineToOrDie[Exception]
-
-  final def read(dsts: List[Chunk[Byte]]): IO[Exception, Long] =
-    for {
-      bs <- IO.collectAll(dsts.map(Buffer.byte(_)))
-      r  <- readBuffer(bs)
-    } yield r
+      buffer    <- Buffer.byte(capacity)
+      readCount <- readBuffer(buffer)
+      _         <- buffer.flip
+      chunk     <- readCount.map(count => buffer.getChunk(count.toInt).map(Some.apply)).getOrElse(IO.succeed(None))
+    } yield chunk
+  }
 
   private def unwrap(dsts: List[Buffer[Byte]]): Array[JByteBuffer] =
     dsts.map(d => d.buffer.asInstanceOf[JByteBuffer]).toList.toArray

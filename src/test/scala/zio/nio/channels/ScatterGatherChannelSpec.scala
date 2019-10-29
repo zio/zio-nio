@@ -2,12 +2,12 @@ package zio.nio.channels
 
 import java.io.{ File, RandomAccessFile }
 
-import scala.io.Source
-
-import zio.test._
-import zio.test.Assertion._
 import zio.nio.{ BaseSpec, Buffer }
+import zio.test.Assertion._
+import zio.test._
 import zio.{ Chunk, IO, ZIO }
+
+import scala.io.Source
 
 object ScatterGatherChannelSpec
     extends BaseSpec(

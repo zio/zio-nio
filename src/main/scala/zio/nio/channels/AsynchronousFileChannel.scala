@@ -3,9 +3,10 @@ package zio.nio.channels
 import java.io.IOException
 import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock }
 import java.nio.file.attribute.FileAttribute
-import java.nio.file.{ OpenOption, Path }
+import java.nio.file.OpenOption
 
 import com.github.ghik.silencer.silent
+import zio.nio.file.Path
 import zio.nio.{ Buffer, ByteBuffer }
 import zio.{ Chunk, IO, Managed, ZIO }
 
@@ -61,7 +62,7 @@ object AsynchronousFileChannel {
 
   def open(file: Path, options: OpenOption*): Managed[Exception, AsynchronousFileChannel] = {
     val open = ZIO
-      .effect(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file, options: _*)))
+      .effect(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*)))
       .refineToOrDie[Exception]
 
     Managed.make(open)(_.close.orDie)
@@ -78,7 +79,7 @@ object AsynchronousFileChannel {
       channel <- ZIO
                   .effect(
                     new AsynchronousFileChannel(
-                      JAsynchronousFileChannel.open(file, options.asJava, eces, attrs.toSeq: _*)
+                      JAsynchronousFileChannel.open(file.javaPath, options.asJava, eces, attrs.toSeq: _*)
                     )
                   )
                   .refineToOrDie[Exception]
