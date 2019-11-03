@@ -84,11 +84,9 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
   /**
    * Accepts a connection.
    */
-  final val accept: Managed[Exception, AsynchronousSocketChannel] =
-    Managed.make(
-      wrap[JAsynchronousSocketChannel](h => channel.accept((), h))
-        .map(AsynchronousSocketChannel(_))
-    )(_.close.orDie)
+  final val accept: IO[Exception, Managed[Exception, AsynchronousSocketChannel]] =
+    wrap[JAsynchronousSocketChannel](h => channel.accept((), h))
+      .map(jchannel => Managed.make(UIO.succeed(AsynchronousSocketChannel(jchannel)))(_.close.orDie))
 
   /**
    * The `SocketAddress` that the socket is bound to,

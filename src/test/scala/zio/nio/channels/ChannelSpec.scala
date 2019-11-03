@@ -21,11 +21,11 @@ object ChannelSpec
                     for {
                       _ <- server.bind(address)
                       _ <- promise.succeed(())
-                      _ <- server.accept.use { worker =>
+                      _ <- server.accept.flatMap(_.use { worker =>
                             worker.readBuffer(sink) *>
                               sink.flip *>
                               worker.writeBuffer(sink)
-                          }
+                          })
                     } yield ()
                   }.fork
             } yield ()
@@ -65,14 +65,12 @@ object ChannelSpec
                          for {
                            _ <- server.bind(address)
                            _ <- started.succeed(())
-                           result <- server.accept
-                                      .use { worker =>
-                                        worker.read(3) *> worker.read(3) *> ZIO.succeed(false)
-                                      }
-                                      .catchAll {
+                           result <- server.accept.flatMap(_.use { worker =>
+                                      worker.read(3) *> worker.read(3) *> ZIO.succeed(false)
+                                    }.catchAll {
                                         case ex: java.io.IOException if ex.getMessage == "Connection reset by peer" =>
                                           ZIO.succeed(true)
-                                      }
+                                      })
                          } yield result
                        }.fork
             } yield result
@@ -115,9 +113,9 @@ object ChannelSpec
                          for {
                            _ <- server.bind(address)
                            _ <- started.succeed(())
-                           worker <- server.accept.use { _ =>
+                           worker <- server.accept.flatMap(_.use { _ =>
                                       ZIO.unit
-                                    }
+                                    })
                          } yield worker
                        }.fork
             } yield worker
