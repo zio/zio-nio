@@ -68,9 +68,9 @@ object ChannelSpec
                            result <- server.accept.flatMap(_.use { worker =>
                                       worker.read(3) *> worker.read(3) *> ZIO.succeed(false)
                                     }.catchAll {
-                                        case ex: java.io.IOException if ex.getMessage == "Connection reset by peer" =>
-                                          ZIO.succeed(true)
-                                      })
+                                      case ex: java.io.IOException if ex.getMessage == "Connection reset by peer" =>
+                                        ZIO.succeed(true)
+                                    })
                          } yield result
                        }.fork
             } yield result
