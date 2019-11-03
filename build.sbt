@@ -52,3 +52,11 @@ lazy val docs = project
   )
   .dependsOn(zioNio)
   .enablePlugins(MdocPlugin, DocusaurusPlugin)
+
+lazy val examples = project
+  .in(file("examples"))
+  .settings(
+    skip in publish := true,
+    moduleName := "examples"
+  )
+  .dependsOn(zioNio)

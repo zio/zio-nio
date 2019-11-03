@@ -85,6 +85,7 @@ mdoc: &mdoc
         command: |
           ./sbt doc
           ./sbt ++${SCALA_VERSION}! docs/mdoc
+          ./sbt ++${SCALA_VERSION}! examples/compile
     - <<: *save_cache
 
 test: &test
