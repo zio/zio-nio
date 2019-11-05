@@ -5,6 +5,7 @@ import zio.test.{ suite, testM }
 import zio.{ IO, _ }
 import zio.test._
 import zio.test.Assertion._
+import zio.test.TestAspect.ignore
 
 object ChannelSpec
     extends BaseSpec(
@@ -21,11 +22,11 @@ object ChannelSpec
                     for {
                       _ <- server.bind(address)
                       _ <- promise.succeed(())
-                      _ <- server.accept.flatMap(_.use { worker =>
+                      _ <- server.accept.use { worker =>
                             worker.readBuffer(sink) *>
                               sink.flip *>
                               worker.writeBuffer(sink)
-                          })
+                          }
                     } yield ()
                   }.fork
             } yield ()
@@ -65,12 +66,14 @@ object ChannelSpec
                          for {
                            _ <- server.bind(address)
                            _ <- started.succeed(())
-                           result <- server.accept.flatMap(_.use { worker =>
-                                      worker.read(3) *> worker.read(3) *> ZIO.succeed(false)
-                                    }.catchAll {
-                                      case ex: java.io.IOException if ex.getMessage == "Connection reset by peer" =>
-                                        ZIO.succeed(true)
-                                    })
+                           result <- server.accept
+                                      .use { worker =>
+                                        worker.read(3) *> worker.read(3) *> ZIO.succeed(false)
+                                      }
+                                      .catchAll {
+                                        case ex: java.io.IOException if ex.getMessage == "Connection reset by peer" =>
+                                          ZIO.succeed(true)
+                                      }
                          } yield result
                        }.fork
             } yield result
@@ -113,9 +116,9 @@ object ChannelSpec
                          for {
                            _ <- server.bind(address)
                            _ <- started.succeed(())
-                           worker <- server.accept.flatMap(_.use { _ =>
+                           worker <- server.accept.use { _ =>
                                       ZIO.unit
-                                    })
+                                    }
                          } yield worker
                        }.fork
             } yield worker
@@ -132,6 +135,22 @@ object ChannelSpec
             _             <- client
             _             <- s2.join
           } yield assert(true, isTrue)
-        }
+        },
+        // this would best be tagged as an regression test. for now just run manually when suspicious.
+        testM("accept should not leak resources") {
+          val server = for {
+            addr    <- SocketAddress.inetSocketAddress(8081).toManaged_
+            channel <- AsynchronousServerSocketChannel()
+            _       <- channel.bind(addr).toManaged_
+            _       <- AsynchronousSocketChannel().use(channel => channel.connect(addr)).forever.toManaged_.fork
+          } yield channel
+          val interruptAccept = server.use(
+            _.accept
+              .use(_ => ZIO.interrupt)
+              .catchSomeCause { case Cause.interrupt => ZIO.unit }
+              .repeat(Schedule.recurs(20000))
+          )
+          assertM(interruptAccept.run, succeeds(equalTo(20000)))
+        } @@ ignore
       )
     )
