@@ -147,7 +147,7 @@ object ChannelSpec
           val interruptAccept = server.use(
             _.accept
               .use(_ => ZIO.interrupt)
-              .catchSomeCause { case Cause.interrupt => ZIO.unit }
+              .catchSomeCause { case Cause.Interrupt(_) => ZIO.unit }
               .repeat(Schedule.recurs(20000))
           )
           assertM(interruptAccept.run, succeeds(equalTo(20000)))
