@@ -32,7 +32,7 @@ lazy val zioNio = project
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio"              % ZioCoreVersion,
       "dev.zio" %% "zio-streams"      % ZioCoreVersion,
-      "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC5",
+      "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC6",
       "dev.zio" %% "zio-test"         % ZioCoreVersion % Test,
       "dev.zio" %% "zio-test-sbt"     % ZioCoreVersion % Test
     ),
