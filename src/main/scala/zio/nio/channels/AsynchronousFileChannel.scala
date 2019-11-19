@@ -75,7 +75,7 @@ object AsynchronousFileChannel {
   ): Managed[Exception, AsynchronousFileChannel] = {
     @silent
     val open = for {
-      eces <- ZIO.runtime.map((runtime: zio.Runtime[Any]) => runtime.Platform.executor.asECES)
+      eces <- ZIO.runtime.map((runtime: zio.Runtime[Any]) => runtime.platform.executor.asECES)
       channel <- ZIO
                   .effect(
                     new AsynchronousFileChannel(

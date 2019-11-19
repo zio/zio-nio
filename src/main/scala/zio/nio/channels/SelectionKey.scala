@@ -50,7 +50,7 @@ class SelectionKey(private[nio] val selectionKey: JSelectionKey) {
     IO.effectTotal(selectionKey.cancel())
 
   final val interestOps: IO[CancelledKeyException, Set[Operation]] =
-    IO.effectTotal(selectionKey.interestOps())
+    IO.effect(selectionKey.interestOps())
       .map(Operation.fromInt(_))
       .refineToOrDie[CancelledKeyException]
 
