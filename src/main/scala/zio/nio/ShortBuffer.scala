@@ -51,5 +51,4 @@ final class ShortBuffer(val shortBuffer: JShortBuffer) extends Buffer[Short](sho
 
   override def asReadOnlyBuffer: IO[Nothing, ShortBuffer] =
     IO.effectTotal(shortBuffer.asReadOnlyBuffer()).map(new ShortBuffer(_))
-
 }

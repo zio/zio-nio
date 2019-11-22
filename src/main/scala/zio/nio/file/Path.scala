@@ -12,7 +12,6 @@ import scala.collection.JavaConverters._
 
 @silent("object JavaConverters in package collection is deprecated")
 final class Path private (private[nio] val javaPath: JPath) extends Watchable {
-
   import Path._
 
   def filesystem: FileSystem = FileSystem.fromJava(javaPath.getFileSystem)
@@ -69,15 +68,12 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
   override def equals(obj: Any): Boolean = javaPath.equals(obj)
 
   override def toString: String = javaPath.toString
-
 }
 
 object Path {
-
   def apply(first: String, more: String*): Path = new Path(Paths.get(first, more: _*))
 
   def apply(uri: URI): Path = new Path(Paths.get(uri))
 
   def fromJava(javaPath: JPath): Path = new Path(javaPath)
-
 }

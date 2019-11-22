@@ -5,7 +5,6 @@ import java.nio.channels.{ Channel => JChannel }
 import zio.{ IO, UIO }
 
 trait Channel {
-
   protected val channel: JChannel
 
   final private[channels] val close: IO[Exception, Unit] =
@@ -16,5 +15,4 @@ trait Channel {
    */
   final def isOpen: UIO[Boolean] =
     IO.effectTotal(channel.isOpen)
-
 }

@@ -144,9 +144,7 @@ object Files {
   }
 
   final case class Attribute(attributeName: String, viewName: String = "basic") {
-
     def toJava: String = s"$viewName:$attributeName"
-
   }
 
   object Attribute {
@@ -156,7 +154,6 @@ object Files {
       case view :: name :: Nil => Some(Attribute(name, view))
       case _                   => None
     }
-
   }
 
   def setAttribute(
@@ -180,7 +177,6 @@ object Files {
   }
 
   object AttributeNames {
-
     final case class List(names: scala.List[String]) extends AttributeNames
 
     case object All extends AttributeNames
@@ -192,9 +188,7 @@ object Files {
   }
 
   final case class Attributes(attributeNames: AttributeNames, viewName: String = "base") {
-
     def toJava: String = s"$viewName:${attributeNames.toJava}"
-
   }
 
   object Attributes {
@@ -328,5 +322,4 @@ object Files {
 //      }
 //    }.use(ZIO.succeed)
 //  }
-
 }

@@ -20,7 +20,6 @@ import scala.reflect.ClassTag
 
 @specialized // See if Specialized will work on return values, e.g. `get`
 abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffer) {
-
   final def capacity: Int = buffer.capacity
 
   def order: ByteOrder
@@ -94,7 +93,6 @@ abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffe
   def putChunk(chunk: Chunk[A]): IO[Exception, Unit]
 
   def asReadOnlyBuffer: IO[Nothing, Buffer[A]]
-
 }
 
 object Buffer {
@@ -169,5 +167,4 @@ object Buffer {
 
   def short(chunk: Chunk[Short]): IO[Nothing, ShortBuffer] =
     IO.effectTotal(JShortBuffer.wrap(chunk.toArray)).map(new ShortBuffer(_))
-
 }

@@ -27,5 +27,4 @@ object Pipe {
 
   final val open: IO[IOException, Pipe] =
     IO.effect(new Pipe(JPipe.open())).refineToOrDie[IOException]
-
 }

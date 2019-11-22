@@ -16,7 +16,6 @@ import scala.collection.JavaConverters._
 final class FileChannel private[channels] (override protected[channels] val channel: JFileChannel)
     extends GatheringByteChannel
     with ScatteringByteChannel {
-
   def position: IO[IOException, Long] = IO.effect(channel.position()).refineToOrDie[IOException]
 
   def postion(newPosition: Long): IO[Exception, Unit] =
@@ -64,7 +63,6 @@ final class FileChannel private[channels] (override protected[channels] val chan
     shared: Boolean = false
   ): IO[Exception, Option[FileLock]] =
     ZIO.effect(Option(channel.tryLock(position, size, shared)).map(new FileLock(_))).refineToOrDie[Exception]
-
 }
 
 object FileChannel {

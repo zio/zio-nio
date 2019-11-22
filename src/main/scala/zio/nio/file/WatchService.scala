@@ -18,7 +18,6 @@ import scala.collection.JavaConverters._
 import zio.{ IO, UIO, ZIO }
 
 trait Watchable {
-
   protected def javaWatchable: JWatchable
 
   final def register(watcher: WatchService, events: WatchEvent.Kind[_]*): IO[Exception, WatchKey] =
@@ -31,12 +30,10 @@ trait Watchable {
   ): IO[Exception, WatchKey] =
     IO.effect(new WatchKey(javaWatchable.register(watcher.javaWatchService, events.toArray, modifiers: _*)))
       .refineToOrDie[Exception]
-
 }
 
 @silent("object JavaConverters in package collection is deprecated")
 final class WatchKey private[file] (private val javaKey: JWatchKey) {
-
   def isValid: UIO[Boolean] = UIO.effectTotal(javaKey.isValid)
 
   def pollEvents: UIO[List[WatchEvent[_]]] = UIO.effectTotal(javaKey.pollEvents().asScala.toList)
@@ -44,11 +41,9 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
   def reset: UIO[Boolean] = UIO.effectTotal(javaKey.reset())
 
   def cancel: UIO[Unit] = UIO.effectTotal(javaKey.cancel())
-
 }
 
 final class WatchService private (private[file] val javaWatchService: JWatchService) {
-
   def close: IO[IOException, Unit] = IO.effect(javaWatchService.close()).refineToOrDie[IOException]
 
   def poll: IO[ClosedWatchServiceException, Option[WatchKey]] =
@@ -62,13 +57,10 @@ final class WatchService private (private[file] val javaWatchService: JWatchServ
     ZIO
       .accessM[Blocking](_.blocking.effectBlocking(new WatchKey(javaWatchService.take())))
       .refineToOrDie[Exception]
-
 }
 
 object WatchService {
-
   def forDefaultFileSystem: ZIO[Blocking, Exception, WatchService] = FileSystem.default.newWatchService
 
   def fromJava(javaWatchService: JWatchService): WatchService = new WatchService(javaWatchService)
-
 }

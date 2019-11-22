@@ -17,7 +17,6 @@ object SelectionKey {
   sealed abstract class Operation(val intVal: Int)
 
   object Operation {
-
     final case object Read    extends Operation(JSelectionKey.OP_READ)
     final case object Write   extends Operation(JSelectionKey.OP_WRITE)
     final case object Connect extends Operation(JSelectionKey.OP_CONNECT)
@@ -34,7 +33,6 @@ object SelectionKey {
 }
 
 class SelectionKey(private[nio] val selectionKey: JSelectionKey) {
-
   import SelectionKey._
 
   final val channel: UIO[JSelectableChannel] =
@@ -87,5 +85,4 @@ class SelectionKey(private[nio] val selectionKey: JSelectionKey) {
 
   final val attachment: UIO[Option[AnyRef]] =
     IO.effectTotal(selectionKey.attachment()).map(Option(_))
-
 }
