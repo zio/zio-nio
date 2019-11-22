@@ -12,7 +12,7 @@ object AsynchronousChannelGroup {
 
   def apply(): IO[Exception, AsynchronousChannelGroup] =
     for {
-      eces <- ZIO.runtime.map((runtime: zio.Runtime[Any]) => runtime.Platform.executor.asECES)
+      eces <- ZIO.runtime.map((runtime: zio.Runtime[Any]) => runtime.platform.executor.asECES)
       channel <- IO
                   .effect(
                     new AsynchronousChannelGroup(JAsynchronousChannelGroup.withThreadPool(eces))
