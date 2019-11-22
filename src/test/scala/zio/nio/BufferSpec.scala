@@ -83,7 +83,6 @@ object BufferSpecUtils {
     jAllocate: Int => B,
     f: Int => A
   ): ZSpec[TestEnvironment, Exception, String, Unit] = {
-
     val initialCapacity = 10
     def initialValues   = Array(1, 2, 3).map(f)
     def zeroValues      = Array(0, 0, 0).map(f)

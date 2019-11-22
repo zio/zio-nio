@@ -22,5 +22,4 @@ final class FileLock private[channels] (javaLock: JFileLock) {
   def isValid: UIO[Boolean] = UIO.effectTotal(javaLock.isValid())
 
   def release: IO[IOException, Unit] = IO.effect(javaLock.release()).refineToOrDie[IOException]
-
 }

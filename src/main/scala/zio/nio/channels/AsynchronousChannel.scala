@@ -238,7 +238,6 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
             ZIO.succeed(as.map(Chunk.fromArray))
           }
     } yield r
-
 }
 
 object AsynchronousSocketChannel {

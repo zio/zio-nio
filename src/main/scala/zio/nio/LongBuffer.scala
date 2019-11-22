@@ -51,5 +51,4 @@ final class LongBuffer(val longBuffer: JLongBuffer) extends Buffer[Long](longBuf
 
   override def asReadOnlyBuffer: IO[Nothing, LongBuffer] =
     IO.effectTotal(longBuffer.asReadOnlyBuffer()).map(new LongBuffer(_))
-
 }
