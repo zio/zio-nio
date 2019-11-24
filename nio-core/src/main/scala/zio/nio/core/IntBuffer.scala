@@ -51,5 +51,4 @@ final class IntBuffer(val intBuffer: JIntBuffer) extends Buffer[Int](intBuffer) 
 
   override def asReadOnlyBuffer: IO[Nothing, IntBuffer] =
     IO.effectTotal(intBuffer.asReadOnlyBuffer()).map(new IntBuffer(_))
-
 }

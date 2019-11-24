@@ -53,5 +53,4 @@ final class CharBuffer(charBuffer: JCharBuffer) extends Buffer[Char](charBuffer)
 
   override def asReadOnlyBuffer: IO[Nothing, CharBuffer] =
     IO.effectTotal(charBuffer.asReadOnlyBuffer()).map(new CharBuffer(_))
-
 }

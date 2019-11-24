@@ -53,5 +53,4 @@ final class DoubleBuffer(doubleBuffer: JDoubleBuffer) extends Buffer[Double](dou
 
   override def asReadOnlyBuffer: IO[Nothing, DoubleBuffer] =
     IO.effectTotal(doubleBuffer.asReadOnlyBuffer()).map(new DoubleBuffer(_))
-
 }

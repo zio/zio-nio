@@ -8,7 +8,6 @@ import zio.IO
 import scala.collection.JavaConverters._
 
 class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetworkInterface) {
-
   import NetworkInterface.JustSocketException
 
   def name: String = jNetworkInterface.getName
@@ -50,7 +49,6 @@ class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetwor
     IO.effect(jNetworkInterface.getMTU).refineOrDie(JustSocketException)
 
   def isVirtual: Boolean = jNetworkInterface.isVirtual
-
 }
 
 object NetworkInterface {

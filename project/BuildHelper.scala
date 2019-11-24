@@ -19,12 +19,12 @@ object BuildHelper {
     incOptions ~= (_.withLogRecompileOnMacro(false))
   )
 
-  val ZioCoreVersion = "1.0.0-RC16"
-  val ZioInteropJava = "1.1.0.0-RC5"
+  val ZioCoreVersion = "1.0.0-RC17"
+  val ZioInteropJava = "1.1.0.0-RC6"
   
   private val SilencerVersion = "1.4.4"
   private val Scala212        = "2.12.10"
-  private val Scala213        = "2.13.0"
+  private val Scala213        = "2.13.1"
 
   private val stdOptions = Seq(
     "-encoding",

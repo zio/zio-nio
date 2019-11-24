@@ -12,7 +12,6 @@ import scala.collection.JavaConverters._
 
 @silent("object JavaConverters in package collection is deprecated")
 final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
-
   def provider: jf.spi.FileSystemProvider = javaFileSystem.provider()
 
   private def close: ZIO[Blocking, Exception, Unit] =
@@ -38,12 +37,10 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
 
   def newWatchService: ZIO[Blocking, Exception, WatchService] =
     effectBlocking(WatchService.fromJava(javaFileSystem.newWatchService())).refineToOrDie[Exception]
-
 }
 
 @silent("object JavaConverters in package collection is deprecated")
 object FileSystem {
-
   private val close: FileSystem => ZIO[Blocking, Nothing, Unit] = _.close.orDie
 
   def fromJava(javaFileSystem: jf.FileSystem): FileSystem = new FileSystem(javaFileSystem)
@@ -67,5 +64,4 @@ object FileSystem {
     effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(path.javaPath, loader)))
       .refineToOrDie[Exception]
       .toManaged(close)
-
 }

@@ -5,7 +5,6 @@ import java.net.{ InetAddress => JInetAddress }
 import zio.IO
 
 class InetAddress private[nio] (private[nio] val jInetAddress: JInetAddress) {
-
   def isMulticastAddress: Boolean = jInetAddress.isMulticastAddress
 
   def isAnyLocalAddress: Boolean = jInetAddress.isAnyLocalAddress
@@ -42,7 +41,6 @@ class InetAddress private[nio] (private[nio] val jInetAddress: JInetAddress) {
   def canonicalHostName: String = jInetAddress.getCanonicalHostName
 
   def address: Array[Byte] = jInetAddress.getAddress
-
 }
 
 object InetAddress {

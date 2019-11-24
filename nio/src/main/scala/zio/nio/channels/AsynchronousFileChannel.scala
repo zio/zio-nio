@@ -5,28 +5,30 @@ import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, 
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.OpenOption
 
-import com.github.ghik.silencer.silent
+import zio.interop.javaz._
 import zio.nio.core.{ Buffer, ByteBuffer }
 import zio.nio.core.channels.FileLock
 import zio.nio.core.file.Path
 import zio.{ Chunk, IO, Managed, ZIO }
 
 import scala.collection.JavaConverters._
+import scala.concurrent.ExecutionContextExecutorService
 
 class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) extends Channel {
-
-  import AsynchronousChannel.wrap
 
   final def force(metaData: Boolean): IO[IOException, Unit] =
     IO.effect(channel.force(metaData)).refineToOrDie[IOException]
 
   final def lock(position: Long = 0L, size: Long = Long.MaxValue, shared: Boolean = false): IO[Exception, FileLock] =
-    wrap[JFileLock](channel.lock(position, size, shared, (), _)).map(FileLock.fromJava(_))
+    withCompletionHandler[JFileLock](channel.lock(position, size, shared, (), _))
+      .map(FileLock.fromJava(_))
+      .refineToOrDie[Exception]
 
   final private[nio] def readBuffer(dst: ByteBuffer, position: Long): IO[Exception, Int] =
     dst.withJavaBuffer { buf =>
-      wrap[Integer](channel.read(buf, position, (), _))
+      withCompletionHandler[Integer](channel.read(buf, position, (), _))
         .map(_.intValue)
+        .refineToOrDie[Exception]
     }
 
   final def read(capacity: Int, position: Long): IO[Exception, Chunk[Byte]] =
@@ -47,8 +49,9 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
 
   final private[nio] def writeBuffer(src: ByteBuffer, position: Long): IO[Exception, Int] =
     src.withJavaBuffer { buf =>
-      wrap[Integer](channel.write(buf, position, (), _))
+      withCompletionHandler[Integer](channel.write(buf, position, (), _))
         .map(_.intValue)
+        .refineToOrDie[Exception]
     }
 
   final def write(src: Chunk[Byte], position: Long): IO[Exception, Int] =
@@ -56,7 +59,6 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
       b <- Buffer.byte(src)
       r <- writeBuffer(b, position)
     } yield r
-
 }
 
 object AsynchronousFileChannel {
@@ -72,21 +74,17 @@ object AsynchronousFileChannel {
   def openWithExecutor(
     file: Path,
     options: Set[_ <: OpenOption],
+    executor: Option[ExecutionContextExecutorService],
     attrs: Set[FileAttribute[_]] = Set.empty
   ): Managed[Exception, AsynchronousFileChannel] = {
-    @silent
-    val open = for {
-      eces <- ZIO.runtime.map((runtime: zio.Runtime[Any]) => runtime.Platform.executor.asECES)
-      channel <- ZIO
-                  .effect(
-                    new AsynchronousFileChannel(
-                      JAsynchronousFileChannel.open(file.javaPath, options.asJava, eces, attrs.toSeq: _*)
-                    )
-                  )
-                  .refineToOrDie[Exception]
-    } yield channel
+    val open = ZIO
+                 .effect(
+                   new AsynchronousFileChannel(
+                     JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
+                   )
+                 )
+                 .refineToOrDie[Exception]
 
     Managed.make(open)(_.close.orDie)
   }
-
 }

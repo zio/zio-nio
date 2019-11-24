@@ -17,7 +17,6 @@ import scala.collection.JavaConverters._
 final class FileChannel private[channels] (override protected[channels] val channel: JFileChannel)
     extends GatheringByteChannel
     with ScatteringByteChannel {
-
   def position: IO[IOException, Long] = IO.effect(channel.position()).refineToOrDie[IOException]
 
   def postion(newPosition: Long): IO[Exception, Unit] =

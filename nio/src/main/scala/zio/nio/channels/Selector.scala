@@ -69,5 +69,4 @@ object Selector {
     val open = IO.effect(new Selector(JSelector.open())).refineToOrDie[IOException]
     Managed.make(open)(_.close.orDie)
   }
-
 }

@@ -51,5 +51,4 @@ final class FloatBuffer(floatBuffer: JFloatBuffer) extends Buffer[Float](floatBu
 
   override def asReadOnlyBuffer: IO[Nothing, FloatBuffer] =
     IO.effectTotal(floatBuffer.asReadOnlyBuffer()).map(new FloatBuffer(_))
-
 }

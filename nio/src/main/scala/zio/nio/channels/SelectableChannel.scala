@@ -16,7 +16,6 @@ import zio.nio.core.channels.SelectionKey.Operation
 import zio.{ IO, Managed, UIO }
 
 trait SelectableChannel extends Channel {
-
   protected val channel: JSelectableChannel
 
   final val provider: UIO[SelectorProvider] =
@@ -56,7 +55,6 @@ trait SelectableChannel extends Channel {
 
   final val blockingLock: UIO[AnyRef] =
     IO.effectTotal(channel.blockingLock())
-
 }
 
 final class SocketChannel private[channels] (override protected[channels] val channel: JSocketChannel)
@@ -103,7 +101,6 @@ final class SocketChannel private[channels] (override protected[channels] val ch
   final val localAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(Option(channel.getLocalAddress()).map(new SocketAddress(_)))
       .refineToOrDie[IOException]
-
 }
 
 object SocketChannel {
@@ -127,7 +124,6 @@ object SocketChannel {
 
   def fromJava(javaSocketChannel: JSocketChannel): Managed[Nothing, SocketChannel] =
     IO.effectTotal(new SocketChannel(javaSocketChannel)).toManaged(_.close.orDie)
-
 }
 
 final class ServerSocketChannel private (override protected val channel: JServerSocketChannel)
@@ -157,7 +153,6 @@ final class ServerSocketChannel private (override protected val channel: JServer
 
   final val localAddress: IO[IOException, SocketAddress] =
     IO.effect(new SocketAddress(channel.getLocalAddress())).refineToOrDie[IOException]
-
 }
 
 object ServerSocketChannel {
@@ -174,5 +169,4 @@ object ServerSocketChannel {
 
   def fromJava(javaChannel: JServerSocketChannel): Managed[IOException, ServerSocketChannel] =
     IO.effectTotal(new ServerSocketChannel(javaChannel)).toManaged(_.close.orDie)
-
 }
