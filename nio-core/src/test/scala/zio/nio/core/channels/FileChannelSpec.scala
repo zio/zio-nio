@@ -64,7 +64,6 @@ object FileChannelSpec
                          } yield assert(bytes == Chunk.fromArray("Hello ".getBytes(StandardCharsets.UTF_8)), isTrue)
                        }
           } yield result
-
         }
       )
     )

@@ -25,7 +25,5 @@ final class FileLock private[channels] (javaLock: JFileLock) {
 }
 
 object FileLock {
-
   def fromJava(javaLock: JFileLock): FileLock = new FileLock(javaLock)
-
 }

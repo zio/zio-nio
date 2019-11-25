@@ -64,7 +64,6 @@ final class FileChannel private[channels] (override protected[channels] val chan
     shared: Boolean = false
   ): IO[Exception, Option[FileLock]] =
     ZIO.effect(Option(channel.tryLock(position, size, shared)).map(FileLock.fromJava(_))).refineToOrDie[Exception]
-
 }
 
 object FileChannel {

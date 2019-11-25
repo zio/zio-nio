@@ -58,7 +58,6 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
       b <- Buffer.byte(src)
       r <- writeBuffer(b, position)
     } yield r
-
 }
 
 object AsynchronousFileChannel {
@@ -81,5 +80,4 @@ object AsynchronousFileChannel {
         )
       )
       .refineToOrDie[Exception]
-
 }

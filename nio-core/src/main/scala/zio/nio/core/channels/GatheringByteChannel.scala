@@ -7,7 +7,6 @@ import zio.nio.core.Buffer
 import zio.{ Chunk, IO }
 
 trait GatheringByteChannel extends Channel {
-
   override protected[channels] val channel: JGatheringByteChannel
 
   final def writeBuffer(srcs: List[Buffer[Byte]]): IO[Exception, Long] =

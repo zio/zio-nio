@@ -39,5 +39,4 @@ object SelectorProvider {
 
   final val make: IO[Nothing, SelectorProvider] =
     IO.effectTotal(JSelectorProvider.provider()).map(new SelectorProvider(_))
-
 }

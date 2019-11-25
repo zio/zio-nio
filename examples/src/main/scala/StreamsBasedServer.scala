@@ -10,7 +10,8 @@ object StreamsBasedServer extends App {
 
   // pretend we already have the next zio release
   implicit class zManagedSyntax[R, E, A](zm: ZManaged[R, E, A]) {
-    def allocated: ZIO[R, E, Managed[Nothing, A]] = {
+
+    def allocated: ZIO[R, E, Managed[Nothing, A]] =
       ZIO.uninterruptibleMask { restore =>
         for {
           env      <- ZIO.environment[R]
@@ -18,7 +19,6 @@ object StreamsBasedServer extends App {
           resource <- restore(res.acquire).onError(err => res.release(Exit.Failure(err)))
         } yield ZManaged.make(ZIO.succeed(resource))(_ => res.release(Exit.Success(resource)).provide(env))
       }
-    }
   }
 
   def run(args: List[String]) =

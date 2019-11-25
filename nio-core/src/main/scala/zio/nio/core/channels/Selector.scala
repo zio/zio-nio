@@ -12,7 +12,6 @@ import zio.{ IO, UIO }
 import scala.collection.JavaConverters
 
 class Selector(private[nio] val selector: JSelector) {
-
   final val isOpen: UIO[Boolean] = IO.effectTotal(selector.isOpen)
 
   final val provider: UIO[SelectorProvider] =
@@ -68,5 +67,4 @@ object Selector {
 
   final val make: IO[IOException, Selector] =
     IO.effect(new Selector(JSelector.open())).refineToOrDie[IOException]
-
 }

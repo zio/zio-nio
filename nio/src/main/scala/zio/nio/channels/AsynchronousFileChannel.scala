@@ -78,12 +78,12 @@ object AsynchronousFileChannel {
     attrs: Set[FileAttribute[_]] = Set.empty
   ): Managed[Exception, AsynchronousFileChannel] = {
     val open = ZIO
-                 .effect(
-                   new AsynchronousFileChannel(
-                     JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
-                   )
-                 )
-                 .refineToOrDie[Exception]
+      .effect(
+        new AsynchronousFileChannel(
+          JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
+        )
+      )
+      .refineToOrDie[Exception]
 
     Managed.make(open)(_.close.orDie)
   }

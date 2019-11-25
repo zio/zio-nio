@@ -134,7 +134,6 @@ object AsynchronousServerSocketChannel {
         case e: Exception => e
       }
       .map(new AsynchronousServerSocketChannel(_))
-
 }
 
 class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
@@ -228,7 +227,6 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
             ZIO.succeed(as.map(Chunk.fromArray))
           }
     } yield r
-
 }
 
 object AsynchronousSocketChannel {

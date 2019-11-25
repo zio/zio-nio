@@ -37,7 +37,6 @@ object AsynchronousChannelGroup {
         new AsynchronousChannelGroup(JAsynchronousChannelGroup.withThreadPool(executor))
       )
       .refineToOrDie[Exception]
-
 }
 
 class AsynchronousChannelGroup(val channelGroup: JAsynchronousChannelGroup) {

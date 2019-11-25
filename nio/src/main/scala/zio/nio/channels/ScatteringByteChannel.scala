@@ -9,7 +9,6 @@ import zio.{ Chunk, IO }
 import zio.nio.core.Buffer
 
 trait ScatteringByteChannel extends Channel {
-
   override protected[channels] val channel: JScatteringByteChannel
 
   final def readBuffer(dsts: List[Buffer[Byte]]): IO[Exception, Option[Long]] =
