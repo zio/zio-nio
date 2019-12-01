@@ -65,7 +65,7 @@ lazy val docs = project
       "dev.zio" %% "zio" % ZioCoreVersion
     )
   )
-  .dependsOn(zioNioCore)
+  .dependsOn(zioNio)
   .enablePlugins(MdocPlugin, DocusaurusPlugin)
 
 lazy val examples = project
