@@ -11,7 +11,7 @@ import zio.nio.core.channels.FileLock
 import zio.nio.core.file.Path
 import zio.{ Chunk, IO, Managed, ZIO }
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContextExecutorService
 
 class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) extends Channel {

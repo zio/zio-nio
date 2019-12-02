@@ -10,7 +10,7 @@ import zio.nio.core.file.Path
 import zio.nio.core.{ Buffer, ByteBuffer }
 import zio.{ Chunk, IO }
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContextExecutorService
 
 class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) extends Channel {
