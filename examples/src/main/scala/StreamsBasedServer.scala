@@ -8,19 +8,6 @@ import zio.stream._
 
 object StreamsBasedServer extends App {
 
-  // pretend we already have the next zio release
-  implicit class zManagedSyntax[R, E, A](zm: ZManaged[R, E, A]) {
-
-    def allocated: ZIO[R, E, Managed[Nothing, A]] =
-      ZIO.uninterruptibleMask { restore =>
-        for {
-          env      <- ZIO.environment[R]
-          res      <- zm.reserve
-          resource <- restore(res.acquire).onError(err => res.release(Exit.Failure(err)))
-        } yield ZManaged.make(ZIO.succeed(resource))(_ => res.release(Exit.Success(resource)).provide(env))
-      }
-  }
-
   def run(args: List[String]) =
     ZStream
       .managed(server(8080))
@@ -44,7 +31,7 @@ object StreamsBasedServer extends App {
     server: AsynchronousServerSocketChannel
   )(f: String => RIO[R, Unit]): ZStream[R, Throwable, Unit] =
     ZStream
-      .repeatEffect(server.accept.allocated)
+      .repeatEffect(server.accept.preallocate)
       .map { conn =>
         ZStream.managed(conn.ensuring(console.putStrLn("Connection closed")).withEarlyRelease)
       }
