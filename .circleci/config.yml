@@ -83,7 +83,7 @@ mdoc: &mdoc
     - run:
         name: Generate documentation
         command: |
-          ./sbt doc
+          ./sbt zioNio/doc zioNioCore/doc
           ./sbt ++${SCALA_VERSION}! docs/mdoc
           ./sbt ++${SCALA_VERSION}! examples/compile
     - <<: *save_cache
