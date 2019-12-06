@@ -19,7 +19,7 @@ final class FileChannel private[channels] (override protected[channels] val chan
     with ScatteringByteChannel {
   def position: IO[IOException, Long] = IO.effect(channel.position()).refineToOrDie[IOException]
 
-  def postion(newPosition: Long): IO[Exception, Unit] =
+  def position(newPosition: Long): IO[Exception, Unit] =
     IO.effect(channel.position(newPosition)).unit.refineToOrDie[Exception]
 
   def size: IO[IOException, Long] = IO.effect(channel.size()).refineToOrDie[IOException]
