@@ -25,16 +25,33 @@ ThisBuild / publishTo := sonatypePublishToBundle.value
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 
+lazy val zioNioCore = project
+  .in(file("nio-core"))
+  .settings(stdSettings("zio-nio-core"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "dev.zio"                %% "zio"                     % ZioCoreVersion,
+      "dev.zio"                %% "zio-streams"             % ZioCoreVersion,
+      "dev.zio"                %% "zio-interop-java"        % ZioInteropJava,
+      "dev.zio"                %% "zio-test"                % ZioCoreVersion % Test,
+      "dev.zio"                %% "zio-test-sbt"            % ZioCoreVersion % Test,
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2"
+    ),
+    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+  )
+
 lazy val zioNio = project
-  .in(file("."))
+  .in(file("nio"))
+  .dependsOn(zioNioCore)
   .settings(stdSettings("zio-nio"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"              % ZioCoreVersion,
-      "dev.zio" %% "zio-streams"      % ZioCoreVersion,
-      "dev.zio" %% "zio-interop-java" % "1.1.0.0-RC6",
-      "dev.zio" %% "zio-test"         % ZioCoreVersion % Test,
-      "dev.zio" %% "zio-test-sbt"     % ZioCoreVersion % Test
+      "dev.zio"                %% "zio"                     % ZioCoreVersion,
+      "dev.zio"                %% "zio-streams"             % ZioCoreVersion,
+      "dev.zio"                %% "zio-interop-java"        % ZioInteropJava,
+      "dev.zio"                %% "zio-test"                % ZioCoreVersion % Test,
+      "dev.zio"                %% "zio-test-sbt"            % ZioCoreVersion % Test,
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.2"
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )

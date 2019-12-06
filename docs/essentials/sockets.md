@@ -13,6 +13,7 @@ import zio.clock._
 import zio.console._
 import zio.nio._
 import zio.nio.channels._
+import zio.nio.core._
 
 // pretend we already have the next zio release
 implicit class zManagedSyntax[R, E, A](zm: ZManaged[R, E, A]) {
