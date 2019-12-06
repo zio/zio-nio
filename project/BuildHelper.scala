@@ -20,6 +20,7 @@ object BuildHelper {
   )
 
   val ZioCoreVersion = "1.0.0-RC17"
+  val ZioInteropJava = "1.1.0.0-RC6"
 
   private val SilencerVersion = "1.4.4"
   private val Scala212        = "2.12.10"

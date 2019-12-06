@@ -2,7 +2,7 @@ package zio.nio.examples
 
 import zio._
 import zio.duration._
-import zio.nio._
+import zio.nio.core.SocketAddress
 import zio.nio.channels._
 import zio.stream._
 

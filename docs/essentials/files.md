@@ -10,7 +10,7 @@ Required imports for presented snippets:
 ```scala mdoc:silent
 import zio._
 import zio.nio.channels._
-import zio.nio.file._
+import zio.nio.core.file._
 import zio.console._
 ```
 
