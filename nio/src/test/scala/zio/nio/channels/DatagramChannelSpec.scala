@@ -1,6 +1,7 @@
-package zio.nio.core.channels
+package zio.nio.channels
 
-import zio.nio.core._
+import zio.nio._
+import zio.nio.core.{ Buffer, InetAddress, InetSocketAddress, SocketAddress }
 import zio.test.Assertion._
 import zio.test.{ suite, testM, _ }
 import zio.{ IO, _ }
@@ -16,25 +17,22 @@ object DatagramChannelSpec
             for {
               address <- inetAddress
               sink    <- Buffer.byte(3)
-              _ <- Managed
-                    .make(DatagramChannel())(_.close.orDie)
-                    .use { server =>
-                      for {
-                        _          <- server.bind(address)
-                        _          <- promise.succeed(())
-                        retAddress <- server.receive(sink)
-                        _          <- sink.flip
-                        _          <- server.send(sink, retAddress)
-                      } yield ()
-                    }
-                    .fork
+              _ <- DatagramChannel().use { server =>
+                    for {
+                      _          <- server.bind(address)
+                      _          <- promise.succeed(())
+                      retAddress <- server.receive(sink)
+                      _          <- sink.flip
+                      _          <- server.send(sink, retAddress)
+                    } yield ()
+                  }.fork
             } yield ()
 
           def echoClient: IO[Exception, Boolean] =
             for {
               address <- inetAddress
               src     <- Buffer.byte(3)
-              result <- Managed.make(DatagramChannel())(_.close.orDie).use { client =>
+              result <- DatagramChannel().use { client =>
                          for {
                            _        <- client.connect(address)
                            sent     <- src.array
@@ -61,7 +59,7 @@ object DatagramChannelSpec
           def client: IO[Exception, Unit] =
             for {
               address <- inetAddress
-              _ <- Managed.make(DatagramChannel())(_.close.orDie).use { client =>
+              _ <- DatagramChannel().use { client =>
                     client.connect(address).unit
                   }
             } yield ()
@@ -69,15 +67,12 @@ object DatagramChannelSpec
           def server(started: Promise[Nothing, Unit]): IO[Exception, Fiber[Exception, Unit]] =
             for {
               address <- inetAddress
-              worker <- Managed
-                         .make(DatagramChannel())(_.close.orDie)
-                         .use { server =>
-                           for {
-                             _ <- server.bind(address)
-                             _ <- started.succeed(())
-                           } yield ()
-                         }
-                         .fork
+              worker <- DatagramChannel().use { server =>
+                         for {
+                           _ <- server.bind(address)
+                           _ <- started.succeed(())
+                         } yield ()
+                       }.fork
             } yield worker
 
           for {

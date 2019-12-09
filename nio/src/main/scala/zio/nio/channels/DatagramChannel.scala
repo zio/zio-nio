@@ -1,11 +1,11 @@
-package zio.nio.core.channels
+package zio.nio.channels
 
 import java.io.IOException
 import java.nio.channels.{ DatagramChannel => JDatagramChannel }
 import java.net.{ DatagramSocket => JDatagramSocket }
 
 import zio.nio.core.{ ByteBuffer, SocketAddress }
-import zio.{ IO, UIO }
+import zio.{ IO, Managed, UIO }
 
 final class DatagramChannel private[channels] (override protected[channels] val channel: JDatagramChannel)
     extends GatheringByteChannel
@@ -35,8 +35,12 @@ final class DatagramChannel private[channels] (override protected[channels] val 
 
 object DatagramChannel {
 
-  def apply(): IO[Exception, DatagramChannel] =
-    IO.effect(JDatagramChannel.open())
+  def apply(): Managed[Exception, DatagramChannel] = {
+    val open = IO
+      .effect(JDatagramChannel.open())
       .refineToOrDie[Exception]
       .map(new DatagramChannel(_))
+
+    Managed.make(open)(_.close.orDie)
+  }
 }
