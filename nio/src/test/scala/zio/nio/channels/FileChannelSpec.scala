@@ -3,12 +3,13 @@ package zio.nio.channels
 import java.nio.charset.StandardCharsets
 import java.nio.file.StandardOpenOption
 
-import zio.nio.core.file.{ Files, Path }
+import zio.{ Chunk, ZIO }
+import zio.nio.BaseSpec
 import zio.nio.core.Buffer
+import zio.nio.core.file.Path
+import zio.nio.file.Files
 import zio.test._
 import zio.test.Assertion._
-import zio.nio.BaseSpec
-import zio.{ Chunk, ZIO }
 
 import scala.io.Source
 

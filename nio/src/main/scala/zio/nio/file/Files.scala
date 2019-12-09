@@ -1,4 +1,4 @@
-package zio.nio.core.file
+package zio.nio.file
 
 import java.io.IOException
 import java.nio.charset.{ Charset, StandardCharsets }
@@ -16,15 +16,14 @@ import java.nio.file.{
 import java.util.function.BiPredicate
 import java.util.{ Iterator => JIterator }
 
-import com.github.ghik.silencer.silent
 import zio.blocking._
+import zio.nio.core.file.Path
 import zio.stream.ZStream
 import zio.{ Chunk, UIO, ZIO, ZManaged }
 
-import scala.collection.JavaConverters.{ asScalaSetConverter, _ }
+import scala.jdk.CollectionConverters._
 import scala.reflect._
 
-@silent("object JavaConverters in package collection is deprecated")
 object Files {
 
   def fromJavaIterator[A](iterator: JIterator[A]): ZStream[Blocking, RuntimeException, A] =
