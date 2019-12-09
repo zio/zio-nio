@@ -1,9 +1,9 @@
 package zio.nio.core.channels
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.StandardOpenOption
+import java.nio.file.{ Files, StandardOpenOption }
 
-import zio.nio.core.file.{ Files, Path }
+import zio.nio.core.file.Path
 import zio.test._
 import zio.test.Assertion._
 import zio.test.environment.TestEnvironment
@@ -47,7 +47,7 @@ object FileChannelSpec
             _       <- channel.writeBuffer(buffer, 0)
             path    <- ZIO.effectTotal(Path("nio-core/src/test/resources/async_file_write_test.txt"))
             result  <- ZIO.effect(Source.fromFile(path.toFile).getLines.toSeq)
-            _       <- Files.delete(path)
+            _       <- ZIO.effect(Files.delete(path.javaPath))
           } yield assert(result.size == 1 && result.head == "Hello World", isTrue)
         },
         testM("memory mapped buffer") {

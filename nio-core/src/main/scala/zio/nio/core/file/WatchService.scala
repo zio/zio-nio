@@ -10,11 +10,10 @@ import java.nio.file.{
 }
 import java.util.concurrent.TimeUnit
 
-import com.github.ghik.silencer.silent
 import zio.blocking.Blocking
 import zio.duration.Duration
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import zio.{ IO, UIO, ZIO }
 
 trait Watchable {
@@ -32,7 +31,6 @@ trait Watchable {
       .refineToOrDie[Exception]
 }
 
-@silent("object JavaConverters in package collection is deprecated")
 final class WatchKey private[file] (private val javaKey: JWatchKey) {
   def isValid: UIO[Boolean] = UIO.effectTotal(javaKey.isValid)
 

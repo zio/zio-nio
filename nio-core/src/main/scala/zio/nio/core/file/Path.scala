@@ -4,13 +4,11 @@ import java.io.{ File, IOError, IOException }
 import java.net.URI
 import java.nio.file.{ LinkOption, Paths, Path => JPath, Watchable => JWatchable }
 
-import com.github.ghik.silencer.silent
 import zio.ZIO
 import zio.blocking.Blocking
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
-@silent("object JavaConverters in package collection is deprecated")
 final class Path private (private[nio] val javaPath: JPath) extends Watchable {
   import Path._
 
