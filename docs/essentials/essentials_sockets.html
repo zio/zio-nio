@@ -67,6 +67,7 @@
 <span class="hljs-keyword">import</span> zio.console._
 <span class="hljs-keyword">import</span> zio.nio._
 <span class="hljs-keyword">import</span> zio.nio.channels._
+<span class="hljs-keyword">import</span> zio.nio.core._
 
 <span class="hljs-comment">// pretend we already have the next zio release</span>
 <span class="hljs-keyword">implicit</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">zManagedSyntax</span>[<span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A</span>](<span class="hljs-params">zm: <span class="hljs-type">ZManaged</span>[<span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A</span>]</span>) </span>{
@@ -120,7 +121,7 @@
   _           &lt;- serverFiber.join
 } <span class="hljs-keyword">yield</span> ()
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 11/5/2019 by Maxim Schuwalow</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/zio-nio/docs/essentials/essentials_files"><span class="arrow-prev">← </span><span>File Channel</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#creating-sockets">Creating sockets</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section><div><div class="gitter-open-chat-button">Open Chat</div><script type="text/javascript">
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 12/6/2019 by Jakub Czuchnowski</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/zio-nio/docs/essentials/essentials_files"><span class="arrow-prev">← </span><span>File Channel</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#creating-sockets">Creating sockets</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section><div><div class="gitter-open-chat-button">Open Chat</div><script type="text/javascript">
         ((window.gitter = {}).chat = {}).options = {
           showChatByDefault: false,
           activationElement: '.gitter-open-chat-button',
