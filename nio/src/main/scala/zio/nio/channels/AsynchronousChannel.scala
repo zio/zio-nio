@@ -210,17 +210,16 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     length: Int,
     timeout: Duration
   ): IO[Exception, Long] =
-    withCompletionHandler[JLong](
-      h =>
-        channel.read(
-          dsts.map(_.buffer.asInstanceOf[JByteBuffer]).toArray,
-          offset,
-          length,
-          timeout.fold(Long.MaxValue, _.nanos),
-          TimeUnit.NANOSECONDS,
-          (),
-          h
-        )
+    withCompletionHandler[JLong](h =>
+      channel.read(
+        dsts.map(_.buffer.asInstanceOf[JByteBuffer]).toArray,
+        offset,
+        length,
+        timeout.fold(Long.MaxValue, _.nanos),
+        TimeUnit.NANOSECONDS,
+        (),
+        h
+      )
     ).map(_.toLong).refineToOrDie[Exception]
 
   final def read[A](
