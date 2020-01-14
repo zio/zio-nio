@@ -3,6 +3,7 @@ package zio
 package object nio {
 
   implicit final class RichLong(val value: Long) extends AnyVal {
+
     /**
      * Handle -1 magic number returned by many Java APIs when end of file is reached.
      *
