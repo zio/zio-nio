@@ -13,26 +13,12 @@ Learn more about ZIO-NIO at:
 
 ## Competition
 
-* Scala standard
-  * Cover File and Socket blocking/unblocking IO operations :x:
-  * Performant  :white_check_mark:
-  * Type-safe, pure FP :x:
-  * Scalaz compatibility :x:
-* http4s blaze
-  * Cover File and Socket blocking/unblocking IO operations :x:
-  * Performant :white_check_mark:
-  * Type-safe, pure FP :x:
-  * Scalaz compatibility :x:
-* ammonite-ops
-  * Cover File and Socket blocking/unblocking IO operations :x:
-  * Performant :white_check_mark:
-  * Type-safe, pure FP :x:
-  * Scalaz compatibility :x:
-* Better files
-  * Cover File and Socket blocking/unblocking IO operations :x:
-  * Performant :white_check_mark:
-  * Type-safe, pure FP :x:
-  * Scalaz compatibility :x:
+&nbsp;|Scala Standard|http4s blaze|ammonite-ops|Better files
+:-----|--------------|------------|------------|------------:
+Cover File and Socket blocking/unblocking IO operations|:x:|:x:|:x:|:x:
+Performant|:white_check_mark:|:white_check_mark:|:white_check_mark:|:white_check_mark:
+Type-safe, pure FP|:x:|:white_check_mark:|:x:|:x:
+Scalaz compatibility|:x:|:x:|:x:|:x:
 
 ## Background
 
@@ -40,7 +26,7 @@ Learn more about ZIO-NIO at:
 * [Http4s Blaze](https://github.com/http4s/blaze)
 * [Ammonite](https://github.com/lihaoyi/Ammonite/)
 * [Better Files](https://github.com/pathikrit/better-files)
-* [Towards a safe, sane I O library in Scala](https://www.youtube.com/watch?feature=player_embedded&v=uaYKkpqs6CE)
+* [Towards a safe, sane I/O library in Scala](https://www.youtube.com/watch?feature=player_embedded&v=uaYKkpqs6CE)
 * [Haskell NIO](https://wiki.haskell.org/NIO)
 * [Non Blocking IO](https://www.youtube.com/watch?v=uKc0Gx_lPsg)
 * [Blocking vs Non-blocking IO](http://tutorials.jenkov.com/java-nio/nio-vs-io.html)
