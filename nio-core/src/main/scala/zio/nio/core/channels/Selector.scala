@@ -20,17 +20,13 @@ class Selector(private[nio] val selector: JSelector) {
   @silent
   final val keys: IO[ClosedSelectorException, Set[SelectionKey]] =
     IO.effect(selector.keys())
-      .map { keys =>
-        JavaConverters.asScalaSet(keys).toSet.map(new SelectionKey(_))
-      }
+      .map(keys => JavaConverters.asScalaSet(keys).toSet.map(new SelectionKey(_)))
       .refineToOrDie[ClosedSelectorException]
 
   @silent
   final val selectedKeys: IO[ClosedSelectorException, Set[SelectionKey]] =
     IO.effect(selector.selectedKeys())
-      .map { keys =>
-        JavaConverters.asScalaSet(keys).toSet.map(new SelectionKey(_))
-      }
+      .map(keys => JavaConverters.asScalaSet(keys).toSet.map(new SelectionKey(_)))
       .refineToOrDie[ClosedSelectorException]
 
   final def removeKey(key: SelectionKey): IO[ClosedSelectorException, Unit] =

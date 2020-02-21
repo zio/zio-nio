@@ -4,7 +4,17 @@ import java.net.{ InetSocketAddress => JInetSocketAddress, SocketAddress => JSoc
 
 import zio.IO
 
-class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocketAddress)
+class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocketAddress) {
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: SocketAddress => other.jSocketAddress == this.jSocketAddress
+    case _                    => false
+  }
+
+  override def hashCode(): Int = jSocketAddress.hashCode()
+
+  override def toString: String = jSocketAddress.toString
+}
 
 class InetSocketAddress private[nio] (private val jInetSocketAddress: JInetSocketAddress)
     extends SocketAddress(jInetSocketAddress) {
@@ -22,7 +32,17 @@ class InetSocketAddress private[nio] (private val jInetSocketAddress: JInetSocke
 }
 
 object SocketAddress {
-  def inetSocketAddress(port: Int): IO[Exception, InetSocketAddress] = InetSocketAddress(port)
+
+  private[nio] def apply(jSocketAddress: JSocketAddress) =
+    jSocketAddress match {
+      case inet: JInetSocketAddress =>
+        new InetSocketAddress(inet)
+      case other =>
+        new SocketAddress(other)
+    }
+
+  def inetSocketAddress(port: Int): IO[Exception, InetSocketAddress] =
+    InetSocketAddress(port)
 
   def inetSocketAddress(hostname: String, port: Int): IO[Exception, InetSocketAddress] =
     InetSocketAddress(hostname, port)

@@ -72,9 +72,7 @@ object ChannelSpec
                              _ <- started.succeed(())
                              result <- Managed
                                         .make(server.accept)(_.close.orDie)
-                                        .use { worker =>
-                                          worker.read(3) *> worker.read(3) *> ZIO.succeed(false)
-                                        }
+                                        .use(worker => worker.read(3) *> worker.read(3) *> ZIO.succeed(false))
                                         .catchAll {
                                           case ex: java.io.IOException if ex.getMessage == "Connection reset by peer" =>
                                             ZIO.succeed(true)
@@ -122,9 +120,7 @@ object ChannelSpec
               _       <- server.bind(address)
               _       <- started.succeed(())
               worker <- server.accept
-                         .bracket(_.close.ignore *> server.close.ignore) { _ =>
-                           ZIO.unit
-                         }
+                         .bracket(_.close.ignore *> server.close.ignore)(_ => ZIO.unit)
                          .fork
             } yield worker
 
