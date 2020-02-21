@@ -166,14 +166,14 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
   final def remoteAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
         Option(channel.getRemoteAddress)
-          .map(new SocketAddress(_))
+          .map(SocketAddress(_))
       )
       .refineToOrDie[Exception]
 
   final def localAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
         Option(channel.getLocalAddress)
-          .map(new SocketAddress(_))
+          .map(SocketAddress(_))
       )
       .refineToOrDie[Exception]
 

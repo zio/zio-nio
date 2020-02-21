@@ -11,9 +11,9 @@ import java.nio.{ ByteBuffer => JByteBuffer }
 import java.util.concurrent.TimeUnit
 
 import zio.duration._
+import zio.interop.javaz._
 import zio.nio.core.{ Buffer, SocketAddress, SocketOption }
 import zio.{ Chunk, IO, UIO, ZIO }
-import zio.interop.javaz._
 
 class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
 
@@ -100,7 +100,7 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    */
   final def localAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
-        Option(channel.getLocalAddress).map(new SocketAddress(_))
+        Option(channel.getLocalAddress).map(SocketAddress(_))
       )
       .refineToOrDie[Exception]
 
@@ -154,14 +154,14 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
   final def remoteAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
         Option(channel.getRemoteAddress)
-          .map(new SocketAddress(_))
+          .map(SocketAddress(_))
       )
       .refineToOrDie[Exception]
 
   final def localAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
         Option(channel.getLocalAddress)
-          .map(new SocketAddress(_))
+          .map(SocketAddress(_))
       )
       .refineToOrDie[Exception]
 

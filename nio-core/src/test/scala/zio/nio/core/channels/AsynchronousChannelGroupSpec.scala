@@ -38,9 +38,7 @@ object ClassFixture {
     }
 
   def providedFixture(f: ClassFixture => ZIO[Any, Throwable, TestResult]): ZIO[Any, Throwable, TestResult] =
-    ZIO(ClassFixture()).bracket(fixture => ZIO.effectTotal(fixture.cleanFixture())) { fixture =>
-      f(fixture)
-    }
+    ZIO(ClassFixture()).bracket(fixture => ZIO.effectTotal(fixture.cleanFixture()))(fixture => f(fixture))
 }
 
 object AsynchronousChannelGroupSpec

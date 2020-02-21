@@ -68,9 +68,7 @@ object ChannelSpec
                            _ <- server.bind(address)
                            _ <- started.succeed(())
                            result <- server.accept
-                                      .use { worker =>
-                                        worker.read(3) *> worker.read(3) *> ZIO.succeed(false)
-                                      }
+                                      .use(worker => worker.read(3) *> worker.read(3) *> ZIO.succeed(false))
                                       .catchAll {
                                         case ex: java.io.IOException if ex.getMessage == "Connection reset by peer" =>
                                           ZIO.succeed(true)
@@ -105,9 +103,7 @@ object ChannelSpec
           def client: IO[Exception, Unit] =
             for {
               address <- inetAddress
-              _ <- AsynchronousSocketChannel().use { client =>
-                    client.connect(address).unit
-                  }
+              _       <- AsynchronousSocketChannel().use(client => client.connect(address).unit)
             } yield ()
 
           def server(started: Promise[Nothing, Unit]): IO[Exception, Fiber[Exception, Unit]] =
@@ -115,11 +111,9 @@ object ChannelSpec
               address <- inetAddress
               worker <- AsynchronousServerSocketChannel().use { server =>
                          for {
-                           _ <- server.bind(address)
-                           _ <- started.succeed(())
-                           worker <- server.accept.use { _ =>
-                                      ZIO.unit
-                                    }
+                           _      <- server.bind(address)
+                           _      <- started.succeed(())
+                           worker <- server.accept.use(_ => ZIO.unit)
                          } yield worker
                        }.fork
             } yield worker

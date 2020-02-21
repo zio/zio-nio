@@ -32,9 +32,7 @@ object StreamsBasedServer extends App {
   )(f: String => RIO[R, Unit]): ZStream[R, Throwable, Unit] =
     ZStream
       .repeatEffect(server.accept.preallocate)
-      .map { conn =>
-        ZStream.managed(conn.ensuring(console.putStrLn("Connection closed")).withEarlyRelease)
-      }
+      .map(conn => ZStream.managed(conn.ensuring(console.putStrLn("Connection closed")).withEarlyRelease))
       .flatMapPar[R, Throwable, Unit](16) { connection =>
         connection
           .mapM {

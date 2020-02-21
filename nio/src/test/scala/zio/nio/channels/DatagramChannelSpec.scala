@@ -59,9 +59,7 @@ object DatagramChannelSpec
           def client: IO[Exception, Unit] =
             for {
               address <- inetAddress
-              _ <- DatagramChannel().use { client =>
-                    client.connect(address).unit
-                  }
+              _       <- DatagramChannel().use(client => client.connect(address).unit)
             } yield ()
 
           def server(started: Promise[Nothing, Unit]): IO[Exception, Fiber[Exception, Unit]] =
