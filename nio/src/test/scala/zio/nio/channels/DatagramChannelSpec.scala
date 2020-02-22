@@ -19,11 +19,12 @@ object DatagramChannelSpec
               sink    <- Buffer.byte(3)
               _ <- DatagramChannel().use { server =>
                     for {
-                      _          <- server.bind(address)
+                      _          <- server.bind(Some(address))
                       _          <- promise.succeed(())
                       retAddress <- server.receive(sink)
+                      addr       <- ZIO.fromOption(retAddress)
                       _          <- sink.flip
-                      _          <- server.send(sink, retAddress)
+                      _          <- server.send(sink, addr)
                     } yield ()
                   }.fork
             } yield ()
@@ -67,7 +68,7 @@ object DatagramChannelSpec
               address <- inetAddress
               worker <- DatagramChannel().use { server =>
                          for {
-                           _ <- server.bind(address)
+                           _ <- server.bind(Some(address))
                            _ <- started.succeed(())
                          } yield ()
                        }.fork
