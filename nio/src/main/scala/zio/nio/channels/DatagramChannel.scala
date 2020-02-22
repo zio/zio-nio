@@ -8,7 +8,7 @@ import zio.{ IO, Managed, UIO }
 import zio.nio.core.{ ByteBuffer, SocketAddress, SocketOption }
 
 /**
- * A `java.nio.channels.DatagramChannel` wrapper allowing for idiomatic [[zio.ZIO]] interoperability.
+ * A [[java.nio.channels.DatagramChannel]] wrapper allowing for idiomatic [[zio.ZIO]] interoperability.
  */
 final class DatagramChannel private[channels] (override protected[channels] val channel: JDatagramChannel)
     extends GatheringByteChannel
