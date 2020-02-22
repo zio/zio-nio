@@ -20,11 +20,12 @@ object DatagramChannelSpec
                     .make(DatagramChannel())(_.close.orDie)
                     .use { server =>
                       for {
-                        _          <- server.bind(address)
+                        _          <- server.bind(Some(address))
                         _          <- promise.succeed(())
                         retAddress <- server.receive(sink)
+                        addr       <- IO.fromOption(retAddress)
                         _          <- sink.flip
-                        _          <- server.send(sink, retAddress)
+                        _          <- server.send(sink, addr)
                       } yield ()
                     }
                     .fork
@@ -71,7 +72,7 @@ object DatagramChannelSpec
                          .make(DatagramChannel())(_.close.orDie)
                          .use { server =>
                            for {
-                             _ <- server.bind(address)
+                             _ <- server.bind(Some(address))
                              _ <- started.succeed(())
                            } yield ()
                          }
