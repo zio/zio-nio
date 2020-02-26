@@ -6,10 +6,13 @@ package charset
 import java.nio.{ charset => j }
 import java.{ util => ju }
 
+import com.github.ghik.silencer.silent
+
 import scala.collection.JavaConverters._
 
 final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset] {
 
+  @silent("object JavaConverters in package collection is deprecated")
   def aliases: Set[String] = javaCharset.aliases().asScala.toSet
 
   def canEncode: Boolean = javaCharset.canEncode
@@ -81,6 +84,7 @@ object Charset {
 
   def fromJava(javaCharset: j.Charset): Charset = new Charset(javaCharset)
 
+  @silent("deprecated")
   val availableCharsets: Map[String, Charset] =
     j.Charset.availableCharsets().asScala.mapValues(new Charset(_)).toMap
 
