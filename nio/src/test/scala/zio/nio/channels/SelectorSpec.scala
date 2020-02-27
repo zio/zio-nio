@@ -32,7 +32,7 @@ object SelectorSpecUtils {
   def byteArrayToString(array: Array[Byte]): String =
     array.takeWhile(_ != 10).map(_.toChar).mkString.trim
 
-  val addressIo = SocketAddress.inetSocketAddress("0.0.0.0", 1111)
+  val addressIo = SocketAddress.inetSocketAddress("0.0.0.0", 1112)
 
   def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
     statusCheck.either.map(_.getOrElse(false))

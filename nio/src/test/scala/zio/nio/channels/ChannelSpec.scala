@@ -13,7 +13,7 @@ object ChannelSpec
       suite("ChannelSpec")(
         testM("read/write") {
           val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
-            .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13370))
+            .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13380))
 
           def echoServer(promise: Promise[Nothing, Unit]): IO[Exception, Unit] =
             for {
@@ -58,7 +58,7 @@ object ChannelSpec
         },
         testM("read should fail when connection close") {
           val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
-            .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13372))
+            .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13382))
 
           def server(started: Promise[Nothing, Unit]): IO[Exception, Fiber[Exception, Boolean]] =
             for {
@@ -98,7 +98,7 @@ object ChannelSpec
         },
         testM("close channel unbind port") {
           val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
-            .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13376))
+            .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13386))
 
           def client: IO[Exception, Unit] =
             for {
