@@ -92,6 +92,18 @@ abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffe
 
   def putChunk(chunk: Chunk[A]): IO[Exception, Unit]
 
+  /**
+   * Writes as much of a chunk as possible to this buffer.
+   *
+   * @return The remaining elements that could not fit in this buffer, if any.
+   */
+  final def fillFromChunk(chunk: Chunk[A]): IO[Nothing, Chunk[A]] =
+    for {
+      r                          <- remaining
+      (putChunk, remainderChunk) = chunk.splitAt(r)
+      _                          <- this.putChunk(putChunk).orDie
+    } yield remainderChunk
+
   def asReadOnlyBuffer: IO[Nothing, Buffer[A]]
 }
 
@@ -108,6 +120,8 @@ object Buffer {
   def byteDirect(capacity: Int): IO[IllegalArgumentException, ByteBuffer] =
     IO.effect(new ByteBuffer(JByteBuffer.allocateDirect(capacity)))
       .refineToOrDie[IllegalArgumentException]
+
+  def byteFromJava(javaBuffer: JByteBuffer): ByteBuffer = new ByteBuffer(javaBuffer)
 
   def char(capacity: Int): IO[IllegalArgumentException, CharBuffer] =
     IO.effect(JCharBuffer.allocate(capacity))
@@ -128,6 +142,8 @@ object Buffer {
   def char(charSequence: CharSequence): IO[Nothing, CharBuffer] =
     IO.effectTotal(new CharBuffer(JCharBuffer.wrap(charSequence)))
 
+  def charFromJava(javaBuffer: JCharBuffer): CharBuffer = new CharBuffer(javaBuffer)
+
   def float(capacity: Int): IO[IllegalArgumentException, FloatBuffer] =
     IO.effect(JFloatBuffer.allocate(capacity))
       .map(new FloatBuffer(_))
@@ -135,6 +151,8 @@ object Buffer {
 
   def float(chunk: Chunk[Float]): IO[Nothing, FloatBuffer] =
     IO.effectTotal(JFloatBuffer.wrap(chunk.toArray)).map(new FloatBuffer(_))
+
+  def floatFromJava(javaBuffer: JFloatBuffer): FloatBuffer = new FloatBuffer(javaBuffer)
 
   def double(capacity: Int): IO[IllegalArgumentException, DoubleBuffer] =
     IO.effect(JDoubleBuffer.allocate(capacity))
@@ -144,6 +162,8 @@ object Buffer {
   def double(chunk: Chunk[Double]): IO[Nothing, DoubleBuffer] =
     IO.effectTotal(JDoubleBuffer.wrap(chunk.toArray)).map(new DoubleBuffer(_))
 
+  def doubleFromJava(javaBuffer: JDoubleBuffer): DoubleBuffer = new DoubleBuffer(javaBuffer)
+
   def int(capacity: Int): IO[IllegalArgumentException, IntBuffer] =
     IO.effect(JIntBuffer.allocate(capacity))
       .map(new IntBuffer(_))
@@ -151,6 +171,8 @@ object Buffer {
 
   def int(chunk: Chunk[Int]): IO[Nothing, IntBuffer] =
     IO.effectTotal(JIntBuffer.wrap(chunk.toArray)).map(new IntBuffer(_))
+
+  def intFromJava(javaBuffer: JIntBuffer): IntBuffer = new IntBuffer(javaBuffer)
 
   def long(capacity: Int): IO[IllegalArgumentException, LongBuffer] =
     IO.effect(JLongBuffer.allocate(capacity))
@@ -160,6 +182,8 @@ object Buffer {
   def long(chunk: Chunk[Long]): IO[Nothing, LongBuffer] =
     IO.effectTotal(JLongBuffer.wrap(chunk.toArray)).map(new LongBuffer(_))
 
+  def longFromJava(javaBuffer: JLongBuffer): LongBuffer = new LongBuffer(javaBuffer)
+
   def short(capacity: Int): IO[IllegalArgumentException, ShortBuffer] =
     IO.effect(JShortBuffer.allocate(capacity))
       .map(new ShortBuffer(_))
@@ -167,4 +191,7 @@ object Buffer {
 
   def short(chunk: Chunk[Short]): IO[Nothing, ShortBuffer] =
     IO.effectTotal(JShortBuffer.wrap(chunk.toArray)).map(new ShortBuffer(_))
+
+  def shortFromJava(javaBuffer: JShortBuffer): ShortBuffer = new ShortBuffer(javaBuffer)
+
 }
