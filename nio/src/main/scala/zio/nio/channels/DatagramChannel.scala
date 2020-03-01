@@ -14,26 +14,13 @@ final class DatagramChannel private[channels] (override protected[channels] val 
     extends GatheringByteChannel
     with ScatteringByteChannel {
 
-  /**
-   * Binds this channel's underlying socket to the given local address. Passing `None` binds to an
-   * automatically assigned local address.
-   *
-   * @param local the local address
-   * @return the datagram channel bound to the local address
-   */
-  def bind(local: Option[SocketAddress]): IO[IOException, DatagramChannel] = {
+  private def bind(local: Option[SocketAddress]): IO[IOException, DatagramChannel] = {
     val addr: JSocketAddress = local.map(_.jSocketAddress).getOrElse(null)
-    IO.effect(new DatagramChannel(channel.bind(addr))).refineToOrDie[IOException]
+    IO.effect(channel.bind(addr)).as(this).refineToOrDie[IOException]
   }
 
-  /**
-   * Connects this channel's underlying socket to the given remote address.
-   *
-   * @param remote the remote address
-   * @return the datagram channel connected to the remote address
-   */
-  def connect(remote: SocketAddress): IO[IOException, DatagramChannel] =
-    IO.effect(new DatagramChannel(channel.connect(remote.jSocketAddress))).refineToOrDie[IOException]
+  private def connect(remote: SocketAddress): IO[IOException, DatagramChannel] =
+    IO.effect(channel.connect(remote.jSocketAddress)).as(this).refineToOrDie[IOException]
 
   /**
    * Disconnects this channel's underlying socket.
@@ -136,15 +123,34 @@ final class DatagramChannel private[channels] (override protected[channels] val 
 object DatagramChannel {
 
   /**
+   * Opens a datagram channel bound to the given local address as a managed resource.
+   * Passing `None` binds to an automatically assigned local address.
+   *
+   * @param local the local address
+   * @return a datagram channel bound to the local address
+   */
+  def bind(local: Option[SocketAddress]): Managed[IOException, DatagramChannel] =
+    open.flatMap(_.bind(local).toManaged_)
+
+  /**
+   * Opens a datagram channel connected to the given remote address as a managed resource.
+   *
+   * @param remote the remote address
+   * @return a datagram channel connected to the remote address
+   */
+  def connect(remote: SocketAddress): Managed[IOException, DatagramChannel] =
+    open.flatMap(_.connect(remote).toManaged_)
+
+  /**
    * Opens a new datagram channel as a managed resource. The channel will be
    * closed after use.
    *
    * @return a new datagram channel
    */
-  def apply(): Managed[Exception, DatagramChannel] = {
+  private def open: Managed[IOException, DatagramChannel] = {
     val open = IO
       .effect(JDatagramChannel.open())
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
       .map(new DatagramChannel(_))
 
     Managed.make(open)(_.close.orDie)
