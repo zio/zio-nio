@@ -140,7 +140,7 @@ object DatagramChannel {
    *
    * @return a new datagram channel
    */
-  def apply(): IO[Exception, DatagramChannel] =
+  def open: IO[Exception, DatagramChannel] =
     IO.effect(JDatagramChannel.open())
       .refineToOrDie[Exception]
       .map(new DatagramChannel(_))

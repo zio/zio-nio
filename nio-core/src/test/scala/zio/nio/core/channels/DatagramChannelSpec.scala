@@ -17,7 +17,7 @@ object DatagramChannelSpec
               address <- inetAddress
               sink    <- Buffer.byte(3)
               _ <- Managed
-                    .make(DatagramChannel())(_.close.orDie)
+                    .make(DatagramChannel.open)(_.close.orDie)
                     .use { server =>
                       for {
                         _          <- server.bind(Some(address))
@@ -35,7 +35,7 @@ object DatagramChannelSpec
             for {
               address <- inetAddress
               src     <- Buffer.byte(3)
-              result <- Managed.make(DatagramChannel())(_.close.orDie).use { client =>
+              result <- Managed.make(DatagramChannel.open)(_.close.orDie).use { client =>
                          for {
                            _        <- client.connect(address)
                            sent     <- src.array
@@ -62,14 +62,14 @@ object DatagramChannelSpec
           def client: IO[Exception, Unit] =
             for {
               address <- inetAddress
-              _       <- Managed.make(DatagramChannel())(_.close.orDie).use(client => client.connect(address).unit)
+              _       <- Managed.make(DatagramChannel.open)(_.close.orDie).use(client => client.connect(address).unit)
             } yield ()
 
           def server(started: Promise[Nothing, Unit]): IO[Exception, Fiber[Exception, Unit]] =
             for {
               address <- inetAddress
               worker <- Managed
-                         .make(DatagramChannel())(_.close.orDie)
+                         .make(DatagramChannel.open)(_.close.orDie)
                          .use { server =>
                            for {
                              _ <- server.bind(Some(address))
