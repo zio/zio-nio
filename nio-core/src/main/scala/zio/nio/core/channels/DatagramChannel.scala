@@ -22,7 +22,7 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    * @return the datagram channel bound to the local address
    */
   def bind(local: Option[SocketAddress]): IO[IOException, DatagramChannel] = {
-    val addr: JSocketAddress = local.map(_.jSocketAddress).getOrElse(null)
+    val addr: JSocketAddress = local.map(_.jSocketAddress).orNull
     IO.effect(new DatagramChannel(channel.bind(addr))).refineToOrDie[IOException]
   }
 

@@ -15,7 +15,7 @@ final class DatagramChannel private[channels] (override protected[channels] val 
     with ScatteringByteChannel {
 
   private def bind(local: Option[SocketAddress]): IO[IOException, DatagramChannel] = {
-    val addr: JSocketAddress = local.map(_.jSocketAddress).getOrElse(null)
+    val addr: JSocketAddress = local.map(_.jSocketAddress).orNull
     IO.effect(channel.bind(addr)).as(this).refineToOrDie[IOException]
   }
 
