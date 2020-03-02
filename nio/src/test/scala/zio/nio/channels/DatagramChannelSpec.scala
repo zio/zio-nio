@@ -17,24 +17,26 @@ object DatagramChannelSpec
             for {
               address <- inetAddress
               sink    <- Buffer.byte(3)
-              _ <- DatagramChannel().use { server =>
-                    for {
-                      _          <- server.bind(address)
-                      _          <- promise.succeed(())
-                      retAddress <- server.receive(sink)
-                      _          <- sink.flip
-                      _          <- server.send(sink, retAddress)
-                    } yield ()
-                  }.fork
+              _ <- DatagramChannel
+                    .bind(Some(address))
+                    .use { server =>
+                      for {
+                        _          <- promise.succeed(())
+                        retAddress <- server.receive(sink)
+                        addr       <- ZIO.fromOption(retAddress)
+                        _          <- sink.flip
+                        _          <- server.send(sink, addr)
+                      } yield ()
+                    }
+                    .fork
             } yield ()
 
           def echoClient: IO[Exception, Boolean] =
             for {
               address <- inetAddress
               src     <- Buffer.byte(3)
-              result <- DatagramChannel().use { client =>
+              result <- DatagramChannel.connect(address).use { client =>
                          for {
-                           _        <- client.connect(address)
                            sent     <- src.array
                            _        = sent.update(0, 1)
                            _        <- client.send(src, address)
@@ -59,18 +61,16 @@ object DatagramChannelSpec
           def client: IO[Exception, Unit] =
             for {
               address <- inetAddress
-              _       <- DatagramChannel().use(client => client.connect(address).unit)
+              _       <- DatagramChannel.connect(address).use_(UIO.unit)
             } yield ()
 
           def server(started: Promise[Nothing, Unit]): IO[Exception, Fiber[Exception, Unit]] =
             for {
               address <- inetAddress
-              worker <- DatagramChannel().use { server =>
-                         for {
-                           _ <- server.bind(address)
-                           _ <- started.succeed(())
-                         } yield ()
-                       }.fork
+              worker <- DatagramChannel
+                         .bind(Some(address))
+                         .use_(started.succeed(()).unit)
+                         .fork
             } yield worker
 
           for {
