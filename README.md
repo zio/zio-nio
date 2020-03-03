@@ -11,29 +11,6 @@ Learn more about ZIO-NIO at:
 
  - [Homepage](https://zio.github.io/zio-nio/)
 
-## Competition
-
-* Scala standard
-  * Cover File and Socket blocking/unblocking IO operations :x:
-  * Performant  :white_check_mark:
-  * Type-safe, pure FP :x:
-  * Scalaz compatibility :x:
-* http4s blaze
-  * Cover File and Socket blocking/unblocking IO operations :x:
-  * Performant :white_check_mark:
-  * Type-safe, pure FP :x:
-  * Scalaz compatibility :x:
-* ammonite-ops
-  * Cover File and Socket blocking/unblocking IO operations :x:
-  * Performant :white_check_mark:
-  * Type-safe, pure FP :x:
-  * Scalaz compatibility :x:
-* Better files
-  * Cover File and Socket blocking/unblocking IO operations :x:
-  * Performant :white_check_mark:
-  * Type-safe, pure FP :x:
-  * Scalaz compatibility :x:
-
 ## Background
 
 * [Scala IO](https://www.scala-lang.org/api/2.12.3/scala/io/index.html)
