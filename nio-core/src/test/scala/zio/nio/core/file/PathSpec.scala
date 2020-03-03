@@ -10,7 +10,7 @@ object PathSpec
         test("Path construction") {
           val p        = Path("a", "b") / "c/d"
           val elements = p.elements.map(_.toString)
-          assert(elements, equalTo(List("a", "b", "c", "d")))
+          assert(elements)(equalTo(List("a", "b", "c", "d")))
         }
       )
     )

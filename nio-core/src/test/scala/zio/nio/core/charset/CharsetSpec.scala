@@ -22,7 +22,7 @@ private[charset] object CharsetFixtures {
     for {
       encoded <- charset.encodeChunk(arabicChunk)
       decoded <- charset.decodeChunk(encoded)
-    } yield assert(decoded, equalTo(arabicChunk))
+    } yield assert(decoded)(equalTo(arabicChunk))
   }
 
   def bufferEncodeDecode(charset: Charset) = testM(s"buffer encode/decode ${charset.displayName}") {
@@ -34,8 +34,8 @@ private[charset] object CharsetFixtures {
       charsHasRemaining <- chars.hasRemaining
       decoded           <- charset.decode(bytes)
       chunk             <- decoded.getChunk().orDie
-    } yield assert(charsHasRemaining, isFalse) &&
-      assert(chunk, equalTo(arabicChunk))
+    } yield assert(charsHasRemaining)(isFalse) &&
+      assert(chunk)(equalTo(arabicChunk))
   }
 
   def streamEncodeDecode(charset: Charset) = testM(s"stream encode/decode ${charset.displayName}") {
@@ -44,7 +44,7 @@ private[charset] object CharsetFixtures {
       byteChunks <- charset.newEncoder.encodeStream(charStream).runCollect
       byteStream = Stream.fromIterable(byteChunks)
       chars      <- charset.newDecoder.decodeStream(byteStream).run(chunkCollectSink[Char])
-    } yield assert(chars, equalTo(arabicChunk))
+    } yield assert(chars)(equalTo(arabicChunk))
   }
 
 }
@@ -60,7 +60,7 @@ object CharsetSpec
         bufferEncodeDecode(Charset.Standard.utf16),
         testM("utf8 encode") {
           Charset.Standard.utf8.encodeChunk(arabicChunk).map {
-            assert(_, equalTo(arabicUtf8))
+            assert(_)(equalTo(arabicUtf8))
           }
         },
         streamEncodeDecode(Charset.Standard.utf8),
@@ -71,27 +71,27 @@ object CharsetSpec
             .map(Chunk.single)
           for {
             chars <- Charset.Standard.utf8.newDecoder.decodeStream(byteStream).run(chunkCollectSink[Char])
-          } yield assert(chars, equalTo(arabicChunk))
+          } yield assert(chars)(equalTo(arabicChunk))
         },
         testM("minimum buffer size for encoding") {
           val in = Stream.succeed(arabicChunk)
           val s  = Charset.Standard.utf8.newEncoder.encodeStream(in, 49)
-          assertM(s.runDrain.run, dies(isSubtype[IllegalArgumentException](anything)))
+          assertM(s.runDrain.run)(dies(isSubtype[IllegalArgumentException](anything)))
         },
         testM("minimum buffer size for decoding") {
           val in = Stream.succeed(arabicUtf8)
           val s  = Charset.Standard.utf8.newDecoder.decodeStream(in, 49)
-          assertM(s.runDrain.run, dies(isSubtype[IllegalArgumentException](anything)))
+          assertM(s.runDrain.run)(dies(isSubtype[IllegalArgumentException](anything)))
         },
         testM("handles encoding errors") {
           val in = Stream.succeed(arabicChunk)
           val s  = Charset.Standard.iso8859_1.newEncoder.encodeStream(in)
-          assertM(s.runDrain.run, fails(isSubtype[UnmappableCharacterException](anything)))
+          assertM(s.runDrain.run)(fails(isSubtype[UnmappableCharacterException](anything)))
         },
         testM("handles decoding errors") {
           val in = Stream(0xd8, 0x00, 0xa5, 0xd8).map(i => Chunk(i.toByte))
           val s  = Charset.Standard.utf16Le.newDecoder.decodeStream(in)
-          assertM(s.runDrain.run, fails(isSubtype[MalformedInputException](anything)))
+          assertM(s.runDrain.run)(fails(isSubtype[MalformedInputException](anything)))
         }
       )
     )

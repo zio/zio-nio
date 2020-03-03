@@ -54,7 +54,7 @@ object ChannelSpec
             _             <- echoServer(serverStarted)
             _             <- serverStarted.await
             same          <- echoClient
-          } yield assert(same, isTrue)
+          } yield assert(same)(isTrue)
         },
         testM("read should fail when connection close") {
           val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
@@ -94,7 +94,7 @@ object ChannelSpec
             _             <- serverStarted.await
             _             <- client
             same          <- serverFiber.join
-          } yield assert(same, isTrue)
+          } yield assert(same)(isTrue)
         },
         testM("close channel unbind port") {
           val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
@@ -129,7 +129,7 @@ object ChannelSpec
             _             <- serverStarted.await
             _             <- client
             _             <- s2.join
-          } yield assert(true, isTrue)
+          } yield assert(true)(isTrue)
         },
         // this would best be tagged as an regression test. for now just run manually when suspicious.
         testM("accept should not leak resources") {
@@ -145,7 +145,7 @@ object ChannelSpec
               .catchSomeCause { case Cause.Interrupt(_) => ZIO.unit }
               .repeat(Schedule.recurs(20000))
           )
-          assertM(interruptAccept.run, succeeds(equalTo(20000)))
+          assertM(interruptAccept.run)(succeeds(equalTo(20000)))
         } @@ ignore
       )
     )

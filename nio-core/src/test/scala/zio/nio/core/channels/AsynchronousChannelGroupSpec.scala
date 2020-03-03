@@ -48,71 +48,71 @@ object AsynchronousChannelGroupSpec
           ClassFixture.providedFixture { fixture =>
             fixture.testObj
               .awaitTermination(Duration.apply(1, TimeUnit.SECONDS))
-              .map(result => assert(result, isFalse))
+              .map(result => assert(result)(isFalse))
           }
         },
         testM("failing awaitTermination") {
           new AsynchronousChannelGroup(null)
             .awaitTermination(Duration.apply(1, TimeUnit.SECONDS))
             .run
-            .map(result => assert(result, fails(anything)))
+            .map(result => assert(result)(fails(anything)))
         },
         testM("isShutdown") {
           ClassFixture.providedFixture { fixture =>
             fixture.testObj.isShutdown
-              .map(result => assert(result, isFalse))
+              .map(result => assert(result)(isFalse))
           }
         },
         testM("isTerminated") {
           ClassFixture.providedFixture { fixture =>
             fixture.testObj.isTerminated
-              .map(result => assert(result, isFalse))
+              .map(result => assert(result)(isFalse))
           }
         },
         testM("shutdown") {
           ClassFixture.providedFixture { fixture =>
             fixture.testObj.shutdown
-              .map(_ => assert(true, isTrue))
+              .map(_ => assert(true)(isTrue))
           }
         },
         testM("shutdownNow") {
           ClassFixture.providedFixture { fixture =>
             fixture.testObj.shutdownNow
-              .map(_ => assert(true, isTrue))
+              .map(_ => assert(true)(isTrue))
           }
         },
         testM("failing shutdownNow") {
           for {
             channel <- ZIO.effect(new AsynchronousChannelGroup(null))
             result  <- channel.shutdownNow.run
-          } yield assert(result, dies(anything))
+          } yield assert(result)(dies(anything))
         },
         testM("companion object create instance using executor and initial size") {
           ZIO(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
             .bracket(executor => ZIO.effectTotal(executor.shutdown())) { executor =>
-              AsynchronousChannelGroup(executor, 1).run.map(result => assert(result.toEither, isRight(anything)))
+              AsynchronousChannelGroup(executor, 1).run.map(result => assert(result.toEither)(isRight(anything)))
             }
         },
         testM("failing companion object create instance using executor and initial size") {
           for {
             result <- AsynchronousChannelGroup(null, 1).run
-          } yield assert(result, fails(anything))
+          } yield assert(result)(fails(anything))
         },
         testM("failing companion object create instance using threads no and threads factory") {
           for {
             result <- AsynchronousChannelGroup(1, null).run
-          } yield assert(result, fails(anything))
+          } yield assert(result)(fails(anything))
         },
         testM("companion object create instance using executor service") {
           ZIO(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
             .bracket(executor => ZIO.effectTotal(executor.shutdown())) { executor =>
-              AsynchronousChannelGroup(executor).run.map(result => assert(result.toEither, isRight(anything)))
+              AsynchronousChannelGroup(executor).run.map(result => assert(result.toEither)(isRight(anything)))
             }
         },
         testM("failing companion object create instance using executor service") {
           for {
             result <- AsynchronousChannelGroup(null).run
-          } yield assert(result, fails(anything))
+          } yield assert(result)(fails(anything))
         }
       )
     )
