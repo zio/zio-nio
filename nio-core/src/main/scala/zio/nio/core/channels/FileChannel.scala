@@ -47,7 +47,7 @@ final class FileChannel private[channels] (override protected[channels] val chan
 
   def map(mode: JFileChannel.MapMode, position: Long, size: Long): ZIO[Blocking, Exception, MappedByteBuffer] =
     ZIO
-      .accessM[Blocking](_.blocking.effectBlocking(new MappedByteBuffer(channel.map(mode, position, size))))
+      .accessM[Blocking](_.get.effectBlocking(new MappedByteBuffer(channel.map(mode, position, size))))
       .refineToOrDie[Exception]
 
   def lock(

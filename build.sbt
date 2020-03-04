@@ -32,7 +32,6 @@ lazy val zioNioCore = project
     libraryDependencies ++= Seq(
       "dev.zio"                %% "zio"                     % ZioCoreVersion,
       "dev.zio"                %% "zio-streams"             % ZioCoreVersion,
-      "dev.zio"                %% "zio-interop-java"        % ZioInteropJava,
       "dev.zio"                %% "zio-test"                % ZioCoreVersion % Test,
       "dev.zio"                %% "zio-test-sbt"            % ZioCoreVersion % Test,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
@@ -48,7 +47,6 @@ lazy val zioNio = project
     libraryDependencies ++= Seq(
       "dev.zio"                %% "zio"                     % ZioCoreVersion,
       "dev.zio"                %% "zio-streams"             % ZioCoreVersion,
-      "dev.zio"                %% "zio-interop-java"        % ZioInteropJava,
       "dev.zio"                %% "zio-test"                % ZioCoreVersion % Test,
       "dev.zio"                %% "zio-test-sbt"            % ZioCoreVersion % Test,
       "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"

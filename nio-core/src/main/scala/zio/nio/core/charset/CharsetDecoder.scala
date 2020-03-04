@@ -87,9 +87,7 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
     stream: ZStream[R, E, Chunk[Byte]],
     bufSize: Int = 5000
   )(handleError: j.CharacterCodingException => E): ZStream[R, E, Chunk[Char]] = {
-    val pull: ZManaged[R, E, Pull[R, E, Chunk[
-      Char
-    ]]] = {
+    val pull: ZManaged[R, Nothing, Pull[R, E, Chunk[Char]]] =
       for {
         byteBuffer <- Buffer.byte(bufSize).toManaged_.orDie
         charBuffer <- Buffer.char((bufSize.toFloat * this.averageCharsPerByte).round).toManaged_.orDie
@@ -172,7 +170,7 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
             IO.fail(None)
         }
       }
-    }
+
     if (bufSize < 50)
       ZStream.die(new IllegalArgumentException(s"Buffer size is $bufSize, must be >= 50"))
     else
