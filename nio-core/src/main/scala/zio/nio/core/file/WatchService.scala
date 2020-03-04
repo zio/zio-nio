@@ -53,7 +53,7 @@ final class WatchService private (private[file] val javaWatchService: JWatchServ
 
   def take: ZIO[Blocking, Exception, WatchKey] =
     ZIO
-      .accessM[Blocking](_.blocking.effectBlocking(new WatchKey(javaWatchService.take())))
+      .accessM[Blocking](_.get.effectBlocking(new WatchKey(javaWatchService.take())))
       .refineToOrDie[Exception]
 }
 

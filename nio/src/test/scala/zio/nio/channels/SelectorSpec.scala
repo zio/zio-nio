@@ -9,25 +9,21 @@ import zio.nio.core.{ Buffer, SocketAddress }
 import zio.nio.BaseSpec
 import zio.test._
 import zio.test.Assertion._
-import SelectorSpecUtils._
 
-object SelectorSpec
-    extends BaseSpec(
-      suite("SelectorSpec")(
-        testM("read/write") {
-          for {
-            started     <- Promise.make[Nothing, Unit]
-            serverFiber <- server(started).fork
-            _           <- started.await
-            clientFiber <- client.fork
-            _           <- serverFiber.join
-            message     <- clientFiber.join
-          } yield assert(message == "Hello world", isTrue)
-        }
-      )
-    )
+object SelectorSpec extends BaseSpec {
 
-object SelectorSpecUtils {
+  override def spec = suite("SelectorSpec")(
+    testM("read/write") {
+      for {
+        started     <- Promise.make[Nothing, Unit]
+        serverFiber <- server(started).fork
+        _           <- started.await
+        clientFiber <- client.fork
+        _           <- serverFiber.join
+        message     <- clientFiber.join
+      } yield assert(message == "Hello world")(isTrue)
+    }
+  )
 
   def byteArrayToString(array: Array[Byte]): String =
     array.takeWhile(_ != 10).map(_.toChar).mkString.trim
@@ -111,4 +107,5 @@ object SelectorSpecUtils {
                } yield text
              }
     } yield text
+
 }
