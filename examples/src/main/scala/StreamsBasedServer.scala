@@ -40,7 +40,9 @@ object StreamsBasedServer extends App {
               for {
                 _ <- console.putStrLn("Received connection")
                 data <- ZStream
-                         .fromPull(channel.read(64).tap(_ => console.putStrLn("Read chunk")).orElse(ZIO.fail(None)))
+                         .fromEffectOption(
+                           channel.read(64).tap(_ => console.putStrLn("Read chunk")).orElse(ZIO.fail(None))
+                         )
                          .take(4)
                          .transduce(ZSink.utf8DecodeChunk)
                          .run(Sink.foldLeft("")(_ + (_: String)))
