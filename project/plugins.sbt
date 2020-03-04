@@ -5,4 +5,4 @@ addSbtPlugin("io.github.davidgregory084"         % "sbt-tpolecat"     % "0.1.10"
 addSbtPlugin("org.scalameta"                     % "sbt-mdoc"         % "2.1.1")
 addSbtPlugin("com.jsuereth"                      % "sbt-pgp"          % "1.1.2")
 addSbtPlugin("org.xerial.sbt"                    % "sbt-sonatype"     % "3.8.1")
-addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "2.1.0")
+addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
