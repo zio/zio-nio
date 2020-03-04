@@ -43,16 +43,16 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
   def relativize(other: Path): Path = fromJava(javaPath.relativize(other.javaPath))
 
   def toUri: ZIO[Blocking, IOError, URI] =
-    ZIO.accessM[Blocking](_.blocking.effectBlocking(javaPath.toUri)).refineToOrDie[IOError]
+    ZIO.accessM[Blocking](_.get.effectBlocking(javaPath.toUri)).refineToOrDie[IOError]
 
   def toAbsolutePath: ZIO[Blocking, IOError, Path] =
     ZIO
-      .accessM[Blocking](_.blocking.effectBlocking(fromJava(javaPath.toAbsolutePath)))
+      .accessM[Blocking](_.get.effectBlocking(fromJava(javaPath.toAbsolutePath)))
       .refineToOrDie[IOError]
 
   def toRealPath(linkOptions: LinkOption*): ZIO[Blocking, IOException, Path] =
     ZIO
-      .accessM[Blocking](_.blocking.effectBlocking(fromJava(javaPath.toRealPath(linkOptions: _*))))
+      .accessM[Blocking](_.get.effectBlocking(fromJava(javaPath.toRealPath(linkOptions: _*))))
       .refineToOrDie[IOException]
 
   def toFile: File = javaPath.toFile
