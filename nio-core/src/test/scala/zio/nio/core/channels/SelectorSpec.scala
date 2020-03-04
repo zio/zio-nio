@@ -21,7 +21,7 @@ object SelectorSpec
             clientFiber <- client.fork
             _           <- serverFiber.join
             message     <- clientFiber.join
-          } yield assert(message == "Hello world", isTrue)
+          } yield assert(message == "Hello world")(isTrue)
         }
       )
     )

@@ -24,14 +24,14 @@ object FileChannelSpec
             _       <- buffer.flip
             array   <- buffer.array
             text    = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
-          } yield assert(text == "Hello World", isTrue)
+          } yield assert(text == "Hello World")(isTrue)
         },
         testM("asynchronous file chunk read") {
           val path = Path("nio-core/src/test/resources/async_file_read_test.txt")
           for {
             channel <- AsynchronousFileChannel.open(path, StandardOpenOption.READ)
             bytes   <- channel.read(500, 0L)
-          } yield assert(bytes == Chunk.fromArray("Hello World".getBytes(StandardCharsets.UTF_8)), isTrue)
+          } yield assert(bytes == Chunk.fromArray("Hello World".getBytes(StandardCharsets.UTF_8)))(isTrue)
         },
         testM("asynchronous file write") {
           val path = Path("nio-core/src/test/resources/async_file_write_test.txt")
@@ -48,7 +48,7 @@ object FileChannelSpec
             path    <- ZIO.effectTotal(Path("nio-core/src/test/resources/async_file_write_test.txt"))
             result  <- ZIO.effect(Source.fromFile(path.toFile).getLines.toSeq)
             _       <- ZIO.effect(Files.delete(path.javaPath))
-          } yield assert(result.size == 1 && result.head == "Hello World", isTrue)
+          } yield assert(result.size == 1 && result.head == "Hello World")(isTrue)
         },
         testM("memory mapped buffer") {
           val path = Path("nio-core/src/test/resources/async_file_read_test.txt")
@@ -61,7 +61,7 @@ object FileChannelSpec
                          for {
                            buffer <- channel.map(FileChannel.MapMode.READ_ONLY, 0L, 6L)
                            bytes  <- buffer.getChunk()
-                         } yield assert(bytes == Chunk.fromArray("Hello ".getBytes(StandardCharsets.UTF_8)), isTrue)
+                         } yield assert(bytes == Chunk.fromArray("Hello ".getBytes(StandardCharsets.UTF_8)))(isTrue)
                        }
           } yield result
         }

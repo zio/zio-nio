@@ -53,7 +53,7 @@ object DatagramChannelSpec
             _             <- echoServer(serverStarted)
             _             <- serverStarted.await
             same          <- echoClient
-          } yield assert(same, isTrue)
+          } yield assert(same)(isTrue)
         },
         testM("close channel unbind port") {
           val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
@@ -90,7 +90,7 @@ object DatagramChannelSpec
             _              <- serverStarted2.await
             _              <- client
             _              <- s2.join
-          } yield assert(true, isTrue)
+          } yield assert(true)(isTrue)
         }
       )
     )
