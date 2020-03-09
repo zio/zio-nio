@@ -90,7 +90,7 @@ object DatagramChannelSpec extends BaseSpec {
         _              <- serverStarted2.await
         _              <- client
         _              <- s2.join
-      } yield assert(true)(isTrue)
+      } yield assertCompletes
     }
   )
 }

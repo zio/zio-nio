@@ -30,7 +30,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
                    list <- IO.collectAll(buffs.map(readLine))
                  } yield list
                }
-      } yield assert(list == "Hello" :: "World" :: Nil)(isTrue)
+      } yield assert(list)(equalTo("Hello" :: "World" :: Nil))
     },
     testM("gathering write") {
       for {
@@ -47,7 +47,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
         _      <- FileChannel(fileChannel).use(_.writeBuffer(buffs).unit)
         result = Source.fromFile(file).getLines.toSeq
         _      = file.delete()
-      } yield assert(result == Seq("HelloWorld"))(isTrue)
+      } yield assert(result)(equalTo(Seq("HelloWorld")))
     }
   )
 }

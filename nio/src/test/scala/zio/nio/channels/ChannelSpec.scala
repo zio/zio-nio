@@ -129,7 +129,7 @@ object ChannelSpec extends BaseSpec {
         _             <- serverStarted.await
         _             <- client
         _             <- s2.join
-      } yield assert(true)(isTrue)
+      } yield assertCompletes
     },
     // this would best be tagged as an regression test. for now just run manually when suspicious.
     testM("accept should not leak resources") {
