@@ -55,7 +55,7 @@ object FileChannelSpec extends BaseSpec {
             path   <- ZIO.effectTotal(Path("nio/src/test/resources/async_file_write_test.txt"))
             result <- ZIO.effect(Source.fromFile(path.toFile).getLines.toSeq)
             _      <- Files.delete(path)
-          } yield  assert(result.size)(equalTo(1)) && assert(result.head)(equalTo("Hello World"))
+          } yield assert(result.size)(equalTo(1)) && assert(result.head)(equalTo("Hello World"))
         }
     },
     testM("memory mapped buffer") {
