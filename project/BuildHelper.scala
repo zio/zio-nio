@@ -19,7 +19,7 @@ object BuildHelper {
     incOptions ~= (_.withLogRecompileOnMacro(false))
   )
 
-  val ZioCoreVersion = "1.0.0-RC18"
+  val ZioCoreVersion = "1.0.0-RC18-2"
 
   private val SilencerVersion = "1.6.0"
   private val Scala212        = "2.12.10"
