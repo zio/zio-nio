@@ -88,44 +88,44 @@ object BufferSpec extends BaseSpec {
         for {
           allocated <- allocate(3)
           array     <- allocated.array
-        } yield assert(array.sameElements(zeroValues))(isTrue)
+        } yield assert(array.toList)(hasSameElements(zeroValues.toList))
       },
       testM("wrap backed by an array") {
         for {
           buffer <- wrap(Chunk.fromArray(initialValues))
           array  <- buffer.array
-        } yield assert(array.sameElements(initialValues))(isTrue)
+        } yield assert(array.toList)(hasSameElements(initialValues.toList))
       },
       testM("capacity") {
         for {
           allocated <- allocate(initialCapacity)
           capacity  = allocated.capacity
-        } yield assert(capacity == jAllocate(initialCapacity).capacity)(isTrue)
+        } yield assert(capacity)(equalTo(jAllocate(initialCapacity).capacity))
       },
       testM("capacity initialized") {
         for {
           allocated <- allocate(initialCapacity)
           capacity  = allocated.capacity
-        } yield assert(capacity == initialCapacity)(isTrue)
+        } yield assert(capacity)(equalTo(initialCapacity))
       },
       testM("position is 0") {
         for {
           allocated <- allocate(initialCapacity)
           position  <- allocated.position
-        } yield assert(position == 0)(isTrue)
+        } yield assert(position)(equalTo(0))
       },
       testM("limit is capacity") {
         for {
           allocated <- allocate(initialCapacity)
           limit     <- allocated.limit
-        } yield assert(limit == initialCapacity)(isTrue)
+        } yield assert(limit)(equalTo(initialCapacity))
       },
       testM("position set") {
         for {
           buffer   <- Buffer.byte(initialCapacity)
           _        <- buffer.position(3)
           position <- buffer.position
-        } yield assert(position == 3)(isTrue)
+        } yield assert(position)(equalTo(3))
       },
       testM("limit set") {
         for {
@@ -133,7 +133,7 @@ object BufferSpec extends BaseSpec {
           limit    = 3
           _        <- buffer.limit(limit)
           newLimit <- buffer.limit
-        } yield assert(newLimit == limit)(isTrue)
+        } yield assert(newLimit)(equalTo(limit))
       },
       testM("position reset") {
         for {
@@ -142,7 +142,7 @@ object BufferSpec extends BaseSpec {
           _        <- buffer.position(newLimit + 1)
           _        <- buffer.limit(newLimit)
           position <- buffer.position
-        } yield assert(position == newLimit)(isTrue)
+        } yield assert(position)(equalTo(newLimit))
       },
       testM("reset to marked position") {
         for {
@@ -152,7 +152,7 @@ object BufferSpec extends BaseSpec {
           _           <- b.position(2)
           _           <- b.reset
           newPosition <- b.position
-        } yield assert(newPosition == 1)(isTrue)
+        } yield assert(newPosition)(equalTo(1))
       },
       testM("clear") {
         for {
@@ -162,7 +162,7 @@ object BufferSpec extends BaseSpec {
           _        <- b.clear
           position <- b.position
           limit    <- b.limit
-        } yield assert(position == 0 && limit == initialCapacity)(isTrue)
+        } yield assert(position)(equalTo(0)) && assert(limit)(equalTo(initialCapacity))
       },
       testM("flip") {
         for {
@@ -171,7 +171,7 @@ object BufferSpec extends BaseSpec {
           _        <- b.flip
           position <- b.position
           limit    <- b.limit
-        } yield assert(position == 0 && limit == 1)(isTrue)
+        } yield assert(position)(equalTo(0)) && assert(limit)(equalTo(1))
       },
       testM("rewind sets position to 0") {
         for {
@@ -179,7 +179,7 @@ object BufferSpec extends BaseSpec {
           _           <- b.position(1)
           _           <- b.rewind
           newPosition <- b.position
-        } yield assert(newPosition == 0)(isTrue)
+        } yield assert(newPosition)(equalTo(0))
       },
       testM("heap buffers a backed by an array") {
         for {
@@ -197,10 +197,10 @@ object BufferSpec extends BaseSpec {
               _    <- b.position(position)
               _    <- b.reset
               mark <- b.position
-            } yield assert(0 <= mark && mark <= position && position <= limit && limit <= capacity)(isTrue))
+            } yield assert(mark)(isWithin(0, position)) && assert(limit)(isWithin(position, capacity)))
               .catchSome {
                 case _: IllegalArgumentException | _: IllegalStateException =>
-                  IO.effectTotal(assert(true)(isTrue))
+                  IO.effectTotal(assertCompletes)
               }
         }
       }

@@ -27,7 +27,7 @@ object FileChannelSpec extends BaseSpec {
             _      <- buffer.flip
             array  <- buffer.array
             text   = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
-          } yield assert(text == "Hello World")(isTrue)
+          } yield assert(text)(equalTo("Hello World"))
         }
     },
     testM("asynchronous file chunk read") {
@@ -37,7 +37,7 @@ object FileChannelSpec extends BaseSpec {
         .use { channel =>
           for {
             bytes <- channel.read(500, 0L)
-          } yield assert(bytes == Chunk.fromArray("Hello World".getBytes(StandardCharsets.UTF_8)))(isTrue)
+          } yield assert(bytes)(equalTo(Chunk.fromArray("Hello World".getBytes(StandardCharsets.UTF_8))))
         }
     },
     testM("asynchronous file write") {
@@ -55,7 +55,7 @@ object FileChannelSpec extends BaseSpec {
             path   <- ZIO.effectTotal(Path("nio/src/test/resources/async_file_write_test.txt"))
             result <- ZIO.effect(Source.fromFile(path.toFile).getLines.toSeq)
             _      <- Files.delete(path)
-          } yield assert(result.size == 1 && result.head == "Hello World")(isTrue)
+          } yield assert(result.size)(equalTo(1)) && assert(result.head)(equalTo("Hello World"))
         }
     },
     testM("memory mapped buffer") {
@@ -66,7 +66,7 @@ object FileChannelSpec extends BaseSpec {
           for {
             buffer <- channel.map(FileChannel.MapMode.READ_ONLY, 0L, 6L)
             bytes  <- buffer.getChunk()
-          } yield assert(bytes == Chunk.fromArray("Hello ".getBytes(StandardCharsets.UTF_8)))(isTrue)
+          } yield assert(bytes)(equalTo(Chunk.fromArray("Hello ".getBytes(StandardCharsets.UTF_8))))
         }
     }
   )

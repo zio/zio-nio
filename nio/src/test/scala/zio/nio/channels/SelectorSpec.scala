@@ -21,7 +21,7 @@ object SelectorSpec extends BaseSpec {
         clientFiber <- client(addr).fork
         _           <- serverFiber.join
         message     <- clientFiber.join
-      } yield assert(message == "Hello world")(isTrue)
+      } yield assert(message)(equalTo("Hello world"))
     }
   )
 

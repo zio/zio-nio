@@ -129,7 +129,7 @@ object ChannelSpec extends BaseSpec {
         _             <- serverStarted.await
         _             <- client(addr)
         _             <- s2.join
-      } yield assert(true)(isTrue)
+      } yield assertCompletes
     }
   )
 }
