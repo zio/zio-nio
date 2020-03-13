@@ -1,6 +1,6 @@
 package zio.nio.core.channels
 
-import zio.nio.core.{ BaseSpec, Buffer, InetAddress, InetSocketAddress, SocketAddress }
+import zio.nio.core.{ BaseSpec, Buffer, SocketAddress }
 import zio.test.{ suite, testM }
 import zio.{ IO, _ }
 import zio.test._
@@ -10,19 +10,17 @@ object ChannelSpec extends BaseSpec {
 
   override def spec = suite("ChannelSpec")(
     testM("read/write") {
-      val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
-        .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13370))
-
-      def echoServer(promise: Promise[Nothing, Unit]): IO[Exception, Unit] =
+      def echoServer(started: Promise[Nothing, SocketAddress]): IO[Exception, Unit] =
         for {
-          address <- inetAddress
+          address <- SocketAddress.inetSocketAddress(0)
           sink    <- Buffer.byte(3)
           _ <- Managed
                 .make(AsynchronousServerSocketChannel())(_.close.orDie)
                 .use { server =>
                   for {
-                    _ <- server.bind(address)
-                    _ <- promise.succeed(())
+                    _    <- server.bind(address)
+                    addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                    _    <- started.succeed(addr)
                     _ <- Managed.make(server.accept)(_.close.orDie).use { worker =>
                           worker.readBuffer(sink) *>
                             sink.flip *>
@@ -33,10 +31,9 @@ object ChannelSpec extends BaseSpec {
                 .fork
         } yield ()
 
-      def echoClient: IO[Exception, Boolean] =
+      def echoClient(address: SocketAddress): IO[Exception, Boolean] =
         for {
-          address <- inetAddress
-          src     <- Buffer.byte(3)
+          src <- Buffer.byte(3)
           result <- Managed.make(AsynchronousSocketChannel())(_.close.orDie).use { client =>
                      for {
                        _        <- client.connect(address)
@@ -51,25 +48,23 @@ object ChannelSpec extends BaseSpec {
         } yield result
 
       for {
-        serverStarted <- Promise.make[Nothing, Unit]
+        serverStarted <- Promise.make[Nothing, SocketAddress]
         _             <- echoServer(serverStarted)
-        _             <- serverStarted.await
-        same          <- echoClient
+        address       <- serverStarted.await
+        same          <- echoClient(address)
       } yield assert(same)(isTrue)
     },
     testM("read should fail when connection close") {
-      val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
-        .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13372))
-
-      def server(started: Promise[Nothing, Unit]): IO[Exception, Fiber[Exception, Boolean]] =
+      def server(started: Promise[Nothing, SocketAddress]): IO[Exception, Fiber[Exception, Boolean]] =
         for {
-          address <- inetAddress
+          address <- SocketAddress.inetSocketAddress(0)
           result <- Managed
                      .make(AsynchronousServerSocketChannel())(_.close.orDie)
                      .use { server =>
                        for {
-                         _ <- server.bind(address)
-                         _ <- started.succeed(())
+                         _    <- server.bind(address)
+                         addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                         _    <- started.succeed(addr)
                          result <- Managed
                                     .make(server.accept)(_.close.orDie)
                                     .use(worker => worker.read(3) *> worker.read(3) *> ZIO.succeed(false))
@@ -82,9 +77,8 @@ object ChannelSpec extends BaseSpec {
                      .fork
         } yield result
 
-      def client: IO[Exception, Unit] =
+      def client(address: SocketAddress): IO[Exception, Unit] =
         for {
-          address <- inetAddress
           _ <- Managed.make(AsynchronousSocketChannel())(_.close.orDie).use { client =>
                 for {
                   _ <- client.connect(address)
@@ -94,46 +88,46 @@ object ChannelSpec extends BaseSpec {
         } yield ()
 
       for {
-        serverStarted <- Promise.make[Nothing, Unit]
+        serverStarted <- Promise.make[Nothing, SocketAddress]
         serverFiber   <- server(serverStarted)
-        _             <- serverStarted.await
-        _             <- client
+        addr          <- serverStarted.await
+        _             <- client(addr)
         same          <- serverFiber.join
       } yield assert(same)(isTrue)
     },
     testM("close channel unbind port") {
-      val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
-        .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13376))
-
-      def client: IO[Exception, Unit] =
+      def client(address: SocketAddress): IO[Exception, Unit] =
         for {
-          address <- inetAddress
-          client  <- AsynchronousSocketChannel()
-          _       <- client.connect(address)
-          _       <- client.close
+          client <- AsynchronousSocketChannel()
+          _      <- client.connect(address)
+          _      <- client.close
         } yield ()
 
-      def server(started: Promise[Nothing, Unit]): IO[Exception, Fiber[Exception, Unit]] =
+      def server(
+        address: SocketAddress,
+        started: Promise[Nothing, SocketAddress]
+      ): IO[Exception, Fiber[Exception, Unit]] =
         for {
-          address <- inetAddress
-          server  <- AsynchronousServerSocketChannel()
-          _       <- server.bind(address)
-          _       <- started.succeed(())
+          server <- AsynchronousServerSocketChannel()
+          _      <- server.bind(address)
+          addr   <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+          _      <- started.succeed(addr)
           worker <- server.accept
                      .bracket(_.close.ignore *> server.close.ignore)(_ => ZIO.unit)
                      .fork
         } yield worker
 
       for {
-        serverStarted <- Promise.make[Nothing, Unit]
-        s1            <- server(serverStarted)
-        _             <- serverStarted.await
-        _             <- client
+        address       <- SocketAddress.inetSocketAddress(0)
+        serverStarted <- Promise.make[Nothing, SocketAddress]
+        s1            <- server(address, serverStarted)
+        addr          <- serverStarted.await
+        _             <- client(addr)
         _             <- s1.join
-        serverStarted <- Promise.make[Nothing, Unit]
-        s2            <- server(serverStarted)
+        serverStarted <- Promise.make[Nothing, SocketAddress]
+        s2            <- server(addr, serverStarted)
         _             <- serverStarted.await
-        _             <- client
+        _             <- client(addr)
         _             <- s2.join
       } yield assertCompletes
     }

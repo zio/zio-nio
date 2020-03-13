@@ -15,10 +15,10 @@ object SelectorSpec extends BaseSpec {
   override def spec = suite("SelectorSpec")(
     testM("read/write") {
       for {
-        started     <- Promise.make[Nothing, Unit]
+        started     <- Promise.make[Nothing, SocketAddress]
         serverFiber <- server(started).fork
-        _           <- started.await
-        clientFiber <- client.fork
+        addr        <- started.await
+        clientFiber <- client(addr).fork
         _           <- serverFiber.join
         message     <- clientFiber.join
       } yield assert(message)(equalTo("Hello world"))
@@ -28,12 +28,10 @@ object SelectorSpec extends BaseSpec {
   def byteArrayToString(array: Array[Byte]): String =
     array.takeWhile(_ != 10).map(_.toChar).mkString.trim
 
-  val addressIo = SocketAddress.inetSocketAddress("0.0.0.0", 1112)
-
   def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
     statusCheck.either.map(_.getOrElse(false))
 
-  def server(started: Promise[Nothing, Unit]): ZIO[Clock, Exception, Unit] = {
+  def server(started: Promise[Nothing, SocketAddress]): ZIO[Clock, Exception, Unit] = {
     def serverLoop(
       selector: Selector,
       channel: ServerSocketChannel,
@@ -69,7 +67,7 @@ object SelectorSpec extends BaseSpec {
       } yield ()
 
     for {
-      address <- addressIo
+      address <- SocketAddress.inetSocketAddress(0)
       _ <- Selector.make.use { selector =>
             ServerSocketChannel.open.use { channel =>
               for {
@@ -77,7 +75,8 @@ object SelectorSpec extends BaseSpec {
                 _      <- channel.configureBlocking(false)
                 _      <- channel.register(selector, Operation.Accept)
                 buffer <- Buffer.byte(256)
-                _      <- started.succeed(())
+                addr   <- channel.localAddress
+                _      <- started.succeed(addr)
 
                 /*
                  *  we need to run the server loop twice:
@@ -91,11 +90,10 @@ object SelectorSpec extends BaseSpec {
     } yield ()
   }
 
-  def client: IO[Exception, String] =
+  def client(address: SocketAddress): IO[Exception, String] = {
+    val bytes = Chunk.fromArray("Hello world".getBytes)
     for {
-      address <- addressIo
-      bytes   = Chunk.fromArray("Hello world".getBytes)
-      buffer  <- Buffer.byte(bytes)
+      buffer <- Buffer.byte(bytes)
       text <- SocketChannel.open(address).use { client =>
                for {
                  _     <- client.write(buffer)
@@ -107,5 +105,5 @@ object SelectorSpec extends BaseSpec {
                } yield text
              }
     } yield text
-
+  }
 }
