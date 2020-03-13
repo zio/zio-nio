@@ -42,13 +42,13 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
     testM("shutdown") {
       ClassFixture.providedFixture { fixture =>
         fixture.testObj.shutdown
-          .map(_ => assert(true)(isTrue))
+          .map(_ => assertCompletes)
       }
     },
     testM("shutdownNow") {
       ClassFixture.providedFixture { fixture =>
         fixture.testObj.shutdownNow
-          .map(_ => assert(true)(isTrue))
+          .map(_ => assertCompletes)
       }
     },
     testM("failing shutdownNow") {

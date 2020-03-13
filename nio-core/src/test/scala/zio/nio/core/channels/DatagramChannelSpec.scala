@@ -9,19 +9,17 @@ object DatagramChannelSpec extends BaseSpec {
 
   override def spec = suite("DatagramChannelSpec")(
     testM("read/write") {
-      val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
-        .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13371))
-
-      def echoServer(promise: Promise[Nothing, Unit]): IO[Exception, Unit] =
+      def echoServer(started: Promise[Nothing, SocketAddress]): IO[Exception, Unit] =
         for {
-          address <- inetAddress
+          address <- SocketAddress.inetSocketAddress(0)
           sink    <- Buffer.byte(3)
           _ <- Managed
                 .make(DatagramChannel.open)(_.close.orDie)
                 .use { server =>
                   for {
                     _          <- server.bind(Some(address))
-                    _          <- promise.succeed(())
+                    addr       <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                    _          <- started.succeed(addr)
                     retAddress <- server.receive(sink)
                     addr       <- IO.fromOption(retAddress)
                     _          <- sink.flip
@@ -31,10 +29,9 @@ object DatagramChannelSpec extends BaseSpec {
                 .fork
         } yield ()
 
-      def echoClient: IO[Exception, Boolean] =
+      def echoClient(address: SocketAddress): IO[Exception, Boolean] =
         for {
-          address <- inetAddress
-          src     <- Buffer.byte(3)
+          src <- Buffer.byte(3)
           result <- Managed.make(DatagramChannel.open)(_.close.orDie).use { client =>
                      for {
                        _        <- client.connect(address)
@@ -49,48 +46,46 @@ object DatagramChannelSpec extends BaseSpec {
         } yield result
 
       for {
-        serverStarted <- Promise.make[Nothing, Unit]
+        serverStarted <- Promise.make[Nothing, SocketAddress]
         _             <- echoServer(serverStarted)
-        _             <- serverStarted.await
-        same          <- echoClient
+        addr          <- serverStarted.await
+        same          <- echoClient(addr)
       } yield assert(same)(isTrue)
     },
     testM("close channel unbind port") {
-      val inetAddress: ZIO[Any, Exception, InetSocketAddress] = InetAddress.localHost
-        .flatMap(iAddr => SocketAddress.inetSocketAddress(iAddr, 13373))
+      def client(address: SocketAddress): IO[Exception, Unit] =
+        Managed.make(DatagramChannel.open)(_.close.orDie).use(_.connect(address).unit)
 
-      def client: IO[Exception, Unit] =
+      def server(
+        address: SocketAddress,
+        started: Promise[Nothing, SocketAddress]
+      ): IO[Exception, Fiber[Exception, Unit]] =
         for {
-          address <- inetAddress
-          _       <- Managed.make(DatagramChannel.open)(_.close.orDie).use(client => client.connect(address).unit)
-        } yield ()
-
-      def server(started: Promise[Nothing, Unit]): IO[Exception, Fiber[Exception, Unit]] =
-        for {
-          address <- inetAddress
           worker <- Managed
                      .make(DatagramChannel.open)(_.close.orDie)
                      .use { server =>
                        for {
-                         _ <- server.bind(Some(address))
-                         _ <- started.succeed(())
+                         _    <- server.bind(Some(address))
+                         addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                         _    <- started.succeed(addr)
                        } yield ()
                      }
                      .fork
         } yield worker
 
       for {
-        serverStarted  <- Promise.make[Nothing, Unit]
-        s1             <- server(serverStarted)
-        _              <- serverStarted.await
-        _              <- client
+        address        <- SocketAddress.inetSocketAddress(0)
+        serverStarted  <- Promise.make[Nothing, SocketAddress]
+        s1             <- server(address, serverStarted)
+        addr           <- serverStarted.await
+        _              <- client(addr)
         _              <- s1.join
-        serverStarted2 <- Promise.make[Nothing, Unit]
-        s2             <- server(serverStarted2)
+        serverStarted2 <- Promise.make[Nothing, SocketAddress]
+        s2             <- server(addr, serverStarted2)
         _              <- serverStarted2.await
-        _              <- client
+        _              <- client(addr)
         _              <- s2.join
-      } yield assert(true)(isTrue)
+      } yield assertCompletes
     }
   )
 }
