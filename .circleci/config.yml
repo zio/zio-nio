@@ -245,7 +245,7 @@ workflows:
             - lint
           filters:
             <<: *filter_tags
-      - test_212_jdk11:
+      - test_211_jdk8:
           requires:
             - lint
           filters:
