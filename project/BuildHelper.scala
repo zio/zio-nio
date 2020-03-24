@@ -11,20 +11,17 @@ object BuildHelper {
     scalacOptions := stdOptions ++ extraOptions(scalaVersion.value),
     libraryDependencies ++=
       Seq(
-        ("com.github.ghik" % "silencer-lib" % SilencerVersion % Provided)
-          .cross(CrossVersion.full),
-        compilerPlugin(("com.github.ghik" % "silencer-plugin" % SilencerVersion).cross(CrossVersion.full)),
-        compilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3")
+        ("com.github.ghik" % "silencer-lib" % "1.4.4" % Provided).cross(CrossVersion.full),
+        compilerPlugin(("com.github.ghik" % "silencer-plugin" % "1.4.4").cross(CrossVersion.full))
       ),
     incOptions ~= (_.withLogRecompileOnMacro(false))
   )
 
   val ZioCoreVersion = "1.0.0-RC18-2"
 
-  private val SilencerVersion = "1.6.0"
-  private val Scala211        = "2.11.12"
-  private val Scala212        = "2.12.10"
-  private val Scala213        = "2.13.1"
+  private val Scala211 = "2.11.12"
+  private val Scala212 = "2.12.10"
+  private val Scala213 = "2.13.1"
 
   private val stdOptions = Seq(
     "-encoding",
@@ -44,19 +41,18 @@ object BuildHelper {
     "-Xfatal-warnings"
   )
 
-  private val stdOpts213 = Seq(
-    "-Wunused:imports",
-    "-Wvalue-discard",
-    "-Wunused:patvars",
-    "-Wunused:privates",
-    "-Wunused:params",
-    "-Wvalue-discard",
-    "-Wdead-code"
-  )
-
   private def extraOptions(scalaVersion: String) =
     CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, 13)) => stdOpts213
+      case Some((2, 13)) =>
+        Seq(
+          "-Wunused:imports",
+          "-Wvalue-discard",
+          "-Wunused:patvars",
+          "-Wunused:privates",
+          "-Wunused:params",
+          "-Wvalue-discard",
+          "-Wdead-code"
+        )
       case Some((2, 12)) =>
         Seq(
           "-opt-warnings",
