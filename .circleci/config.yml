@@ -1,7 +1,10 @@
 version: 2.1
 
+scala_211: &scala_211
+  SCALA_VERSION: 2.11.12
+
 scala_212: &scala_212
-  SCALA_VERSION: 2.12.8
+  SCALA_VERSION: 2.12.10
 
 scala_213: &scala_213
   SCALA_VERSION: 2.13.1
@@ -58,6 +61,10 @@ install_nodejs: &install_nodejs
         nvm use
         node -v
 
+filter_tags: &filter_tags
+  tags:             
+    only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+
 compile: &compile
   steps:
     - checkout
@@ -105,10 +112,28 @@ release: &release
         name: Fetch git tags
         command: git fetch --tags
     - <<: *load_cache
-    - run: echo -n "${PGP_PUBLIC}" | base64 -d > /tmp/public.asc
-    - run: echo -n "${PGP_SECRET}" | base64 -d > /tmp/secret.asc
-    - run: echo "credentials += Credentials(\"Sonatype Nexus Repository Manager\", \"oss.sonatype.org\", \"$SONATYPE_USER\", \"$SONATYPE_PASSWORD\")" > ~/.sbt/1.0/sonatype.sbt
-    - run: ./sbt ++${SCALA_VERSION}! clean sonatypeBundleClean +publishSigned sonatypeBundleRelease
+    - run: 
+        name: Write PGP public key
+        command: echo -n "${PGP_PUBLIC}" | base64 -di > /tmp/public.asc
+    - run: 
+        name: Write PGP secret key
+        command: echo -n "${PGP_SECRET}" | base64 -di > /tmp/secret.asc
+    - run: 
+        name: Write Sonatype credentials
+        command: echo "credentials += Credentials(\"Sonatype Nexus Repository Manager\", \"oss.sonatype.org\", \"$SONATYPE_USER\", \"$SONATYPE_PASSWORD\")" > ~/.sbt/1.0/sonatype.sbt
+    - run: 
+        name: Release artifacts
+        command: |
+          mkdir -p $HOME/bin
+          sudo apt-get update && sudo apt-get -y install gnupg2
+          echo pinentry-mode loopback >> ~/.gnupg/gpg.conf
+          echo allow-loopback-pinentry >> ~/.gnupg/gpg-agent.conf
+          chmod 600 ~/.gnupg/*
+          ln -s /usr/bin/gpg2 $HOME/bin/gpg
+          $HOME/bin/gpg --version
+          echo RELOADAGENT | gpg-connect-agent
+          echo $PGP_SECRET | base64 -di | gpg2 --import --no-tty --batch --yes
+          PATH=$HOME/bin:$PATH ./sbt ++${SCALA_VERSION}! ci-release
 
 microsite: &microsite
   steps:
@@ -152,6 +177,20 @@ jobs:
     environment:
       - <<: *scala_212
       - <<: *jdk_8
+
+  test_211_jdk8:
+    <<: *test
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_211
+      - <<: *jdk_8
+
+  test_211_jdk11:
+    <<: *test
+    <<: *machine_ubuntu
+    environment:
+      - <<: *scala_211
+      - <<: *jdk_11
 
   test_212_jdk8:
     <<: *test
@@ -200,57 +239,62 @@ workflows:
     jobs:
       - lint:
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *filter_tags
       - mdoc:
           requires:
             - lint
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *filter_tags
+      - test_211_jdk8:
+          requires:
+            - lint
+          filters:
+            <<: *filter_tags
+      - test_211_jdk11:
+          requires:
+            - lint
+          filters:
+            <<: *filter_tags
       - test_212_jdk8:
           requires:
             - lint
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *filter_tags
       - test_212_jdk11:
           requires:
             - lint
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *filter_tags
       - test_213_jdk8:
           requires:
             - lint
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *filter_tags
       - test_213_jdk11:
           requires:
             - lint
           filters:
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+            <<: *filter_tags
       - release:
-          context: Sonatype
+          context: Sonatype2
           requires:
             - mdoc
+            - test_211_jdk8
+            - test_211_jdk11
             - test_212_jdk8
             - test_212_jdk11
             - test_213_jdk8
             - test_213_jdk11
           filters:
+            <<: *filter_tags
             branches:
-              ignore: /.*/
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
+              only:
+                - master
       - microsite:
           context: Website
           requires:
             - release
           filters:
+            <<: *filter_tags
             branches:
               ignore: /.*/
-            tags:
-              only: /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
