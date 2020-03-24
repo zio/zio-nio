@@ -29,7 +29,7 @@ object SelectorSpec extends BaseSpec {
     array.takeWhile(_ != 10).map(_.toChar).mkString.trim
 
   def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
-    statusCheck.either.map(_.getOrElse(false))
+    statusCheck.fold(_ => false, identity)
 
   def server(started: Promise[Nothing, SocketAddress]): ZIO[Clock, Exception, Unit] = {
     def serverLoop(
