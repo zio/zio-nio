@@ -1,7 +1,7 @@
 package zio.nio.channels
 
 import java.io.IOException
-import java.nio.channels.{ ClosedSelectorException, Selector => JSelector }
+import java.nio.channels.{ ClosedSelectorException, Selector => JSelector, SelectionKey => JSelectionKey }
 
 import zio.{ IO, Managed, UIO }
 import com.github.ghik.silencer.silent
@@ -10,7 +10,7 @@ import zio.nio.channels.spi.SelectorProvider
 import zio.nio.core.channels.SelectionKey
 import zio.{ IO, Managed, UIO }
 
-import scala.collection.JavaConverters
+import scala.jdk.CollectionConverters._
 
 class Selector(private[nio] val selector: JSelector) {
 
@@ -20,13 +20,13 @@ class Selector(private[nio] val selector: JSelector) {
   @silent
   final val keys: IO[ClosedSelectorException, Set[SelectionKey]] =
     IO.effect(selector.keys())
-      .map(keys => JavaConverters.asScalaSet(keys).toSet.map(new SelectionKey(_)))
+      .map(_.asScala.toSet[JSelectionKey].map(new SelectionKey(_)))
       .refineToOrDie[ClosedSelectorException]
 
   @silent
   final val selectedKeys: IO[ClosedSelectorException, Set[SelectionKey]] =
     IO.effect(selector.selectedKeys())
-      .map(keys => JavaConverters.asScalaSet(keys).toSet.map(new SelectionKey(_)))
+      .map(_.asScala.toSet[JSelectionKey].map(new SelectionKey(_)))
       .refineToOrDie[ClosedSelectorException]
 
   final def removeKey(key: SelectionKey): IO[ClosedSelectorException, Unit] =
