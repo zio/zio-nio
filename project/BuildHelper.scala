@@ -6,7 +6,7 @@ object BuildHelper {
   def stdSettings(prjName: String) = Seq(
     name := s"$prjName",
     scalacOptions := stdOptions,
-    crossScalaVersions := Seq(Scala212, Scala213),
+    crossScalaVersions := Seq(Scala211, Scala212, Scala213),
     scalaVersion in ThisBuild := Scala212,
     scalacOptions := stdOptions ++ extraOptions(scalaVersion.value),
     libraryDependencies ++=
@@ -53,21 +53,9 @@ object BuildHelper {
     "-Wdead-code"
   )
 
-  private val stdOptsUpto212 = Seq(
-    "-Xfuture",
-    "-Ypartial-unification",
-    "-Ywarn-nullary-override",
-    "-Yno-adapted-args",
-    "-Ywarn-infer-any",
-    "-Ywarn-inaccessible",
-    "-Ywarn-nullary-unit",
-    "-Ywarn-unused-import"
-  )
-
   private def extraOptions(scalaVersion: String) =
     CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, 13)) =>
-        stdOpts213
+      case Some((2, 13)) => stdOpts213
       case Some((2, 12)) =>
         Seq(
           "-opt-warnings",
@@ -75,9 +63,31 @@ object BuildHelper {
           "-Ywarn-unused:_,imports",
           "-Ywarn-unused:imports",
           "-opt:l:inline",
-          "-opt-inline-from:<source>"
-        ) ++ stdOptsUpto212
-      case _ =>
-        Seq("-Xexperimental") ++ stdOptsUpto212
+          "-opt-inline-from:<source>",
+          "-Xfuture",
+          "-Ypartial-unification",
+          "-Ywarn-nullary-override",
+          "-Yno-adapted-args",
+          "-Ywarn-infer-any",
+          "-Ywarn-inaccessible",
+          "-Ywarn-nullary-unit",
+          "-Ywarn-unused-import"
+        )
+      case Some((2, 11)) =>
+        Seq(
+          "-Ypartial-unification",
+          "-Yno-adapted-args",
+          "-Ywarn-inaccessible",
+          "-Ywarn-infer-any",
+          "-Ywarn-nullary-override",
+          "-Ywarn-nullary-unit",
+          "-Xexperimental",
+          "-Ywarn-unused-import",
+          "-Xfuture",
+          "-Xsource:2.13",
+          "-Xmax-classfile-name",
+          "242"
+        )
+      case _ => Seq.empty
     }
 }
