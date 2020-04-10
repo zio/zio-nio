@@ -9,7 +9,7 @@ import zio.stream._
 object StreamsBasedServer extends App {
 
   override def run(args: List[String]): ZIO[zio.ZEnv, Nothing, Int] =
-    server(30303, 5).orDie
+    server(8080, 16).orDie
       .as(0)
 
   def server(port: Int, parallelism: Int): ZIO[ZEnv, Exception, Unit] =
