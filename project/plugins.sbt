@@ -1,5 +1,5 @@
 addSbtPlugin("ch.epfl.scala"                     % "sbt-bloop"        % "1.3.5")
-addSbtPlugin("org.scalameta"                     % "sbt-scalafmt"     % "2.3.2")
+addSbtPlugin("org.scalameta"                     % "sbt-scalafmt"     % "2.3.3")
 addSbtPlugin("io.github.davidgregory084"         % "sbt-tpolecat"     % "0.1.10")
 addSbtPlugin("org.scalameta"                     % "sbt-mdoc"         % "2.1.5")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
