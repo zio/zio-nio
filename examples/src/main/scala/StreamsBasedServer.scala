@@ -20,12 +20,15 @@ object StreamsBasedServer extends App {
           _ <- ZStream
                 .repeatEffect(socket.accept.preallocate)
                 .map(_.withEarlyRelease)
-                .mapMPar(parallelism)(_.use((doWork _).tupled))
+                .mapMPar(parallelism)(_.use((handleChannel _).tupled))
                 .runDrain
         } yield ()
       )
 
-  def doWork(closeConn: URIO[Any, Any], channel: AsynchronousSocketChannel): ZIO[Clock with Console, Nothing, Unit] =
+  def handleChannel(
+    closeConn: URIO[Any, Any],
+    channel: AsynchronousSocketChannel
+  ): ZIO[Clock with Console, Nothing, Unit] =
     for {
       _ <- console.putStrLn("Received connection")
       data <- ZStream
