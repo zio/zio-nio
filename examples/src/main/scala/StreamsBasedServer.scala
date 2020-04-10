@@ -7,7 +7,7 @@ import zio.nio.channels._
 import zio.stream._
 
 object StreamsBasedServer extends App {
-  override def run(args: List[String]) =
+  override def run(args: List[String]): ZIO[zio.ZEnv, Nothing, Int] =
     server(30303, 5)
       .orDie
       .as(0)
