@@ -34,7 +34,7 @@ lazy val zioNioCore = project
       "dev.zio"                %% "zio-streams"             % ZioCoreVersion,
       "dev.zio"                %% "zio-test"                % ZioCoreVersion % Test,
       "dev.zio"                %% "zio-test-sbt"            % ZioCoreVersion % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.5"
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -49,7 +49,7 @@ lazy val zioNio = project
       "dev.zio"                %% "zio-streams"             % ZioCoreVersion,
       "dev.zio"                %% "zio-test"                % ZioCoreVersion % Test,
       "dev.zio"                %% "zio-test-sbt"            % ZioCoreVersion % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.4"
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.5"
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
