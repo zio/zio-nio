@@ -103,6 +103,10 @@ test: &test
     - run:
         name: Run tests
         command: ./sbt ++${SCALA_VERSION}! test
+    - store_test_results:
+        path: nio/target/test-reports/
+    - store_test_results:
+        path: nio-core/target/test-reports/
     - <<: *save_cache
 
 release: &release
