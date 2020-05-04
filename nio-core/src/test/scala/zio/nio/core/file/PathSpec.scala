@@ -11,6 +11,11 @@ object PathSpec extends BaseSpec {
       val p        = Path("a", "b") / "c/d"
       val elements = p.elements.map(_.toString)
       assert(elements)(equalTo(List("a", "b", "c", "d")))
+    },
+    test("Path equality") {
+      val path1 = Path("a") / "b" / "c"
+      val path2 = Path("a", "b") / "c"
+      assert(path1)(equalTo(path2))
     }
   )
 }
