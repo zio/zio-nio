@@ -63,7 +63,10 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
 
   override def hashCode: Int = javaPath.hashCode
 
-  override def equals(obj: Any): Boolean = javaPath.equals(obj)
+  override def equals(obj: Any): Boolean = obj match {
+    case other: Path => this.javaPath.equals(other.javaPath)
+    case _           => false
+  }
 
   override def toString: String = javaPath.toString
 }
