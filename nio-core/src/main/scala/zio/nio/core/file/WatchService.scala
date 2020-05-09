@@ -6,7 +6,8 @@ import java.nio.file.{
   WatchEvent,
   WatchKey => JWatchKey,
   WatchService => JWatchService,
-  Watchable => JWatchable
+  Watchable => JWatchable,
+  Path => JPath
 }
 import java.util.concurrent.TimeUnit
 
@@ -31,6 +32,13 @@ trait Watchable {
       .refineToOrDie[Exception]
 }
 
+object Watchable {
+
+  def apply(jWatchable: JWatchable): Watchable = new Watchable {
+    override protected val javaWatchable = jWatchable
+  }
+}
+
 final class WatchKey private[file] (private val javaKey: JWatchKey) {
   def isValid: UIO[Boolean] = UIO.effectTotal(javaKey.isValid)
 
@@ -39,6 +47,11 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
   def reset: UIO[Boolean] = UIO.effectTotal(javaKey.reset())
 
   def cancel: UIO[Unit] = UIO.effectTotal(javaKey.cancel())
+
+  def watchable: UIO[Watchable] = UIO.effectTotal(javaKey.watchable()).map {
+    case javaPath: JPath => Path.fromJava(javaPath)
+    case javaWatchable   => Watchable(javaWatchable)
+  }
 }
 
 final class WatchService private (private[file] val javaWatchService: JWatchService) {
