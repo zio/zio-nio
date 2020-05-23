@@ -110,7 +110,7 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
           case StreamCodeState.Pull =>
             def decode(
               inBytes: Chunk[Byte]
-            ): ZIO[Any, Some[E], Chunk[Char]] =
+            ): ZIO[R, Option[E], Chunk[Char]] =
               for {
                 bufRemaining <- byteBuffer.remaining
                 (decodeBytes, remainingBytes) = {
@@ -132,10 +132,13 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
               } yield decodedChars ++ remainderChars
 
             inPull.foldM(
-              _.map(e => ZIO.fail(Some(e))).getOrElse {
+              _.map(e => ZIO.fail(Option(e))).getOrElse {
                 stateRef.set(StreamCodeState.EndOfInput).as(Chunk.empty)
               },
-              decode
+              ccb =>
+                ccb.collectM {
+                  case cb: Chunk[Byte] => decode(cb)
+                }
             )
           case StreamCodeState.EndOfInput =>
             for {
@@ -149,7 +152,7 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
               _ <- ZIO.when(result == CoderResult.Underflow)(
                     stateRef.set(StreamCodeState.Flush)
                   )
-            } yield outChars
+            } yield Chunk(outChars)
           case StreamCodeState.Flush =>
             for {
               result <- this.flush(charBuffer)
@@ -165,7 +168,7 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
                                s"Error $e should not returned from decoder flush"
                              )
                          }
-            } yield outChars
+            } yield Chunk(outChars)
           case StreamCodeState.Done =>
             IO.fail(None)
         }
