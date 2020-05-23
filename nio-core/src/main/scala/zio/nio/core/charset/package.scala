@@ -6,7 +6,7 @@ import zio.stream.Sink
 
 package object charset {
 
-  def chunkCollectSink[A]: Sink[Nothing, Nothing, Chunk[A], Chunk[A]] =
+  def chunkCollectSink[A]: Sink[Nothing, Chunk[A], Chunk[A]] =
     Sink.foldLeft(Chunk[A]())(_ ++ _)
 
 }
