@@ -68,19 +68,6 @@
 <span class="hljs-keyword">import</span> zio.nio._
 <span class="hljs-keyword">import</span> zio.nio.channels._
 <span class="hljs-keyword">import</span> zio.nio.core._
-
-<span class="hljs-comment">// pretend we already have the next zio release</span>
-<span class="hljs-keyword">implicit</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">zManagedSyntax</span>[<span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A</span>](<span class="hljs-params">zm: <span class="hljs-type">ZManaged</span>[<span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">A</span>]</span>) </span>{
-  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">allocated</span></span>: <span class="hljs-type">ZIO</span>[<span class="hljs-type">R</span>, <span class="hljs-type">E</span>, <span class="hljs-type">Managed</span>[<span class="hljs-type">Nothing</span>, <span class="hljs-type">A</span>]] = {
-    <span class="hljs-type">ZIO</span>.uninterruptibleMask { restore =&gt;
-      <span class="hljs-keyword">for</span> {
-        env      &lt;- <span class="hljs-type">ZIO</span>.environment[<span class="hljs-type">R</span>]
-        res      &lt;- zm.reserve
-        resource &lt;- restore(res.acquire).onError(err =&gt; res.release(<span class="hljs-type">Exit</span>.<span class="hljs-type">Failure</span>(err)))
-      } <span class="hljs-keyword">yield</span> <span class="hljs-type">ZManaged</span>.make(<span class="hljs-type">ZIO</span>.succeed(resource))(_ =&gt; res.release(<span class="hljs-type">Exit</span>.<span class="hljs-type">Success</span>(resource)).provide(env))
-    }
-  }
-}
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="creating-sockets"></a><a href="#creating-sockets" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Creating sockets</h2>
 <p>Creating server socket:</p>
@@ -88,7 +75,7 @@
   .mapM { socket =&gt;
     <span class="hljs-keyword">for</span> {
       _ &lt;- <span class="hljs-type">SocketAddress</span>.inetSocketAddress(<span class="hljs-string">"127.0.0.1"</span>, <span class="hljs-number">1337</span>) &gt;&gt;= socket.bind
-      _ &lt;- socket.accept.allocated.flatMap(_.use(channel =&gt; doWork(channel).catchAll(ex =&gt; putStrLn(ex.getMessage))).fork).forever.fork
+      _ &lt;- socket.accept.preallocate.flatMap(_.use(channel =&gt; doWork(channel).catchAll(ex =&gt; putStrLn(ex.getMessage))).fork).forever.fork
     } <span class="hljs-keyword">yield</span> ()
   }.useForever
 
@@ -121,7 +108,7 @@
   _           &lt;- serverFiber.join
 } <span class="hljs-keyword">yield</span> ()
 </code></pre>
-</span></div></article></div><div class="docLastUpdate"><em>Last updated on 12/6/2019 by Jakub Czuchnowski</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/zio-nio/docs/essentials/essentials_files"><span class="arrow-prev">← </span><span>File Channel</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#creating-sockets">Creating sockets</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section><div><div class="gitter-open-chat-button">Open Chat</div><script type="text/javascript">
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 5/23/2020 by toxicafunk</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/zio-nio/docs/essentials/essentials_files"><span class="arrow-prev">← </span><span>File Channel</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#creating-sockets">Creating sockets</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section><div><div class="gitter-open-chat-button">Open Chat</div><script type="text/javascript">
         ((window.gitter = {}).chat = {}).options = {
           showChatByDefault: false,
           activationElement: '.gitter-open-chat-button',
