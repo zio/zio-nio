@@ -43,8 +43,9 @@ object StreamsBasedServer extends App {
                          .fromEffectOption(
                            channel.read(64).tap(_ => console.putStrLn("Read chunk")).orElse(ZIO.fail(None))
                          )
+                         .flattenChunks
                          .take(4)
-                         .transduce(ZSink.utf8DecodeChunk)
+                         .transduce(ZTransducer.utf8Decode)
                          .run(Sink.foldLeft("")(_ + (_: String)))
                 _ <- closeConn
                 _ <- f(data)
