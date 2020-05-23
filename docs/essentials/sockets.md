@@ -14,19 +14,6 @@ import zio.console._
 import zio.nio._
 import zio.nio.channels._
 import zio.nio.core._
-
-// pretend we already have the next zio release
-implicit class zManagedSyntax[R, E, A](zm: ZManaged[R, E, A]) {
-  def allocated: ZIO[R, E, Managed[Nothing, A]] = {
-    ZIO.uninterruptibleMask { restore =>
-      for {
-        env      <- ZIO.environment[R]
-        res      <- zm.reserve
-        resource <- restore(res.acquire).onError(err => res.release(Exit.Failure(err)))
-      } yield ZManaged.make(ZIO.succeed(resource))(_ => res.release(Exit.Success(resource)).provide(env))
-    }
-  }
-}
 ```
 
 ## Creating sockets
@@ -38,7 +25,7 @@ val server = AsynchronousServerSocketChannel()
   .mapM { socket =>
     for {
       _ <- SocketAddress.inetSocketAddress("127.0.0.1", 1337) >>= socket.bind
-      _ <- socket.accept.allocated.flatMap(_.use(channel => doWork(channel).catchAll(ex => putStrLn(ex.getMessage))).fork).forever.fork
+      _ <- socket.accept.preallocate.flatMap(_.use(channel => doWork(channel).catchAll(ex => putStrLn(ex.getMessage))).fork).forever.fork
     } yield ()
   }.useForever
 
