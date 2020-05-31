@@ -18,7 +18,7 @@ object StreamsBasedServer extends App {
       })
       .runDrain
       .orDie
-      .as(0)
+      .exitCode
 
   def server(port: Int): Managed[Exception, AsynchronousServerSocketChannel] =
     for {
