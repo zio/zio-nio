@@ -53,7 +53,7 @@ object FileChannelSpec extends BaseSpec {
             buffer <- Buffer.byte(Chunk.fromArray("Hello World".getBytes))
             _      <- channel.writeBuffer(buffer, 0)
             path   <- ZIO.effectTotal(Path("nio/src/test/resources/async_file_write_test.txt"))
-            result <- ZIO.effect(Source.fromFile(path.toFile).getLines.toSeq)
+            result <- ZIO.effect(Source.fromFile(path.toFile).getLines().toSeq)
             _      <- Files.delete(path)
           } yield assert(result.size)(equalTo(1)) && assert(result.head)(equalTo("Hello World"))
         }

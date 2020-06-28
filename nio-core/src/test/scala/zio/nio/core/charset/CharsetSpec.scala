@@ -27,7 +27,7 @@ object CharsetSpec extends DefaultRunnableSpec {
         .fromIterable(arabicUtf8.toSeq)
         .map(Chunk.single)
       for {
-        chars <- Charset.Standard.utf8.newDecoder.decodeStream(byteStream).run(chunkCollectSink[Char])
+        chars <- Charset.Standard.utf8.newDecoder.decodeStream(byteStream).runCollect.map(_.flatten)
       } yield assert(chars)(equalTo(arabicChunk))
     },
     testM("minimum buffer size for encoding") {
@@ -84,7 +84,7 @@ object CharsetSpec extends DefaultRunnableSpec {
     for {
       byteChunks <- charset.newEncoder.encodeStream(charStream).runCollect
       byteStream = Stream.fromIterable(byteChunks)
-      chars      <- charset.newDecoder.decodeStream(byteStream).run(chunkCollectSink[Char])
+      chars      <- charset.newDecoder.decodeStream(byteStream).runCollect.map(_.flatten)
     } yield assert(chars)(equalTo(arabicChunk))
   }
 }
