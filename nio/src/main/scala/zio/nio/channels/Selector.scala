@@ -3,7 +3,6 @@ package zio.nio.channels
 import java.io.IOException
 import java.nio.channels.{ ClosedSelectorException, Selector => JSelector, SelectionKey => JSelectionKey }
 
-import zio.{ IO, Managed, UIO }
 import com.github.ghik.silencer.silent
 import zio.duration.Duration
 import zio.nio.channels.spi.SelectorProvider

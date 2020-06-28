@@ -44,7 +44,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
         channel = new FileChannel(fileChannel)
         _       <- channel.writeBuffer(buffs)
         _       <- channel.close
-        result  = Source.fromFile(file).getLines.toSeq
+        result  = Source.fromFile(file).getLines().toSeq
         _       = file.delete()
       } yield assert(result)(equalTo(Seq("HelloWorld")))
     }
