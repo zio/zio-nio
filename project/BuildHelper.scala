@@ -3,6 +3,8 @@ import sbt.Keys._
 
 object BuildHelper {
 
+  private val SilencerVersion = "1.7.0"
+
   def stdSettings(prjName: String) = Seq(
     name := s"$prjName",
     scalacOptions := stdOptions,
@@ -11,17 +13,17 @@ object BuildHelper {
     scalacOptions := stdOptions ++ extraOptions(scalaVersion.value),
     libraryDependencies ++=
       Seq(
-        ("com.github.ghik" % "silencer-lib" % "1.4.4" % Provided).cross(CrossVersion.full),
-        compilerPlugin(("com.github.ghik" % "silencer-plugin" % "1.4.4").cross(CrossVersion.full))
+        ("com.github.ghik" % "silencer-lib" % SilencerVersion % Provided).cross(CrossVersion.full),
+        compilerPlugin(("com.github.ghik" % "silencer-plugin" % SilencerVersion).cross(CrossVersion.full))
       ),
     incOptions ~= (_.withLogRecompileOnMacro(false))
   )
 
-  val ZioCoreVersion = "1.0.0-RC20"
+  val ZioCoreVersion = "1.0.0-RC21-1"
 
   private val Scala211 = "2.11.12"
-  private val Scala212 = "2.12.10"
-  private val Scala213 = "2.13.1"
+  private val Scala212 = "2.12.11"
+  private val Scala213 = "2.13.3"
 
   private val stdOptions = Seq(
     "-encoding",
