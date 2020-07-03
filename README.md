@@ -10,7 +10,7 @@ Java NIO is unsafe, and can surprise you a lot with e.g. hiding actual error in 
 
 ZIO-NIO comes in two flavours:
 
- - `zio.nio.core` - a small and unopionanted ZIO interface to NIO that just wraps NIO API in ZIO effects,
+ - `zio.nio.core` - a small and unopinionated ZIO interface to NIO that just wraps NIO API in ZIO effects,
  - `zio.nio` - an opinionated interface with deeper ZIO integration that provides more type and resource safety.
 
 Learn more about ZIO-NIO at:
