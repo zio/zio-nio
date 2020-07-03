@@ -6,7 +6,7 @@
 
 ZIO interface to Java NIO.
 
-Java NIO is unsafe, and can surprise you a lot with e.g. hiding actual error in IO operation and giving you only true/false values when IO was successful/not successful. ZIO-NIO on the other hand embraces the full power of ZIO effects, evironment, error and resource management to provide type-safe, performant, purely-functional, low-level, and unopinionated wrapping of Java NIO functionality.
+Java NIO is unsafe, and can surprise you a lot with e.g. hiding the actual error in IO operation and giving you only true/false values when IO was successful/not successful. ZIO-NIO on the other hand embraces the full power of ZIO effects, environment, error and resource management to provide type-safe, performant, purely-functional, low-level, and unopinionated wrapping of Java NIO functionality.
 
 ZIO-NIO comes in two flavours:
 
