@@ -8,25 +8,36 @@ import java.nio.channels.{
   SocketChannel => JSocketChannel
 }
 
-import zio.{ IO, UIO }
+import zio.{ IO, Managed, UIO, ZIO, blocking }
 import zio.nio.core.channels.SelectionKey.Operation
 import zio.nio.core.channels.spi.SelectorProvider
 import zio.nio.core.SocketAddress
 
 /**
- * A channel that can be multiplexed via a [[zio.nio.core.channels.Selector]].
+ * A channel that can be in either blocking or non-blocking mode.
  */
-trait SelectableChannel extends Channel {
+trait ModalChannel extends Channel {
+
   protected val channel: JSelectableChannel
 
-  final val provider: UIO[SelectorProvider] =
-    IO.effectTotal(new SelectorProvider(channel.provider()))
+  final def provider: SelectorProvider = new SelectorProvider(channel.provider())
 
-  final val validOps: UIO[Set[Operation]] =
-    IO.effectTotal(channel.validOps())
-      .map(Operation.fromInt(_))
+  final def isBlocking: UIO[Boolean] =
+    IO.effectTotal(channel.isBlocking())
 
-  final val isRegistered: UIO[Boolean] =
+  final def blockingLock: UIO[AnyRef] =
+    IO.effectTotal(channel.blockingLock())
+}
+
+/**
+ * A channel that can be multiplexed via a [[zio.nio.core.channels.Selector]].
+ */
+trait SelectableChannel extends ModalChannel with WithEnv.NonBlocking {
+
+  final def validOps: Set[Operation] =
+    Operation.fromInt(channel.validOps())
+
+  final def isRegistered: UIO[Boolean] =
     IO.effectTotal(channel.isRegistered())
 
   final def keyFor(sel: Selector): UIO[Option[SelectionKey]] =
@@ -48,20 +59,12 @@ trait SelectableChannel extends Channel {
     IO.effect(new SelectionKey(channel.register(sel.selector, op.intVal)))
       .refineToOrDie[IOException]
 
-  final def configureBlocking(block: Boolean): IO[IOException, Unit] =
-    IO.effect(channel.configureBlocking(block)).unit.refineToOrDie[IOException]
-
-  final val isBlocking: UIO[Boolean] =
-    IO.effectTotal(channel.isBlocking())
-
-  final val blockingLock: UIO[AnyRef] =
-    IO.effectTotal(channel.blockingLock())
 }
 
-final class SocketChannel(override protected[channels] val channel: JSocketChannel)
-    extends SelectableChannel
-    with GatheringByteChannel
-    with ScatteringByteChannel {
+sealed abstract class SocketChannel[R](override protected[channels] val channel: JSocketChannel)
+    extends ModalChannel
+    with GatheringByteChannel[R]
+    with ScatteringByteChannel[R] {
 
   def bind(local: SocketAddress): IO[IOException, Unit] =
     IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
@@ -69,80 +72,183 @@ final class SocketChannel(override protected[channels] val channel: JSocketChann
   def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
     IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
-  val shutdownInput: IO[IOException, Unit] =
+  def shutdownInput: IO[IOException, Unit] =
     IO.effect(channel.shutdownInput()).refineToOrDie[IOException].unit
 
-  val shutdownOutput: IO[IOException, Unit] =
+  def shutdownOutput: IO[IOException, Unit] =
     IO.effect(channel.shutdownOutput()).refineToOrDie[IOException].unit
 
-  val socket: UIO[JSocket] =
+  def socket: UIO[JSocket] =
     IO.effectTotal(channel.socket())
 
-  val isConnected: UIO[Boolean] =
+  def isConnected: UIO[Boolean] =
     IO.effectTotal(channel.isConnected)
 
-  val isConnectionPending: UIO[Boolean] =
-    IO.effectTotal(channel.isConnectionPending)
+  def remoteAddress: IO[IOException, Option[SocketAddress]] =
+    IO.effect(Option(channel.getRemoteAddress()).map(SocketAddress.fromJava))
+      .refineToOrDie[IOException]
 
-  def connect(remote: SocketAddress): IO[IOException, Boolean] =
-    IO.effect(channel.connect(remote.jSocketAddress)).refineToOrDie[IOException]
-
-  val finishConnect: IO[IOException, Boolean] =
-    IO.effect(channel.finishConnect()).refineToOrDie[IOException]
-
-  val remoteAddress: IO[IOException, SocketAddress] =
-    IO.effect(SocketAddress.fromJava(channel.getRemoteAddress())).refineToOrDie[IOException]
-
-  val localAddress: IO[IOException, Option[SocketAddress]] =
+  def localAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(Option(channel.getLocalAddress()).map(SocketAddress.fromJava))
       .refineToOrDie[IOException]
 }
 
 object SocketChannel {
 
-  def fromJava(javaSocketChannel: JSocketChannel): SocketChannel =
-    new SocketChannel(javaSocketChannel)
+  final class Blocking private[SocketChannel] (c: JSocketChannel)
+      extends SocketChannel[blocking.Blocking](c)
+      with WithEnv.Blocking {
 
-  val open: IO[IOException, SocketChannel] =
-    IO.effect(new SocketChannel(JSocketChannel.open())).refineToOrDie[IOException]
+    def nonBlockingMode: IO[IOException, NonBlocking] =
+      IO.effect(c.configureBlocking(false))
+        .refineToOrDie[IOException]
+        .as(new NonBlocking(c))
 
-  def open(remote: SocketAddress): IO[IOException, SocketChannel] =
-    IO.effect(new SocketChannel(JSocketChannel.open(remote.jSocketAddress))).refineToOrDie[IOException]
+    def connect(remote: SocketAddress): ZIO[blocking.Blocking, IOException, Unit] =
+      IO.effect(channel.connect(remote.jSocketAddress)).refineToOrDie[IOException].unit
+
+  }
+
+  object Blocking {
+
+    def fromJava(javaSocketChannel: JSocketChannel): Blocking =
+      new Blocking(javaSocketChannel)
+
+    def open: IO[IOException, Blocking] =
+      IO.effect(fromJava(JSocketChannel.open())).refineToOrDie[IOException]
+
+    def open(remote: SocketAddress): ZIO[blocking.Blocking, IOException, Blocking] =
+      blocking
+        .effectBlockingInterrupt(fromJava(JSocketChannel.open(remote.jSocketAddress)))
+        .refineToOrDie[IOException]
+
+  }
+
+  final class NonBlocking private[SocketChannel] (c: JSocketChannel)
+      extends SocketChannel[Any](c)
+      with SelectableChannel {
+
+    def blockingMode: IO[IOException, Blocking] =
+      IO.effect(c.configureBlocking(true))
+        .refineToOrDie[IOException]
+        .as(new Blocking(c))
+
+    def connect(remote: SocketAddress): IO[IOException, Boolean] =
+      IO.effect(channel.connect(remote.jSocketAddress)).refineToOrDie[IOException]
+
+    def isConnectionPending: UIO[Boolean] =
+      IO.effectTotal(channel.isConnectionPending)
+
+    def finishConnect: IO[IOException, Boolean] =
+      IO.effect(channel.finishConnect()).refineToOrDie[IOException]
+
+  }
+
+  object NonBlocking {
+
+    def fromJava(javaSocketChannel: JSocketChannel): NonBlocking =
+      new NonBlocking(javaSocketChannel)
+
+    def open: IO[IOException, NonBlocking] =
+      IO.effect {
+        val javaChannel = JSocketChannel.open()
+        javaChannel.configureBlocking(false)
+        fromJava(javaChannel)
+      }.refineToOrDie[IOException]
+  }
 }
 
-final class ServerSocketChannel(override protected val channel: JServerSocketChannel) extends SelectableChannel {
+sealed abstract class ServerSocketChannel[R](override protected val channel: JServerSocketChannel)
+    extends ModalChannel {
 
-  def bind(local: SocketAddress): IO[IOException, Unit] =
-    IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
-
-  def bind(local: SocketAddress, backlog: Int): IO[IOException, Unit] =
+  def bind(local: SocketAddress, backlog: Int = 0): IO[IOException, Unit] =
     IO.effect(channel.bind(local.jSocketAddress, backlog)).refineToOrDie[IOException].unit
 
   def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
     IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
-  val socket: UIO[JServerSocket] =
+  def socket: UIO[JServerSocket] =
     IO.effectTotal(channel.socket())
 
-  /**
-   * Accepts a socket connection.
-   *
-   * Not you must manually manage the lifecyle of the returned socket, calling `close` when you're finished with it.
-   *
-   * @return None if this socket is in non-blocking mode and no connection is currently available to be accepted.
-   */
-  def accept: IO[IOException, Option[SocketChannel]] =
-    IO.effect(Option(channel.accept()).map(new SocketChannel(_))).refineToOrDie[IOException]
+  def localAddress: IO[IOException, Option[SocketAddress]] =
+    IO.effect(Option(channel.getLocalAddress()).map(new SocketAddress(_))).refineToOrDie[IOException]
 
-  val localAddress: IO[IOException, SocketAddress] =
-    IO.effect(new SocketAddress(channel.getLocalAddress())).refineToOrDie[IOException]
 }
 
 object ServerSocketChannel {
 
-  val open: IO[IOException, ServerSocketChannel] =
-    IO.effect(new ServerSocketChannel(JServerSocketChannel.open())).refineToOrDie[IOException]
+  final class Blocking private[ServerSocketChannel] (c: JServerSocketChannel)
+      extends ServerSocketChannel[blocking.Blocking](c)
+      with WithEnv.Blocking {
 
-  def fromJava(javaChannel: JServerSocketChannel): ServerSocketChannel =
-    new ServerSocketChannel(javaChannel)
+    def nonBlockingMode: IO[IOException, NonBlocking] =
+      IO.effect(c.configureBlocking(false))
+        .refineToOrDie[IOException]
+        .as(new NonBlocking(c))
+
+    def accept: ZIO[blocking.Blocking, IOException, SocketChannel.Blocking] =
+      isBlocking.filterOrDie(identity)(new IllegalStateException("Blocking socket in non-blocking mode")) *>
+        IO.effect(SocketChannel.Blocking.fromJava(c.accept())).refineToOrDie[IOException]
+
+  }
+
+  object Blocking {
+
+    def fromJava(javaChannel: JServerSocketChannel): Blocking =
+      new Blocking(javaChannel)
+
+    def open: IO[IOException, Blocking] =
+      IO.effect(fromJava(JServerSocketChannel.open())).refineToOrDie[IOException]
+
+  }
+
+  final class NonBlocking private[ServerSocketChannel] (c: JServerSocketChannel)
+      extends ServerSocketChannel[Any](c)
+      with SelectableChannel {
+
+    def blockingMode: IO[IOException, Blocking] =
+      IO.effect(c.configureBlocking(true))
+        .refineToOrDie[IOException]
+        .as(new Blocking(c))
+
+    private def assertNonBlocking =
+      isBlocking.filterOrDie(!_)(new IllegalStateException("Non-blocking socket in blocking mode")).unit
+
+    def accept: IO[IOException, Option[SocketChannel.Blocking]] =
+      assertNonBlocking *>
+        IO.effect(Option(c.accept()).map(SocketChannel.Blocking.fromJava)).refineToOrDie[IOException]
+
+    def acceptNonBlocking: IO[IOException, Option[SocketChannel.NonBlocking]] =
+      assertNonBlocking *>
+        IO.effect {
+          Option(c.accept()).map { javaChannel =>
+            javaChannel.configureBlocking(false)
+            SocketChannel.NonBlocking.fromJava(javaChannel)
+          }
+        }.refineToOrDie[IOException]
+
+    def acceptBracket[R, A](f: SocketChannel.NonBlocking => ZIO[R, IOException, A]): ZIO[R, IOException, Option[A]] =
+      acceptNonBlocking.some.flatMap(f.andThen(_.asSomeError)).optional
+
+    def acceptBracket_[R](f: SocketChannel.NonBlocking => ZIO[R, IOException, Unit]): ZIO[R, IOException, Unit] =
+      acceptNonBlocking.some.flatMap(f.andThen(_.asSomeError)).optional.someOrElse(())
+
+    def acceptManaged: Managed[IOException, Option[SocketChannel.NonBlocking]] =
+      Managed.make(acceptNonBlocking.some)(_.close.ignore).optional
+
+  }
+
+  object NonBlocking {
+
+    def fromJava(javaChannel: JServerSocketChannel): NonBlocking = new NonBlocking(javaChannel)
+
+    def open: IO[IOException, NonBlocking] =
+      IO.effect {
+        val javaChannel = JServerSocketChannel.open()
+        javaChannel.configureBlocking(false)
+        fromJava(javaChannel)
+      }.refineToOrDie[IOException]
+
+  }
+
 }

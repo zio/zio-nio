@@ -17,6 +17,8 @@ import zio.nio.core.IOCloseable
 
 import scala.jdk.CollectionConverters._
 
+import scala.jdk.CollectionConverters._
+
 trait Watchable {
   protected def javaWatchable: JWatchable
 

@@ -54,7 +54,7 @@ object SelectorSpec extends BaseSpec {
                             IO.whenM(safeStatusCheck(key.isReadable)) {
                               IO.effectSuspendTotal {
                                 val sClient = key.channel
-                                val client  = sClient.asInstanceOf[zio.nio.core.channels.SocketChannel]
+                                val client  = sClient.asInstanceOf[zio.nio.core.channels.SocketChannel.NonBlocking]
                                 for {
                                   _ <- client.read(buffer)
                                   _ <- buffer.flip

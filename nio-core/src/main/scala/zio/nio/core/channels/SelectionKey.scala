@@ -1,10 +1,7 @@
 package zio.nio.core.channels
 
-import java.nio
 import java.nio.{ channels => jc }
 
-import zio.nio.core
-import zio.nio.core.channels
 import zio.{ IO, UIO, ZIO }
 
 object SelectionKey {
@@ -33,14 +30,14 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
 
   def channel: SelectableChannel =
     selectionKey.channel() match {
-      case c: jc.SocketChannel       => new SocketChannel(c)
-      case c: jc.ServerSocketChannel => new ServerSocketChannel(c)
-      case c: jc.DatagramChannel     => new DatagramChannel(c)
-      case c: jc.Pipe.SinkChannel    => new channels.Pipe.SinkChannel(c)
-      case c: jc.Pipe.SourceChannel  => new core.channels.Pipe.SourceChannel(c)
+      case c: jc.SocketChannel       => SocketChannel.NonBlocking.fromJava(c)
+      case c: jc.ServerSocketChannel => ServerSocketChannel.NonBlocking.fromJava(c)
+      case c: jc.DatagramChannel     => DatagramChannel.NonBlocking.fromJava(c)
+      case c: jc.Pipe.SinkChannel    => new Pipe.NonBlockingSinkChannel(c)
+      case c: jc.Pipe.SourceChannel  => new Pipe.NonBlockingSourceChannel(c)
       case other                     =>
         new SelectableChannel {
-          override protected val channel: nio.channels.SelectableChannel = other
+          override protected val channel: jc.SelectableChannel = other
         }
     }
 
@@ -86,7 +83,10 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
   ): ZIO[R, E, A] =
     readyOps.flatMap(
       matcher(_)
-        .applyOrElse(channel, (channel: SelectableChannel) => ZIO.dieMessage(s"Unexpected channel type: $channel"))
+        .applyOrElse(
+          channel,
+          (channel: SelectableChannel) => ZIO.dieMessage(s"Unexpected channel type: $channel")
+        )
     )
 
   final def selector: Selector =

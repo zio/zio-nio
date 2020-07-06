@@ -1,12 +1,13 @@
 package zio.nio.core.channels
 
 import java.io.IOException
-import java.nio.channels.{ Selector => JSelector, SelectionKey => JSelectionKey }
+import java.nio.channels.{ SelectionKey => JSelectionKey, Selector => JSelector }
 
 import com.github.ghik.silencer.silent
 import zio.duration.Duration
 import zio.nio.core.channels.spi.SelectorProvider
 import zio.{ IO, UIO }
+import zio.nio.core.IOCloseable
 
 import scala.jdk.CollectionConverters._
 
@@ -17,20 +18,20 @@ import scala.jdk.CollectionConverters._
  * [[https://docs.oracle.com/javase/8/docs/api/java/nio/channels/Selector.html the documentation for the underlying Java]]
  * API before attempting to use this.
  */
-final class Selector(private[nio] val selector: JSelector) {
+final class Selector(private[nio] val selector: JSelector) extends IOCloseable[Any] {
 
-  val isOpen: UIO[Boolean] = IO.effectTotal(selector.isOpen)
+  def isOpen: UIO[Boolean] = IO.effectTotal(selector.isOpen)
 
-  val provider: UIO[SelectorProvider] =
+  def provider: UIO[SelectorProvider] =
     IO.effectTotal(selector.provider()).map(new SelectorProvider(_))
 
   @silent
-  val keys: UIO[Set[SelectionKey]] =
+  def keys: UIO[Set[SelectionKey]] =
     IO.effectTotal(selector.keys())
       .map(_.asScala.toSet[JSelectionKey].map(new SelectionKey(_)))
 
   @silent
-  val selectedKeys: UIO[Set[SelectionKey]] =
+  def selectedKeys: UIO[Set[SelectionKey]] =
     IO.effectTotal(selector.selectedKeys())
       .map(_.asScala.toSet[JSelectionKey].map(new SelectionKey(_)))
 
@@ -46,7 +47,7 @@ final class Selector(private[nio] val selector: JSelector) {
    * @return The number of keys, possibly zero, whose ready-operation sets
    *         were updated by the selection operation.
    */
-  val selectNow: IO[IOException, Int] =
+  def selectNow: IO[IOException, Int] =
     IO.effect(selector.selectNow()).refineToOrDie[IOException]
 
   /**
@@ -91,7 +92,7 @@ final class Selector(private[nio] val selector: JSelector) {
    * Invoking this method more than once between two successive selection
    * operations has the same effect as invoking it just once.
    */
-  val wakeup: IO[Nothing, Unit] =
+  def wakeup: IO[Nothing, Unit] =
     IO.effectTotal(selector.wakeup()).unit
 
   /**
@@ -107,7 +108,7 @@ final class Selector(private[nio] val selector: JSelector) {
    * invoking this method or the wakeup method, will cause a
    * `ClosedSelectorException` to be raised as a defect.
    */
-  val close: IO[IOException, Unit] =
+  def close: IO[IOException, Unit] =
     IO.effect(selector.close()).refineToOrDie[IOException]
 
 }

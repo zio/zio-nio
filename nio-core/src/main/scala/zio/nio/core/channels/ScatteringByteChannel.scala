@@ -6,12 +6,12 @@ import java.io.IOException
 import java.nio.{ ByteBuffer => JByteBuffer }
 import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
 
-import zio.{ Chunk, IO }
+import zio.{ Chunk, IO, ZIO }
 
 /**
  * A channel that can read bytes into a sequence of buffers.
  */
-trait ScatteringByteChannel extends Channel {
+trait ScatteringByteChannel[R] extends Channel with WithEnv[R] {
 
   import ScatteringByteChannel._
 
@@ -24,8 +24,10 @@ trait ScatteringByteChannel extends Channel {
    *
    * @return The number of bytes read in total, possibly 0
    */
-  final def read(dsts: List[ByteBuffer]): IO[IOException, Long] =
-    IO.effect(channel.read(unwrap(dsts))).refineToOrDie[IOException].flatMap(eofCheck)
+  final def read(dsts: List[ByteBuffer]): ZIO[R, IOException, Long] =
+    withEnv {
+      IO.effect(channel.read(unwrap(dsts))).refineToOrDie[IOException].flatMap(eofCheck)
+    }
 
   /**
    * Reads a sequence of bytes from this channel into the given buffer.
@@ -34,8 +36,10 @@ trait ScatteringByteChannel extends Channel {
    *
    * @return The number of bytes read, possibly 0
    */
-  final def read(dst: ByteBuffer): IO[IOException, Int] =
-    IO.effect(channel.read(dst.byteBuffer)).refineToOrDie[IOException].flatMap(eofCheck)
+  final def read(dst: ByteBuffer): ZIO[R, IOException, Int] =
+    withEnv {
+      IO.effect(channel.read(dst.byteBuffer)).refineToOrDie[IOException].flatMap(eofCheck)
+    }
 
   /**
    * Reads a chunk of bytes.
@@ -45,7 +49,7 @@ trait ScatteringByteChannel extends Channel {
    * @param capacity The maximum number of bytes to be read.
    * @return The bytes read, between 0 and `capacity` in size, inclusive
    */
-  final def readChunk(capacity: Int): IO[IOException, Chunk[Byte]] =
+  final def readChunk(capacity: Int): ZIO[R, IOException, Chunk[Byte]] =
     for {
       buffer <- Buffer.byte(capacity)
       _      <- read(buffer)
@@ -62,7 +66,7 @@ trait ScatteringByteChannel extends Channel {
    * @return A list with one `Chunk` per input size. Some chunks may be less than the requested size if the channel
    *         does not have enough data
    */
-  final def read(capacities: Seq[Int]): IO[IOException, List[Chunk[Byte]]] =
+  final def read(capacities: Seq[Int]): ZIO[R, IOException, List[Chunk[Byte]]] =
     for {
       buffers <- IO.foreach(capacities)(Buffer.byte)
       _       <- read(buffers)

@@ -10,7 +10,7 @@ import java.nio.channels.{
 
 import zio.{ IO, Managed, UIO }
 import zio.nio.channels.spi.SelectorProvider
-import zio.nio.core.{ SocketAddress }
+import zio.nio.core.SocketAddress
 import zio.nio.core.channels.SelectionKey
 import zio.nio.core.channels.SelectionKey.Operation
 

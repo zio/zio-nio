@@ -3,27 +3,45 @@ package zio.nio.core.channels
 import java.io.IOException
 import java.nio.channels.{ Pipe => JPipe }
 
-import zio.nio.core.channels
-import zio.{ IO, UIO }
+import zio.{ IO, UIO, blocking }
 
 final class Pipe private (private val pipe: JPipe) {
 
-  val source: UIO[Pipe.SourceChannel] =
-    IO.effectTotal(new channels.Pipe.SourceChannel(pipe.source()))
+  def sourceBlocking: UIO[Pipe.BlockingSourceChannel] =
+    IO.effectTotal(new Pipe.BlockingSourceChannel(pipe.source()))
 
-  val sink: UIO[Pipe.SinkChannel] =
-    IO.effectTotal(new Pipe.SinkChannel(pipe.sink()))
+  def sinkBlocking: UIO[Pipe.BlockingSinkChannel] =
+    IO.effectTotal(new Pipe.BlockingSinkChannel(pipe.sink()))
+
+  def sourceNonBlocking: UIO[Pipe.NonBlockingSourceChannel] =
+    IO.effectTotal(new Pipe.NonBlockingSourceChannel(pipe.source()))
+
+  def sinkNonBlocking: UIO[Pipe.NonBlockingSinkChannel] =
+    IO.effectTotal(new Pipe.NonBlockingSinkChannel(pipe.sink()))
+
 }
 
 object Pipe {
 
-  final class SinkChannel(override protected[channels] val channel: JPipe.SinkChannel)
-      extends GatheringByteChannel
-      with SelectableChannel
+  sealed abstract class SinkChannel[R](override protected[channels] val channel: JPipe.SinkChannel)
+      extends ModalChannel
+      with GatheringByteChannel[R]
 
-  final class SourceChannel(override protected[channels] val channel: JPipe.SourceChannel)
-      extends ScatteringByteChannel
-      with SelectableChannel
+  sealed abstract class SourceChannel[R](override protected[channels] val channel: JPipe.SourceChannel)
+      extends ModalChannel
+      with ScatteringByteChannel[R]
+
+  final class BlockingSinkChannel(c: JPipe.SinkChannel)
+      extends SinkChannel[blocking.Blocking](c)
+      with WithEnv.Blocking {}
+
+  final class BlockingSourceChannel(c: JPipe.SourceChannel)
+      extends SourceChannel[blocking.Blocking](c)
+      with WithEnv.Blocking {}
+
+  final class NonBlockingSinkChannel(c: JPipe.SinkChannel) extends SinkChannel[Any](c) with SelectableChannel {}
+
+  final class NonBlockingSourceChannel(c: JPipe.SourceChannel) extends SourceChannel[Any](c) with SelectableChannel {}
 
   val open: IO[IOException, Pipe] =
     IO.effect(new Pipe(JPipe.open())).refineToOrDie[IOException]

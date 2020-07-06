@@ -1,39 +1,38 @@
 package zio.nio.core.channels
 
+import java.io.IOException
+
 import zio.nio.core._
 import zio.test.Assertion._
 import zio.test.{ suite, testM, _ }
 import zio.{ IO, _ }
+import zio.blocking.Blocking
 
 object DatagramChannelSpec extends BaseSpec {
 
   override def spec =
     suite("DatagramChannelSpec")(
       testM("read/write") {
-        def echoServer(started: Promise[Nothing, SocketAddress]): IO[Exception, Unit] =
+        def echoServer(started: Promise[Nothing, SocketAddress]): URIO[Blocking, Unit] =
           for {
             address <- SocketAddress.inetSocketAddress(0)
             sink    <- Buffer.byte(3)
-            _       <- Managed
-                         .make(DatagramChannel.open)(_.close.orDie)
-                         .use { server =>
-                           for {
-                             _          <- server.bind(Some(address))
-                             addr       <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
-                             _          <- started.succeed(addr)
-                             retAddress <- server.receive(sink)
-                             addr       <- IO.fromOption(retAddress)
-                             _          <- sink.flip
-                             _          <- server.send(sink, addr)
-                           } yield ()
-                         }
-                         .fork
+            _       <- DatagramChannel.Blocking.open.bracketNio { server =>
+                         for {
+                           _    <- server.bind(Some(address))
+                           addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                           _    <- started.succeed(addr)
+                           addr <- server.receive(sink)
+                           _    <- sink.flip
+                           _    <- server.send(sink, addr)
+                         } yield ()
+                       }.fork
           } yield ()
 
-        def echoClient(address: SocketAddress): IO[Exception, Boolean] =
+        def echoClient(address: SocketAddress): ZIO[Blocking, IOException, Boolean] =
           for {
             src    <- Buffer.byte(3)
-            result <- Managed.make(DatagramChannel.open)(_.close.orDie).use { client =>
+            result <- DatagramChannel.Blocking.open.bracketNio { client =>
                         for {
                           _        <- client.connect(address)
                           sent     <- src.array
@@ -54,24 +53,21 @@ object DatagramChannelSpec extends BaseSpec {
         } yield assert(same)(isTrue)
       },
       testM("close channel unbind port") {
-        def client(address: SocketAddress): IO[Exception, Unit] =
-          Managed.make(DatagramChannel.open)(_.close.orDie).use(_.connect(address).unit)
+        def client(address: SocketAddress): ZIO[Blocking, IOException, Unit] =
+          DatagramChannel.Blocking.open.bracketNio(_.connect(address).unit)
 
         def server(
           address: SocketAddress,
           started: Promise[Nothing, SocketAddress]
-        ): IO[Exception, Fiber[Exception, Unit]] =
+        ): URIO[Blocking, Fiber[IOException, Unit]] =
           for {
-            worker <- Managed
-                        .make(DatagramChannel.open)(_.close.orDie)
-                        .use { server =>
-                          for {
-                            _    <- server.bind(Some(address))
-                            addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
-                            _    <- started.succeed(addr)
-                          } yield ()
-                        }
-                        .fork
+            worker <- DatagramChannel.Blocking.open.bracketNio { server =>
+                        for {
+                          _    <- server.bind(Some(address))
+                          addr <- server.localAddress.someOrElseM(IO.dieMessage("Address not bound"))
+                          _    <- started.succeed(addr)
+                        } yield ()
+                      }.fork
           } yield worker
 
         for {

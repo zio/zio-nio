@@ -1,19 +1,20 @@
 package zio.nio.core.channels
 
 import java.io.IOException
-import java.net.{ SocketOption, DatagramSocket => JDatagramSocket, SocketAddress => JSocketAddress }
+import java.net.{ ProtocolFamily, SocketOption, DatagramSocket => JDatagramSocket, SocketAddress => JSocketAddress }
 import java.nio.channels.{ DatagramChannel => JDatagramChannel }
 
-import zio.{ IO, UIO }
+import zio.{ IO, UIO, ZIO, blocking }
 import zio.nio.core.{ ByteBuffer, SocketAddress }
 
 /**
  * A [[java.nio.channels.DatagramChannel]] wrapper allowing for basic [[zio.ZIO]] interoperability.
  */
-final class DatagramChannel private[channels] (override protected[channels] val channel: JDatagramChannel)
-    extends GatheringByteChannel
-    with SelectableChannel
-    with ScatteringByteChannel {
+sealed abstract class DatagramChannel[R] private[channels] (override protected[channels] val channel: JDatagramChannel)
+    extends ModalChannel
+    with GatheringByteChannel[R]
+    with ScatteringByteChannel[R]
+    with WithEnv[R] {
 
   /**
    * Binds this channel's underlying socket to the given local address. Passing `None` binds to an
@@ -31,18 +32,15 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    * Connects this channel's underlying socket to the given remote address.
    *
    * @param remote the remote address
-   * @return the datagram channel connected to the remote address
    */
-  def connect(remote: SocketAddress): IO[IOException, DatagramChannel] =
-    IO.effect(new DatagramChannel(channel.connect(remote.jSocketAddress))).refineToOrDie[IOException]
+  def connect(remote: SocketAddress): IO[IOException, Unit] =
+    IO.effect(channel.connect(remote.jSocketAddress)).unit.refineToOrDie[IOException]
 
   /**
    * Disconnects this channel's underlying socket.
-   *
-   * @return the disconnected datagram channel
    */
-  def disconnect: IO[IOException, DatagramChannel] =
-    IO.effect(new DatagramChannel(channel.disconnect())).refineToOrDie[IOException]
+  def disconnect: IO[IOException, Unit] =
+    IO.effect(channel.disconnect()).unit.refineToOrDie[IOException]
 
   /**
    * Tells whether this channel's underlying socket is both open and connected.
@@ -61,31 +59,12 @@ final class DatagramChannel private[channels] (override protected[channels] val 
     IO.effect(channel.getLocalAddress()).refineToOrDie[IOException].map(a => Option(a).map(new SocketAddress(_)))
 
   /**
-   * Receives a datagram via this channel into the given [[zio.nio.core.ByteBuffer]].
-   *
-   * @param dst the destination buffer
-   * @return the socket address of the datagram's source, if available.
-   */
-  def receive(dst: ByteBuffer): IO[IOException, Option[SocketAddress]] =
-    IO.effect(channel.receive(dst.byteBuffer)).refineToOrDie[IOException].map(a => Option(a).map(new SocketAddress(_)))
-
-  /**
    * Optionally returns the remote socket address that this channel's underlying socket is connected to.
    *
    * @return the remote address if the socket is connected, otherwise `None`
    */
   def remoteAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(channel.getRemoteAddress()).refineToOrDie[IOException].map(a => Option(a).map(new SocketAddress(_)))
-
-  /**
-   * Sends a datagram via this channel to the given target [[zio.nio.core.SocketAddress]].
-   *
-   * @param src the source buffer
-   * @param target the target address
-   * @return the number of bytes that were sent over this channel
-   */
-  def send(src: ByteBuffer, target: SocketAddress): IO[IOException, Int] =
-    IO.effect(channel.send(src.byteBuffer, target.jSocketAddress)).refineToOrDie[IOException]
 
   /**
    * Sets the value of the given socket option.
@@ -108,15 +87,94 @@ final class DatagramChannel private[channels] (override protected[channels] val 
 
 object DatagramChannel {
 
-  /**
-   * Opens a new datagram channel.
-   *
-   * @return a new datagram channel
-   */
-  def open: IO[IOException, DatagramChannel] =
-    IO.effect(new DatagramChannel(JDatagramChannel.open())).refineToOrDie[IOException]
+  final class Blocking private[DatagramChannel] (c: JDatagramChannel)
+      extends DatagramChannel[blocking.Blocking](c)
+      with WithEnv.Blocking {
 
-  def fromJava(javaDatagramChannel: JDatagramChannel): DatagramChannel =
-    new DatagramChannel(javaDatagramChannel)
+    def nonBlockingMode: IO[IOException, NonBlocking] =
+      IO.effect(c.configureBlocking(false))
+        .refineToOrDie[IOException]
+        .as(new NonBlocking(c))
+
+    /**
+     * Receives a datagram via this channel into the given [[zio.nio.core.ByteBuffer]].
+     *
+     * @param dst the destination buffer
+     * @return the socket address of the datagram's source.
+     */
+    def receive(dst: ByteBuffer): ZIO[blocking.Blocking, IOException, SocketAddress] =
+      withEnv {
+        IO.effect(SocketAddress.fromJava(c.receive(dst.byteBuffer))).refineToOrDie[IOException]
+      }
+
+    def send(src: ByteBuffer, target: SocketAddress): ZIO[blocking.Blocking, IOException, Unit] =
+      withEnv {
+        IO.effect(c.send(src.byteBuffer, target.jSocketAddress)).refineToOrDie[IOException].unit
+      }
+
+  }
+
+  object Blocking {
+
+    def fromJava(javaDatagramChannel: JDatagramChannel): Blocking =
+      new Blocking(javaDatagramChannel)
+
+    /**
+     * Opens a new datagram channel.
+     *
+     * @return a new datagram channel
+     */
+    def open: IO[IOException, Blocking] =
+      IO.effect(fromJava(JDatagramChannel.open())).refineToOrDie[IOException]
+
+    def open(family: ProtocolFamily): IO[IOException, Blocking] =
+      IO.effect(fromJava(JDatagramChannel.open(family))).refineToOrDie[IOException]
+
+  }
+
+  final class NonBlocking private[DatagramChannel] (c: JDatagramChannel)
+      extends DatagramChannel[Any](c)
+      with SelectableChannel {
+
+    def blockingMode: IO[IOException, Blocking] =
+      IO.effect(c.configureBlocking(true))
+        .refineToOrDie[IOException]
+        .as(new Blocking(c))
+
+    def receive(dst: ByteBuffer): IO[IOException, Option[SocketAddress]] =
+      IO.effect(Option(c.receive(dst.byteBuffer)).map(SocketAddress.fromJava))
+        .refineToOrDie[IOException]
+
+    def send(src: ByteBuffer, target: SocketAddress): IO[IOException, Boolean] =
+      IO.effect(c.send(src.byteBuffer, target.jSocketAddress) > 0)
+        .refineToOrDie[IOException]
+
+  }
+
+  object NonBlocking {
+
+    def fromJava(javaDatagramChannel: JDatagramChannel): NonBlocking =
+      new NonBlocking(javaDatagramChannel)
+
+    /**
+     * Opens a new datagram channel.
+     *
+     * @return a new datagram channel
+     */
+    def open: IO[IOException, NonBlocking] =
+      IO.effect {
+        val javaChannel = JDatagramChannel.open()
+        javaChannel.configureBlocking(false)
+        fromJava(javaChannel)
+      }.refineToOrDie[IOException]
+
+    def open(family: ProtocolFamily): IO[IOException, NonBlocking] =
+      IO.effect {
+        val javaChannel = JDatagramChannel.open(family)
+        javaChannel.configureBlocking(false)
+        fromJava(javaChannel)
+      }.refineToOrDie[IOException]
+
+  }
 
 }

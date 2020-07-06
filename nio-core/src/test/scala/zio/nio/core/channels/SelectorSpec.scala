@@ -1,10 +1,10 @@
 package zio.nio.core.channels
 
+import java.io.IOException
 import java.nio.channels.CancelledKeyException
 
 import zio._
 import zio.blocking.Blocking
-import zio.clock.Clock
 import zio.nio.core.channels.SelectionKey.Operation
 import zio.nio.core.{ BaseSpec, Buffer, ByteBuffer, SocketAddress }
 import zio.test.Assertion._
@@ -32,25 +32,23 @@ object SelectorSpec extends BaseSpec {
   def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
     statusCheck.fold(_ => false, identity)
 
-  def server(started: Promise[Nothing, SocketAddress]): ZIO[Clock with Blocking, Exception, Unit] = {
+  def server(started: Promise[Nothing, SocketAddress]): IO[IOException, Unit] = {
     def serverLoop(
       selector: Selector,
       buffer: ByteBuffer
-    ): ZIO[Blocking, Exception, Unit] =
+    ): IO[IOException, Unit] =
       for {
         _            <- selector.select
         selectedKeys <- selector.selectedKeys
         _            <- IO.foreach_(selectedKeys) { key =>
                           key.matchChannel { readyOps =>
                             {
-                              case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
+                              case channel: ServerSocketChannel.NonBlocking if readyOps(Operation.Accept) =>
                                 for {
-                                  clientOpt <- channel.accept
-                                  client     = clientOpt.get
-                                  _         <- client.configureBlocking(false)
-                                  _         <- client.register(selector, Operation.Read)
+                                  client <- channel.acceptNonBlocking.someOrElseM(IO.dieMessage("Nothing to accept!"))
+                                  _      <- client.register(selector, Operation.Read)
                                 } yield ()
-                              case client: SocketChannel if readyOps(Operation.Read)          =>
+                              case client: SocketChannel.NonBlocking if readyOps(Operation.Read)          =>
                                 for {
                                   _     <- client.read(buffer)
                                   array <- buffer.array
@@ -65,35 +63,35 @@ object SelectorSpec extends BaseSpec {
                         }
       } yield ()
 
-    for {
-      address <- SocketAddress.inetSocketAddress(0)
-      _       <- Managed.make(Selector.make)(_.close.orDie).use { selector =>
-                   Managed.make(ServerSocketChannel.open)(_.close.orDie).use { channel =>
-                     for {
-                       _      <- channel.bind(address)
-                       _      <- channel.configureBlocking(false)
-                       _      <- channel.register(selector, Operation.Accept)
-                       buffer <- Buffer.byte(256)
-                       addr   <- channel.localAddress
-                       _      <- started.succeed(addr)
+    val managed = for {
+      address  <- SocketAddress.inetSocketAddress(0).toManaged_
+      selector <- Selector.make.toManagedNio
+      channel  <- ServerSocketChannel.NonBlocking.open.toManagedNio
+      _        <- ZManaged.fromEffect {
+                    for {
+                      _      <- channel.bind(address)
+                      _      <- channel.register(selector, Operation.Accept)
+                      buffer <- Buffer.byte(256)
+                      addr   <- channel.localAddress.someOrElseM(IO.dieMessage("Address not bound"))
+                      _      <- started.succeed(addr)
 
-                       /*
-                  *  we need to run the server loop twice:
-                  *  1. to accept the client request
-                  *  2. to read from the client channel
-                  */
-                       _ <- serverLoop(selector, buffer).repeat(Schedule.once)
-                     } yield ()
-                   }
-                 }
+                      /*
+                *  we need to run the server loop twice:
+                *  1. to accept the client request
+                *  2. to read from the client channel
+                */
+                      _ <- serverLoop(selector, buffer).repeat(Schedule.once)
+                    } yield ()
+                  }
     } yield ()
+    managed.useNow
   }
 
-  def client(address: SocketAddress): IO[Exception, String] = {
+  def client(address: SocketAddress): ZIO[Blocking, IOException, String] = {
     val bytes = Chunk.fromArray("Hello world".getBytes)
     for {
       buffer <- Buffer.byte(bytes)
-      text   <- Managed.make(SocketChannel.open(address))(_.close.orDie).use { client =>
+      text   <- SocketChannel.Blocking.open(address).bracketNio { client =>
                   for {
                     _     <- client.write(buffer)
                     _     <- buffer.clear

@@ -20,8 +20,9 @@ import scala.collection.JavaConverters._
  * Read and write calls operate at the current position.
  */
 final class FileChannel private[channels] (override protected[channels] val channel: JFileChannel)
-    extends GatheringByteChannel
-    with ScatteringByteChannel {
+    extends GatheringByteChannel[Blocking]
+    with ScatteringByteChannel[Blocking]
+    with WithEnv.Blocking {
 
   def position: IO[IOException, Long] = IO.effect(channel.position()).refineToOrDie[IOException]
 
@@ -42,10 +43,10 @@ final class FileChannel private[channels] (override protected[channels] val chan
   def force(metadata: Boolean): ZIO[Blocking, IOException, Unit] =
     effectBlocking(channel.force(metadata)).refineToOrDie[IOException]
 
-  def transferTo(position: Long, count: Long, target: GatheringByteChannel): ZIO[Blocking, IOException, Long] =
+  def transferTo(position: Long, count: Long, target: GatheringByteChannel[_]): ZIO[Blocking, IOException, Long] =
     effectBlocking(channel.transferTo(position, count, target.channel)).refineToOrDie[IOException]
 
-  def transferFrom(src: ScatteringByteChannel, position: Long, count: Long): ZIO[Blocking, IOException, Long] =
+  def transferFrom(src: ScatteringByteChannel[_], position: Long, count: Long): ZIO[Blocking, IOException, Long] =
     effectBlocking(channel.transferFrom(src.channel, position, count)).refineToOrDie[IOException]
 
   def read(dst: ByteBuffer, position: Long): ZIO[Blocking, IOException, Int] =
