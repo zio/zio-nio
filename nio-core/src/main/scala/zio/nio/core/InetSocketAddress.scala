@@ -2,9 +2,14 @@ package zio.nio.core
 
 import java.net.{ InetSocketAddress => JInetSocketAddress, SocketAddress => JSocketAddress }
 
-import zio.IO
+import zio.UIO
 
-class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocketAddress) {
+/**
+ * Representation of a socket address without a specific protocol.
+ *
+ * The concrete subclass [[InetSocketAddress]] is used in practice.
+ */
+sealed class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocketAddress) {
 
   override def equals(obj: Any): Boolean =
     obj match {
@@ -17,18 +22,53 @@ class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocketAddres
   override def toString: String = jSocketAddress.toString
 }
 
-class InetSocketAddress private[nio] (private val jInetSocketAddress: JInetSocketAddress)
+/**
+ * Representation of an IP Socket Address (IP address + port number).
+ *
+ * It can also be a pair (hostname + port number), in which case an attempt
+ * will be made to resolve the hostname.
+ * If resolution fails then the address is said to be unresolved but can still
+ * be used on some circumstances like connecting through a proxy.
+ * It provides an immutable object used by sockets for binding, connecting,
+ * or as returned values.
+ *
+ * The wildcard is a special local IP address. It usually means "any" and can
+ * only be used for bind operations.
+ */
+final class InetSocketAddress private[nio] (private val jInetSocketAddress: JInetSocketAddress)
     extends SocketAddress(jInetSocketAddress) {
+
+  /**
+   * The socket's port number.
+   */
   def port: Int = jInetSocketAddress.getPort
 
-  def hostName: IO[Exception, String] =
-    IO.effect(jInetSocketAddress.getHostName).refineToOrDie[Exception]
+  /**
+   * Gets the hostname.
+   *
+   * Note: This method may trigger a name service reverse lookup if the
+   * address was created with a literal IP address.
+   *
+   * @return
+   */
+  def hostName: UIO[String] =
+    UIO.effectTotal(jInetSocketAddress.getHostName)
 
+  /**
+   * Returns the hostname, or the String form of the address if it doesn't
+   * have a hostname (it was created using a literal).
+   *
+   * This has the benefit of not attempting a reverse lookup.
+   */
   def hostString: String = jInetSocketAddress.getHostString
 
+  /**
+   * Checks whether the address
+   * @return
+   */
   def isUnresolved: Boolean = jInetSocketAddress.isUnresolved
 
-  final override def toString: String =
+  override def toString: String =
     jInetSocketAddress.toString
 }
 
@@ -42,38 +82,31 @@ object SocketAddress {
         new SocketAddress(other)
     }
 
-  def inetSocketAddress(port: Int): IO[Exception, InetSocketAddress] =
+  def inetSocketAddress(port: Int): UIO[InetSocketAddress] =
     InetSocketAddress(port)
 
-  def inetSocketAddress(hostname: String, port: Int): IO[Exception, InetSocketAddress] =
+  def inetSocketAddress(hostname: String, port: Int): UIO[InetSocketAddress] =
     InetSocketAddress(hostname, port)
 
-  def inetSocketAddress(address: InetAddress, port: Int): IO[Exception, InetSocketAddress] =
+  def inetSocketAddress(address: InetAddress, port: Int): UIO[InetSocketAddress] =
     InetSocketAddress(address, port)
 
-  def unresolvedInetSocketAddress(hostname: String, port: Int): IO[Exception, InetSocketAddress] =
+  def unresolvedInetSocketAddress(hostname: String, port: Int): UIO[InetSocketAddress] =
     InetSocketAddress.createUnresolved(hostname, port)
 
   private object InetSocketAddress {
 
-    def apply(port: Int): IO[Exception, InetSocketAddress] =
-      IO.effect(new JInetSocketAddress(port))
-        .refineToOrDie[Exception]
-        .map(new InetSocketAddress(_))
+    def apply(port: Int): UIO[InetSocketAddress] =
+      UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(port)))
 
-    def apply(host: String, port: Int): IO[Exception, InetSocketAddress] =
-      IO.effect(new JInetSocketAddress(host, port))
-        .refineToOrDie[Exception]
-        .map(new InetSocketAddress(_))
+    def apply(host: String, port: Int): UIO[InetSocketAddress] =
+      UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(host, port)))
 
-    def apply(addr: InetAddress, port: Int): IO[Exception, InetSocketAddress] =
-      IO.effect(new JInetSocketAddress(addr.jInetAddress, port))
-        .refineToOrDie[Exception]
-        .map(new InetSocketAddress(_))
+    def apply(addr: InetAddress, port: Int): UIO[InetSocketAddress] =
+      UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(addr.jInetAddress, port)))
 
-    def createUnresolved(host: String, port: Int): IO[Exception, InetSocketAddress] =
-      IO.effect(JInetSocketAddress.createUnresolved(host, port))
-        .refineToOrDie[Exception]
-        .map(new InetSocketAddress(_))
+    def createUnresolved(host: String, port: Int): UIO[InetSocketAddress] =
+      UIO.effectTotal(new InetSocketAddress(JInetSocketAddress.createUnresolved(host, port)))
+
   }
 }

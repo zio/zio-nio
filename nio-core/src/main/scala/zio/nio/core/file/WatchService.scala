@@ -2,7 +2,6 @@ package zio.nio.core.file
 
 import java.io.IOException
 import java.nio.file.{
-  ClosedWatchServiceException,
   WatchEvent,
   WatchKey => JWatchKey,
   WatchService => JWatchService,
@@ -13,23 +12,23 @@ import java.util.concurrent.TimeUnit
 
 import zio.blocking.Blocking
 import zio.duration.Duration
+import zio.{ IO, UIO, ZIO }
 
 import scala.jdk.CollectionConverters._
-import zio.{ IO, UIO, ZIO }
 
 trait Watchable {
   protected def javaWatchable: JWatchable
 
-  final def register(watcher: WatchService, events: WatchEvent.Kind[_]*): IO[Exception, WatchKey] =
-    IO.effect(new WatchKey(javaWatchable.register(watcher.javaWatchService, events: _*))).refineToOrDie[Exception]
+  final def register(watcher: WatchService, events: WatchEvent.Kind[_]*): IO[IOException, WatchKey] =
+    IO.effect(new WatchKey(javaWatchable.register(watcher.javaWatchService, events: _*))).refineToOrDie[IOException]
 
   final def register(
     watcher: WatchService,
     events: Iterable[WatchEvent.Kind[_]],
     modifiers: WatchEvent.Modifier*
-  ): IO[Exception, WatchKey] =
+  ): IO[IOException, WatchKey] =
     IO.effect(new WatchKey(javaWatchable.register(watcher.javaWatchService, events.toArray, modifiers: _*)))
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 }
 
 object Watchable {
@@ -59,21 +58,21 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
 final class WatchService private (private[file] val javaWatchService: JWatchService) {
   def close: IO[IOException, Unit] = IO.effect(javaWatchService.close()).refineToOrDie[IOException]
 
-  def poll: IO[ClosedWatchServiceException, Option[WatchKey]] =
-    IO.effect(Option(javaWatchService.poll()).map(new WatchKey(_))).refineToOrDie[ClosedWatchServiceException]
+  def poll: UIO[Option[WatchKey]] =
+    IO.effectTotal(Option(javaWatchService.poll()).map(new WatchKey(_)))
 
-  def poll(timeout: Duration): IO[Exception, Option[WatchKey]] =
+  def poll(timeout: Duration): IO[InterruptedException, Option[WatchKey]] =
     IO.effect(Option(javaWatchService.poll(timeout.toNanos, TimeUnit.NANOSECONDS)).map(new WatchKey(_)))
-      .refineToOrDie[Exception]
+      .refineToOrDie[InterruptedException]
 
-  def take: ZIO[Blocking, Exception, WatchKey] =
+  def take: ZIO[Blocking, InterruptedException, WatchKey] =
     ZIO
       .accessM[Blocking](_.get.effectBlocking(new WatchKey(javaWatchService.take())))
-      .refineToOrDie[Exception]
+      .refineToOrDie[InterruptedException]
 }
 
 object WatchService {
-  def forDefaultFileSystem: ZIO[Blocking, Exception, WatchService] = FileSystem.default.newWatchService
+  def forDefaultFileSystem: ZIO[Blocking, IOException, WatchService] = FileSystem.default.newWatchService
 
   def fromJava(javaWatchService: JWatchService): WatchService = new WatchService(javaWatchService)
 }

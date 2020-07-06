@@ -32,7 +32,7 @@ val server = AsynchronousServerSocketChannel()
 def doWork(channel: AsynchronousSocketChannel): ZIO[Console with Clock, Throwable, Unit] = {
   val process =
     for {
-      chunk <- channel.read(3)
+      chunk <- channel.readChunk(3)
       str = chunk.toArray.map(_.toChar).mkString
       _ <- putStrLn(s"received: [$str] [${chunk.length}]")
     } yield ()
@@ -59,7 +59,7 @@ Reading and writing to socket:
 ```scala mdoc:silent
 for {
   serverFiber <- server.fork
-  clientFiber <- clientM.use(_.write(Chunk.fromArray(Array(1, 2, 3).map(_.toByte)))).fork
+  clientFiber <- clientM.use(_.writeChunk(Chunk.fromArray(Array(1, 2, 3).map(_.toByte)))).fork
   _           <- clientFiber.join
   _           <- serverFiber.join
 } yield ()

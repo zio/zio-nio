@@ -15,37 +15,37 @@ object ChannelSpec extends BaseSpec {
           for {
             address <- SocketAddress.inetSocketAddress(0)
             sink    <- Buffer.byte(3)
-            _       <- Managed
-                         .make(AsynchronousServerSocketChannel())(_.close.orDie)
-                         .use { server =>
-                           for {
-                             _    <- server.bind(address)
-                             addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
-                             _    <- started.succeed(addr)
-                             _    <- Managed.make(server.accept)(_.close.orDie).use { worker =>
-                                       worker.readBuffer(sink) *>
-                                         sink.flip *>
-                                         worker.writeBuffer(sink)
-                                     }
-                           } yield ()
-                         }
-                         .fork
+            _ <- Managed
+                  .make(AsynchronousServerSocketChannel())(_.close.orDie)
+                  .use { server =>
+                    for {
+                      _    <- server.bind(address)
+                      addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                      _    <- started.succeed(addr)
+                      _ <- Managed.make(server.accept)(_.close.orDie).use { worker =>
+                            worker.read(sink) *>
+                              sink.flip *>
+                              worker.write(sink)
+                          }
+                    } yield ()
+                  }
+                  .fork
           } yield ()
 
         def echoClient(address: SocketAddress): IO[Exception, Boolean] =
           for {
-            src    <- Buffer.byte(3)
+            src <- Buffer.byte(3)
             result <- Managed.make(AsynchronousSocketChannel())(_.close.orDie).use { client =>
-                        for {
-                          _        <- client.connect(address)
-                          sent     <- src.array
-                          _         = sent.update(0, 1)
-                          _        <- client.writeBuffer(src)
-                          _        <- src.flip
-                          _        <- client.readBuffer(src)
-                          received <- src.array
-                        } yield sent.sameElements(received)
-                      }
+                       for {
+                         _        <- client.connect(address)
+                         sent     <- src.array
+                         _        = sent.update(0, 1)
+                         _        <- client.write(src)
+                         _        <- src.flip
+                         _        <- client.read(src)
+                         received <- src.array
+                       } yield sent.sameElements(received)
+                     }
           } yield result
 
         for {
@@ -59,33 +59,33 @@ object ChannelSpec extends BaseSpec {
         def server(started: Promise[Nothing, SocketAddress]): IO[Exception, Fiber[Exception, Boolean]] =
           for {
             address <- SocketAddress.inetSocketAddress(0)
-            result  <- Managed
-                         .make(AsynchronousServerSocketChannel())(_.close.orDie)
-                         .use { server =>
-                           for {
-                             _      <- server.bind(address)
-                             addr   <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
-                             _      <- started.succeed(addr)
-                             result <- Managed
-                                         .make(server.accept)(_.close.orDie)
-                                         .use(worker => worker.read(3) *> worker.read(3) *> ZIO.succeed(false))
-                                         .catchAll {
-                                           case ex: java.io.IOException if ex.getMessage == "Connection reset by peer" =>
-                                             ZIO.succeed(true)
-                                         }
-                           } yield result
-                         }
-                         .fork
+            result <- Managed
+                       .make(AsynchronousServerSocketChannel())(_.close.orDie)
+                       .use { server =>
+                         for {
+                           _    <- server.bind(address)
+                           addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                           _    <- started.succeed(addr)
+                           result <- Managed
+                                      .make(server.accept)(_.close.orDie)
+                                      .use(worker => worker.readChunk(3) *> worker.readChunk(3) *> ZIO.succeed(false))
+                                      .catchAll {
+                                        case ex: java.io.IOException if ex.getMessage == "Connection reset by peer" =>
+                                          ZIO.succeed(true)
+                                      }
+                         } yield result
+                       }
+                       .fork
           } yield result
 
         def client(address: SocketAddress): IO[Exception, Unit] =
           for {
             _ <- Managed.make(AsynchronousSocketChannel())(_.close.orDie).use { client =>
-                   for {
-                     _ <- client.connect(address)
-                     _  = client.write(Chunk.fromArray(Array[Byte](1, 1, 1)))
-                   } yield ()
-                 }
+                  for {
+                    _ <- client.connect(address)
+                    _ = client.writeChunk(Chunk.fromArray(Array[Byte](1, 1, 1)))
+                  } yield ()
+                }
           } yield ()
 
         for {
@@ -114,8 +114,8 @@ object ChannelSpec extends BaseSpec {
             addr   <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
             _      <- started.succeed(addr)
             worker <- server.accept
-                        .bracket(_.close.ignore *> server.close.ignore)(_ => ZIO.unit)
-                        .fork
+                       .bracket(_.close.ignore *> server.close.ignore)(_ => ZIO.unit)
+                       .fork
           } yield worker
 
         for {

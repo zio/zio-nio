@@ -26,7 +26,7 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
         new AsynchronousChannelGroup(null)
           .awaitTermination(Duration.apply(1, TimeUnit.SECONDS))
           .run
-          .map(result => assert(result)(fails(anything)))
+          .map(result => assert(result)(dies(isSubtype[NullPointerException](anything))))
       },
       testM("isShutdown") {
         ClassFixture.providedFixture { fixture =>
@@ -67,12 +67,12 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
       testM("failing companion object create instance using executor and initial size") {
         for {
           result <- AsynchronousChannelGroup(null, 1).run
-        } yield assert(result)(fails(anything))
+        } yield assert(result)(dies(isSubtype[NullPointerException](anything)))
       },
       testM("failing companion object create instance using threads no and threads factory") {
         for {
           result <- AsynchronousChannelGroup(1, null).run
-        } yield assert(result)(fails(anything))
+        } yield assert(result)(dies(isSubtype[NullPointerException](anything)))
       },
       testM("companion object create instance using executor service") {
         ZIO(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
@@ -83,7 +83,7 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
       testM("failing companion object create instance using executor service") {
         for {
           result <- AsynchronousChannelGroup(null).run
-        } yield assert(result)(fails(anything))
+        } yield assert(result)(dies(isSubtype[NullPointerException](anything)))
       }
     )
 
@@ -105,7 +105,7 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
 
         val jChannelGroup: JAsynchronousChannelGroup =
           JAsynchronousChannelGroup.withThreadPool(jExecutor)
-        val testObj                                  = new AsynchronousChannelGroup(jChannelGroup)
+        val testObj = new AsynchronousChannelGroup(jChannelGroup)
 
         def cleanFixture(): Unit = {
           jChannelGroup.shutdown()

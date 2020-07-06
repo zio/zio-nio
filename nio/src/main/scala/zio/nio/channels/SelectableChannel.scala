@@ -7,13 +7,12 @@ import java.nio.channels.{
   ServerSocketChannel => JServerSocketChannel,
   SocketChannel => JSocketChannel
 }
-import java.nio.{ ByteBuffer => JByteBuffer }
 
+import zio.{ IO, Managed, UIO }
 import zio.nio.channels.spi.SelectorProvider
-import zio.nio.core.{ Buffer, SocketAddress }
+import zio.nio.core.{ SocketAddress }
 import zio.nio.core.channels.SelectionKey
 import zio.nio.core.channels.SelectionKey.Operation
-import zio.{ IO, Managed, UIO }
 
 trait SelectableChannel extends Channel {
   protected val channel: JSelectableChannel
@@ -65,8 +64,8 @@ final class SocketChannel private[channels] (override protected[channels] val ch
   final def bind(local: SocketAddress): IO[IOException, Unit] =
     IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
 
-  final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.effect(channel.setOption(name, value)).refineToOrDie[Exception].unit
+  final def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
+    IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
   final val shutdownInput: IO[IOException, Unit] =
     IO.effect(channel.shutdownInput()).refineToOrDie[IOException].unit
@@ -91,12 +90,6 @@ final class SocketChannel private[channels] (override protected[channels] val ch
 
   final val remoteAddress: IO[IOException, SocketAddress] =
     IO.effect(SocketAddress(channel.getRemoteAddress())).refineToOrDie[IOException]
-
-  final def read(b: Buffer[Byte]): IO[IOException, Int] =
-    IO.effect(channel.read(b.buffer.asInstanceOf[JByteBuffer])).refineToOrDie[IOException]
-
-  final def write(b: Buffer[Byte]): IO[Exception, Int] =
-    IO.effect(channel.write(b.buffer.asInstanceOf[JByteBuffer])).refineToOrDie[IOException]
 
   final val localAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(Option(channel.getLocalAddress()).map(SocketAddress(_)))

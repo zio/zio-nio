@@ -8,56 +8,53 @@ import java.nio.channels.{
   AsynchronousServerSocketChannel => JAsynchronousServerSocketChannel,
   AsynchronousSocketChannel => JAsynchronousSocketChannel
 }
-import java.nio.{ ByteBuffer => JByteBuffer }
 import java.util.concurrent.TimeUnit
 
+import zio._
 import zio.duration._
-import zio.nio.core.{ Buffer, SocketAddress }
-import zio.nio.core.channels.AsynchronousChannelGroup
-import zio.{ Chunk, IO, Managed, UIO, ZIO }
 import zio.interop.javaz._
+import zio.nio.core.{ Buffer, ByteBuffer, RichInt, RichLong, SocketAddress }
+import zio.nio.core.channels.AsynchronousChannelGroup
 
 class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
 
   /**
-   *  Reads data from this channel into buffer, returning the number of bytes
-   *  read, or -1 if no bytes were read.
+   *  Reads data from this channel into buffer.
+   *
+   *  @return The number of bytes read, or None if end-of-stream is reached.
    */
-  final private[nio] def readBuffer(b: Buffer[Byte]): IO[Exception, Int] =
-    effectAsyncWithCompletionHandler[JInteger](h => channel.read(b.buffer.asInstanceOf[JByteBuffer], (), h))
-      .map(_.toInt)
+  final def read(b: ByteBuffer): IO[Exception, Option[Int]] =
+    effectAsyncWithCompletionHandler[JInteger](h => channel.read(b.byteBuffer, (), h))
+      .map(_.toInt.eofCheck)
       .refineToOrDie[Exception]
 
-  final def read(capacity: Int): IO[Exception, Chunk[Byte]] =
+  final def readChunk(capacity: Int): IO[Exception, Chunk[Byte]] =
     for {
       b <- Buffer.byte(capacity)
-      l <- readBuffer(b)
-      a <- b.array
-      r <- if (l == -1)
-             ZIO.fail(new IOException("Connection reset by peer"))
-           else
-             ZIO.succeed(Chunk.fromArray(a).take(l))
+      l <- read(b)
+      _ <- b.flip
+      r <- l.map(_ => b.getChunk()).getOrElse(ZIO.fail(new IOException("Connection reset by peer")))
     } yield r
 
   /**
    *  Writes data into this channel from buffer, returning the number of bytes written.
    */
-  final private[nio] def writeBuffer(b: Buffer[Byte]): IO[Exception, Int] =
-    effectAsyncWithCompletionHandler[JInteger](h => channel.write(b.buffer.asInstanceOf[JByteBuffer], (), h))
+  final def write(b: ByteBuffer): IO[Exception, Int] =
+    effectAsyncWithCompletionHandler[JInteger](h => channel.write(b.byteBuffer, (), h))
       .map(_.toInt)
       .refineToOrDie[Exception]
 
-  final def write(chunk: Chunk[Byte]): IO[Exception, Int] =
+  final def writeChunk(chunk: Chunk[Byte]): IO[Exception, Int] =
     for {
       b <- Buffer.byte(chunk)
-      r <- writeBuffer(b)
+      r <- write(b)
     } yield r
 
   /**
    * Closes this channel.
    */
-  final private[channels] val close: IO[Exception, Unit] =
-    IO.effect(channel.close()).refineToOrDie[Exception]
+  final private[channels] val close: IO[IOException, Unit] =
+    IO.effect(channel.close()).refineToOrDie[IOException]
 
   /**
    * Tells whether or not this channel is open.
@@ -72,18 +69,18 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    * Binds the channel's socket to a local address and configures the socket
    * to listen for connections.
    */
-  final def bind(address: SocketAddress): IO[Exception, Unit] =
-    IO.effect(channel.bind(address.jSocketAddress)).refineToOrDie[Exception].unit
+  final def bind(address: SocketAddress): IO[IOException, Unit] =
+    IO.effect(channel.bind(address.jSocketAddress)).refineToOrDie[IOException].unit
 
   /**
    * Binds the channel's socket to a local address and configures the socket
    * to listen for connections, up to backlog pending connection.
    */
-  final def bind(address: SocketAddress, backlog: Int): IO[Exception, Unit] =
-    IO.effect(channel.bind(address.jSocketAddress, backlog)).refineToOrDie[Exception].unit
+  final def bind(address: SocketAddress, backlog: Int): IO[IOException, Unit] =
+    IO.effect(channel.bind(address.jSocketAddress, backlog)).refineToOrDie[IOException].unit
 
-  final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.effect(channel.setOption(name, value)).refineToOrDie[Exception].unit
+  final def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
+    IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
   /**
    * Accepts a connection.
@@ -102,16 +99,17 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    * denied by the security manager, or `Maybe.empty` if the
    * channel's socket is not bound.
    */
-  final def localAddress: IO[Exception, Option[SocketAddress]] =
+  final def localAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(
-      Option(channel.getLocalAddress).map(new SocketAddress(_))
-    ).refineToOrDie[Exception]
+        Option(channel.getLocalAddress).map(new SocketAddress(_))
+      )
+      .refineToOrDie[IOException]
 
   /**
    * Closes this channel.
    */
-  final private[channels] val close: IO[Exception, Unit] =
-    IO.effect(channel.close()).refineToOrDie[Exception]
+  final private[channels] val close: IO[IOException, Unit] =
+    IO.effect(channel.close()).refineToOrDie[IOException]
 
   /**
    * Tells whether or not this channel is open.
@@ -122,26 +120,22 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
 
 object AsynchronousServerSocketChannel {
 
-  def apply(): Managed[Exception, AsynchronousServerSocketChannel] = {
+  def apply(): Managed[IOException, AsynchronousServerSocketChannel] = {
     val open = IO
-      .effect(JAsynchronousServerSocketChannel.open())
-      .refineToOrDie[Exception]
-      .map(new AsynchronousServerSocketChannel(_))
+      .effect(new AsynchronousServerSocketChannel(JAsynchronousServerSocketChannel.open()))
+      .refineToOrDie[IOException]
 
     Managed.make(open)(_.close.orDie)
   }
 
   def apply(
     channelGroup: AsynchronousChannelGroup
-  ): Managed[Exception, AsynchronousServerSocketChannel] = {
+  ): Managed[IOException, AsynchronousServerSocketChannel] = {
     val open = IO
       .effect(
-        JAsynchronousServerSocketChannel.open(channelGroup.channelGroup)
+        new AsynchronousServerSocketChannel(JAsynchronousServerSocketChannel.open(channelGroup.channelGroup))
       )
-      .refineOrDie {
-        case e: Exception => e
-      }
-      .map(new AsynchronousServerSocketChannel(_))
+      .refineToOrDie[IOException]
 
     Managed.make(open)(_.close.orDie)
   }
@@ -150,111 +144,100 @@ object AsynchronousServerSocketChannel {
 class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     extends AsynchronousByteChannel(channel) {
 
-  final def bind(address: SocketAddress): IO[Exception, Unit] =
-    IO.effect(channel.bind(address.jSocketAddress)).refineToOrDie[Exception].unit
+  final def bind(address: SocketAddress): IO[IOException, Unit] =
+    IO.effect(channel.bind(address.jSocketAddress)).refineToOrDie[IOException].unit
 
-  final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.effect(channel.setOption(name, value)).refineToOrDie[Exception].unit
+  final def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
+    IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
-  final def shutdownInput: IO[Exception, Unit] =
-    IO.effect(channel.shutdownInput()).refineToOrDie[Exception].unit
+  final def shutdownInput: IO[IOException, Unit] =
+    IO.effect(channel.shutdownInput()).refineToOrDie[IOException].unit
 
-  final def shutdownOutput: IO[Exception, Unit] =
-    IO.effect(channel.shutdownOutput()).refineToOrDie[Exception].unit
+  final def shutdownOutput: IO[IOException, Unit] =
+    IO.effect(channel.shutdownOutput()).refineToOrDie[IOException].unit
 
-  final def remoteAddress: IO[Exception, Option[SocketAddress]] =
+  final def remoteAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(
-      Option(channel.getRemoteAddress)
-        .map(SocketAddress(_))
-    ).refineToOrDie[Exception]
+        Option(channel.getRemoteAddress)
+          .map(SocketAddress(_))
+      )
+      .refineToOrDie[IOException]
 
-  final def localAddress: IO[Exception, Option[SocketAddress]] =
+  final def localAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(
-      Option(channel.getLocalAddress)
-        .map(SocketAddress(_))
-    ).refineToOrDie[Exception]
+        Option(channel.getLocalAddress)
+          .map(SocketAddress(_))
+      )
+      .refineToOrDie[IOException]
 
   final def connect(socketAddress: SocketAddress): IO[Exception, Unit] =
     effectAsyncWithCompletionHandler[JVoid](h => channel.connect(socketAddress.jSocketAddress, (), h)).unit
       .refineToOrDie[Exception]
 
-  final private[nio] def readBuffer[A](dst: Buffer[Byte], timeout: Duration): IO[Exception, Int] =
+  final def read[A](dst: ByteBuffer, timeout: Duration): IO[Exception, Option[Int]] =
     effectAsyncWithCompletionHandler[JInteger] { h =>
       channel.read(
-        dst.buffer.asInstanceOf[JByteBuffer],
+        dst.byteBuffer,
         timeout.fold(Long.MaxValue, _.nanos),
         TimeUnit.NANOSECONDS,
         (),
         h
       )
-    }.map(_.toInt).refineToOrDie[Exception]
+    }.map(_.toInt.eofCheck).refineToOrDie[Exception]
 
-  final def read[A](capacity: Int, timeout: Duration): IO[Exception, Chunk[Byte]] =
+  final def readChunk[A](capacity: Int, timeout: Duration): IO[Exception, Chunk[Byte]] =
     for {
       b <- Buffer.byte(capacity)
-      l <- readBuffer(b, timeout)
-      a <- b.array
-      r <- if (l == -1)
-             ZIO.fail(new IOException("Connection reset by peer"))
-           else
-             ZIO.succeed(Chunk.fromArray(a).take(l))
+      l <- read(b, timeout)
+      _ <- b.flip
+      r <- l.map(_ => b.getChunk()).getOrElse(ZIO.fail(new IOException("Connection reset by peer")))
     } yield r
 
-  final private[nio] def readBuffer[A](
-    dsts: List[Buffer[Byte]],
-    offset: Int,
-    length: Int,
+  final def read[A](
+    dsts: List[ByteBuffer],
     timeout: Duration
-  ): IO[Exception, Long] =
-    effectAsyncWithCompletionHandler[JLong](h =>
+  ): IO[Exception, Option[Long]] =
+    effectAsyncWithCompletionHandler[JLong] { h =>
+      val a = dsts.map(_.byteBuffer).toArray
       channel.read(
-        dsts.map(_.buffer.asInstanceOf[JByteBuffer]).toArray,
-        offset,
-        length,
+        dsts.map(_.byteBuffer).toArray,
+        0,
+        a.length,
         timeout.fold(Long.MaxValue, _.nanos),
         TimeUnit.NANOSECONDS,
         (),
         h
       )
-    ).map(_.toLong).refineToOrDie[Exception]
+    }.map(_.toLong.eofCheck).refineToOrDie[Exception]
 
-  final def read[A](
+  final def readChunks[A](
     capacities: List[Int],
-    offset: Int,
-    length: Int,
     timeout: Duration
   ): IO[Exception, List[Chunk[Byte]]] =
     for {
-      bs <- IO.collectAll(capacities.map(Buffer.byte))
-      l  <- readBuffer(bs, offset, length, timeout)
-      as <- IO.collectAll(bs.map(_.array))
-      r  <- if (l == -1)
-              ZIO.fail(new IOException("Connection reset by peer"))
-            else
-              ZIO.succeed(as.map(Chunk.fromArray))
+      bs     <- ZIO.foreach(capacities)(Buffer.byte)
+      l      <- read(bs, timeout)
+      chunks <- ZIO.foreach(bs)(b => b.flip *> b.getChunk())
+      r      <- l.map(_ => ZIO.succeed(chunks)).getOrElse(ZIO.fail(new IOException("Connection reset by peer")))
     } yield r
 }
 
 object AsynchronousSocketChannel {
 
-  def apply(): Managed[Exception, AsynchronousSocketChannel] = {
+  def apply(): Managed[IOException, AsynchronousSocketChannel] = {
     val open = IO
-      .effect(JAsynchronousSocketChannel.open())
-      .refineToOrDie[Exception]
-      .map(new AsynchronousSocketChannel(_))
+      .effect(new AsynchronousSocketChannel(JAsynchronousSocketChannel.open()))
+      .refineToOrDie[IOException]
 
     Managed.make(open)(_.close.orDie)
   }
 
-  def apply(channelGroup: AsynchronousChannelGroup): Managed[Exception, AsynchronousSocketChannel] = {
+  def apply(channelGroup: AsynchronousChannelGroup): Managed[IOException, AsynchronousSocketChannel] = {
     val open = IO
       .effect(
-        JAsynchronousSocketChannel.open(channelGroup.channelGroup)
+        new AsynchronousSocketChannel(JAsynchronousSocketChannel.open(channelGroup.channelGroup))
       )
-      .refineOrDie {
-        case e: Exception => e
-      }
-      .map(new AsynchronousSocketChannel(_))
+      .refineToOrDie[IOException]
 
     Managed.make(open)(_.close.orDie)
   }

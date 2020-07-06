@@ -1,27 +1,60 @@
 package zio.nio.core.channels
 
+import java.io.IOException
 import java.nio.channels.{ GatheringByteChannel => JGatheringByteChannel }
 import java.nio.{ ByteBuffer => JByteBuffer }
 
-import zio.nio.core.Buffer
+import zio.nio.core.{ Buffer, ByteBuffer }
 import zio.{ Chunk, IO }
 
+/**
+ * A channel that can write bytes from a sequence of buffers.
+ */
 trait GatheringByteChannel extends Channel {
+
+  import GatheringByteChannel._
+
   override protected[channels] val channel: JGatheringByteChannel
 
-  final def writeBuffer(srcs: List[Buffer[Byte]]): IO[Exception, Long] =
-    IO.effect(channel.write(unwrap(srcs))).refineToOrDie[Exception]
+  final def write(srcs: List[ByteBuffer]): IO[IOException, Long] =
+    IO.effect(channel.write(unwrap(srcs))).refineToOrDie[IOException]
 
-  final def writeBuffer(src: Buffer[Byte]): IO[Exception, Long] = writeBuffer(List(src))
+  final def write(src: ByteBuffer): IO[IOException, Int] =
+    IO.effect(channel.write(src.byteBuffer)).refineToOrDie[IOException]
 
-  final def write(srcs: List[Chunk[Byte]]): IO[Exception, Long] =
+  /**
+   * Writes a list of chunks, in order.
+   *
+   * Multiple writes may be performed in order to write all the chunks.
+   */
+  final def writeChunks(srcs: List[Chunk[Byte]]): IO[IOException, Unit] =
     for {
-      bs <- IO.collectAll(srcs.map(Buffer.byte(_)))
-      r  <- writeBuffer(bs)
-    } yield r
+      bs <- IO.foreach(srcs)(Buffer.byte)
+      _ <- {
+        // Handle partial writes by dropping buffers where `hasRemaining` returns false,
+        // meaning they've been completely written
+        def go(buffers: List[ByteBuffer]): IO[IOException, Unit] = write(buffers).flatMap { _ =>
+          IO.foreach(buffers)(b => b.hasRemaining.map(_ -> b)).flatMap { pairs =>
+            val remaining = pairs.dropWhile(!_._1).map(_._2)
+            if (remaining.isEmpty) IO.unit else go(remaining)
+          }
+        }
+        go(bs)
+      }
+    } yield ()
 
-  final def write(src: Chunk[Byte]): IO[Exception, Long] = write(List(src))
+  /**
+   * Writes a chunk of bytes.
+   *
+   * Multiple writes may be performed to write the entire chunk.
+   */
+  final def writeChunk(src: Chunk[Byte]): IO[IOException, Unit] = writeChunks(List(src))
 
-  private def unwrap(srcs: List[Buffer[Byte]]): Array[JByteBuffer] =
-    srcs.map(d => d.buffer.asInstanceOf[JByteBuffer]).toList.toArray
+}
+
+object GatheringByteChannel {
+
+  private def unwrap(srcs: List[ByteBuffer]): Array[JByteBuffer] =
+    srcs.map(d => d.byteBuffer).toArray
+
 }
