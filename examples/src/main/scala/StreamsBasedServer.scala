@@ -38,17 +38,17 @@ object StreamsBasedServer extends App {
           .mapM {
             case (closeConn, channel) =>
               for {
-                _    <- console.putStrLn("Received connection")
+                _ <- console.putStrLn("Received connection")
                 data <- ZStream
-                          .fromEffectOption(
-                            channel.read(64).tap(_ => console.putStrLn("Read chunk")).orElse(ZIO.fail(None))
-                          )
-                          .flattenChunks
-                          .take(4)
-                          .transduce(ZTransducer.utf8Decode)
-                          .run(Sink.foldLeft("")(_ + (_: String)))
-                _    <- closeConn
-                _    <- f(data)
+                         .fromEffectOption(
+                           channel.readChunk(64).tap(_ => console.putStrLn("Read chunk")).orElse(ZIO.fail(None))
+                         )
+                         .flattenChunks
+                         .take(4)
+                         .transduce(ZTransducer.utf8Decode)
+                         .run(Sink.foldLeft("")(_ + (_: String)))
+                _ <- closeConn
+                _ <- f(data)
               } yield ()
           }
       }

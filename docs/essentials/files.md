@@ -30,12 +30,12 @@ Reading and writing is performed as effects where raw `Byte` content is wrapped 
 ```scala mdoc:silent
 val readWriteOp = (channel: AsynchronousFileChannel) =>
   for {
-    chunk <- channel.read(20, 0)
+    chunk <- channel.readChunk(20, 0L).someOrFailException
     text  = chunk.map(_.toChar).mkString
     _     <- putStrLn(text)
   
     input = Chunk.fromArray("message".toArray.map(_.toByte))
-    _     <- channel.write(input, 0)
+    _     <- channel.writeChunk(input, 0L)
   } yield ()
 ```
 

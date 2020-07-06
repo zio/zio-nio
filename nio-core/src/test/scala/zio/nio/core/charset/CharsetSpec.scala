@@ -70,13 +70,13 @@ object CharsetSpec extends DefaultRunnableSpec {
   def bufferEncodeDecode(charset: Charset) =
     testM(s"buffer encode/decode ${charset.displayName}") {
       for {
-        chars             <- Buffer.char(100).orDie
-        _                 <- chars.putChunk(arabicChunk).orDie
+        chars             <- Buffer.char(100)
+        _                 <- chars.putChunk(arabicChunk)
         _                 <- chars.flip
         bytes             <- charset.encode(chars)
         charsHasRemaining <- chars.hasRemaining
         decoded           <- charset.decode(bytes)
-        chunk             <- decoded.getChunk().orDie
+        chunk             <- decoded.getChunk()
       } yield assert(charsHasRemaining)(isFalse) && assert(chunk)(equalTo(arabicChunk))
     }
 
@@ -85,7 +85,7 @@ object CharsetSpec extends DefaultRunnableSpec {
       val charStream = Stream.fromIterable(arabic)
       for {
         byteChunks <- charStream.transduce(charset.newEncoder.transducer()).runCollect
-        byteStream  = Stream.fromIterable(byteChunks)
+        byteStream = Stream.fromIterable(byteChunks)
         chars      <- byteStream.transduce(charset.newDecoder.transducer()).runCollect
       } yield assert(chars)(equalTo(arabicChunk))
     }
