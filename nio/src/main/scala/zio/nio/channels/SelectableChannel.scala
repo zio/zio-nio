@@ -89,10 +89,10 @@ final class SocketChannel private[channels] (override protected[channels] val ch
     IO.effect(channel.finishConnect()).refineToOrDie[IOException]
 
   final val remoteAddress: IO[IOException, SocketAddress] =
-    IO.effect(SocketAddress(channel.getRemoteAddress())).refineToOrDie[IOException]
+    IO.effect(SocketAddress.fromJava(channel.getRemoteAddress())).refineToOrDie[IOException]
 
   final val localAddress: IO[IOException, Option[SocketAddress]] =
-    IO.effect(Option(channel.getLocalAddress()).map(SocketAddress(_)))
+    IO.effect(Option(channel.getLocalAddress()).map(SocketAddress.fromJava))
       .refineToOrDie[IOException]
 }
 

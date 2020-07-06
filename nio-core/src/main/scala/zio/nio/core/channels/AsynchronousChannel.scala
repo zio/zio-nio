@@ -96,7 +96,7 @@ final class AsynchronousServerSocketChannel(protected val channel: JAsynchronous
    */
   def localAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(
-      Option(channel.getLocalAddress).map(SocketAddress(_))
+      Option(channel.getLocalAddress).map(SocketAddress.fromJava)
     ).refineToOrDie[IOException]
 
 }
@@ -132,13 +132,13 @@ class AsynchronousSocketChannel(override protected val channel: JAsynchronousSoc
   final def remoteAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(
       Option(channel.getRemoteAddress)
-        .map(SocketAddress(_))
+        .map(SocketAddress.fromJava)
     ).refineToOrDie[IOException]
 
   final def localAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(
       Option(channel.getLocalAddress)
-        .map(SocketAddress(_))
+        .map(SocketAddress.fromJava)
     ).refineToOrDie[IOException]
 
   final def connect(socketAddress: SocketAddress): IO[Exception, Unit] =
