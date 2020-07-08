@@ -7,14 +7,15 @@ import java.nio.{ file => jf }
 
 import zio.blocking.{ Blocking, effectBlocking }
 import zio.{ UIO, ZIO }
+import zio.nio.core.IOCloseable
 
 import scala.jdk.CollectionConverters._
 
-final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
+final class FileSystem private (private val javaFileSystem: jf.FileSystem) extends IOCloseable[Blocking] {
   def provider: jf.spi.FileSystemProvider = javaFileSystem.provider()
 
-  def close: ZIO[Blocking, Exception, Unit] =
-    effectBlocking(javaFileSystem.close()).refineToOrDie[Exception]
+  override def close: ZIO[Blocking, IOException, Unit] =
+    effectBlocking(javaFileSystem.close()).refineToOrDie[IOException]
 
   def isOpen: UIO[Boolean] = UIO.effectTotal(javaFileSystem.isOpen())
 

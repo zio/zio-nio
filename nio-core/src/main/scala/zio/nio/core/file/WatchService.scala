@@ -3,16 +3,17 @@ package zio.nio.core.file
 import java.io.IOException
 import java.nio.file.{
   WatchEvent,
-  WatchKey => JWatchKey,
-  WatchService => JWatchService,
+  Path => JPath,
   Watchable => JWatchable,
-  Path => JPath
+  WatchKey => JWatchKey,
+  WatchService => JWatchService
 }
 import java.util.concurrent.TimeUnit
 
 import zio.blocking.Blocking
 import zio.duration.Duration
 import zio.{ IO, UIO, ZIO }
+import zio.nio.core.IOCloseable
 
 import scala.jdk.CollectionConverters._
 
@@ -55,8 +56,9 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
     }
 }
 
-final class WatchService private (private[file] val javaWatchService: JWatchService) {
-  def close: IO[IOException, Unit] = IO.effect(javaWatchService.close()).refineToOrDie[IOException]
+final class WatchService private (private[file] val javaWatchService: JWatchService) extends IOCloseable[Any] {
+
+  override def close: IO[IOException, Unit] = IO.effect(javaWatchService.close()).refineToOrDie[IOException]
 
   def poll: UIO[Option[WatchKey]] =
     IO.effectTotal(Option(javaWatchService.poll()).map(new WatchKey(_)))

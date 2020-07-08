@@ -4,15 +4,16 @@ import java.io.IOException
 import java.nio.channels.{ Channel => JChannel }
 
 import zio.{ IO, UIO }
+import zio.nio.core.IOCloseable
 
-trait Channel {
+trait Channel extends IOCloseable[Any] {
 
   protected val channel: JChannel
 
   /**
    * Closes this channel.
    */
-  final def close: IO[IOException, Unit] =
+  final override def close: IO[IOException, Unit] =
     IO.effect(channel.close()).refineToOrDie[IOException]
 
   /**

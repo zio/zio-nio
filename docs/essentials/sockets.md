@@ -11,9 +11,10 @@ Required imports for snippets:
 import zio._
 import zio.clock._
 import zio.console._
-import zio.nio._
-import zio.nio.channels._
+import zio.nio.core.channels._
 import zio.nio.core._
+import zio.nio.core.charset._
+import java.io.IOException
 ```
 
 ## Creating sockets
@@ -21,20 +22,22 @@ import zio.nio.core._
 Creating server socket:
 
 ```scala mdoc:silent
-val server = AsynchronousServerSocketChannel()
+val server = AsynchronousServerSocketChannel().toManagedNio
   .mapM { socket =>
     for {
-      _ <- SocketAddress.inetSocketAddress("127.0.0.1", 1337) >>= socket.bind
-      _ <- socket.accept.preallocate.flatMap(_.use(channel => doWork(channel).catchAll(ex => putStrLn(ex.getMessage))).fork).forever.fork
+      address <- SocketAddress.inetSocketAddress("127.0.0.1", 1337)
+      _ <- socket.bind(address)
+      _ <- socket.accept.toManagedNio.preallocate.flatMap(_.use(channel => doWork(channel).catchAll(ex => putStrLn(ex.getMessage))).fork).forever.fork
     } yield ()
   }.useForever
 
-def doWork(channel: AsynchronousSocketChannel): ZIO[Console with Clock, Throwable, Unit] = {
+def doWork(channel: AsynchronousSocketChannel): ZIO[Console, Exception, Unit] = {
   val process =
     for {
-      chunk <- channel.readChunk(3)
-      str = chunk.toArray.map(_.toChar).mkString
-      _ <- putStrLn(s"received: [$str] [${chunk.length}]")
+      byteChunk <- channel.readChunk(3)
+      charChunk <- Charset.Standard.utf8.decodeChunk(byteChunk)
+      str = charChunk.mkString
+      _ <- putStrLn(s"received: [$str] [${str.length}]")
     } yield ()
 
   process.whenM(channel.isOpen).forever
@@ -44,7 +47,7 @@ def doWork(channel: AsynchronousSocketChannel): ZIO[Console with Clock, Throwabl
 Creating client socket:
 
 ```scala mdoc:silent
-val clientM: Managed[Exception, AsynchronousSocketChannel] = AsynchronousSocketChannel()
+val clientM: Managed[Exception, AsynchronousSocketChannel] = AsynchronousSocketChannel().toManagedNio
   .mapM { client =>
     for {
       host    <- InetAddress.localHost
@@ -59,7 +62,7 @@ Reading and writing to socket:
 ```scala mdoc:silent
 for {
   serverFiber <- server.fork
-  clientFiber <- clientM.use(_.writeChunk(Chunk.fromArray(Array(1, 2, 3).map(_.toByte)))).fork
+  clientFiber <- clientM.use(_.writeChunk(Chunk(1, 2, 3).map(_.toByte))).fork
   _           <- clientFiber.join
   _           <- serverFiber.join
 } yield ()

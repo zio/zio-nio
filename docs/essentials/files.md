@@ -9,21 +9,35 @@ Required imports for presented snippets:
 
 ```scala mdoc:silent
 import zio._
-import zio.nio.channels._
+import zio.nio.core.channels._
 import zio.nio.core.file._
 import zio.console._
 ```
 
 ## Basic operations 
 
-Opening file for given path (with no additional open attributes) returns a `ZManaged` instance on which we're running the intended operations. `ZManaged` makes sure that the channel gets closed afterwards:
+### Managed Resources
+
+Any resource that supports a close or release effect implements the `IOCloseable` trait and can produce a `ZManaged` value by calling the `toIOManaged` method. `ZManaged` makes sure that the channel gets closed afterwards:
 
 ```scala mdoc:silent
 val path = Path("file.txt")
-val channelM = AsynchronousFileChannel.open(path).use { channel => 
+val channelM = AsynchronousFileChannel.open(path).toManagedNio.use { channel => 
   readWriteOp(channel) *> lockOp(channel)
 }
 ```
+
+It is also possible to directly bracket calls where the power of `ZManaged` isn't required:
+
+```scala mdoc:silent
+val channelBracket = AsynchronousFileChannel.open(path).bracketNio { channel => 
+  readWriteOp(channel) *> lockOp(channel)
+}
+```
+
+More low-level code can forgo use of `ZManaged` or bracketing and manually arrange to call `close`, but note this requires great care to get right.
+
+### Reading/Writing
 
 Reading and writing is performed as effects where raw `Byte` content is wrapped in `Chunk`:
 
@@ -39,20 +53,18 @@ val readWriteOp = (channel: AsynchronousFileChannel) =>
   } yield ()
 ```
 
-Contrary to previous operations file locks are performed with core `java.nio.channels.FileLock` class so
-it's not in an effect. Apart from basic acquire/release actions Core API offers e.g. partial locks and overlaps checks:
+### File Locks
+
+File locking is also available as effect values with resource management, shown here with both the `ZManaged` and bracket styles:
 
 ```scala mdoc:silent
 val lockOp = (channel: AsynchronousFileChannel) =>
   for {
-    isShared     <- channel.lock().bracket(_.release.ignore)(l => IO.succeed(l.isShared))
+    isShared     <- channel.lock().bracketNio(l => IO.succeed(l.isShared))
     _            <- putStrLn(isShared.toString)                                      // false
 
-    managed      = Managed.make(channel.lock(position = 0, size = 10, shared = false))(_.release.ignore)
+    managed      = channel.lock(position = 0, size = 10, shared = false).toManagedNio
     isOverlaping <- managed.use(l => IO.succeed(l.overlaps(5, 20)))
     _            <- putStrLn(isOverlaping.toString)                                  // true
   } yield ()
 ```
-
-Also it's worth mentioning that we are treating here `FileLock` as a resource. 
-For demonstration purposes we handled it in two different ways: using `bracket` and creating `Managed` for this.

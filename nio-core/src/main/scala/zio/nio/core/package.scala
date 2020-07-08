@@ -2,7 +2,7 @@ package zio.nio
 
 import java.io.EOFException
 
-import zio.{ IO, ZIO }
+import zio.{ IO, ZIO, ZManaged }
 
 package object core {
 
@@ -29,5 +29,20 @@ package object core {
     effect.asSome.catchSome {
       case _: EOFException => ZIO.none
     }
+
+  implicit final class CloseableResourceOps[-R, +E, +A <: IOCloseable[R]](val value: ZIO[R, E, A]) extends AnyVal {
+
+    /**
+     * Lifts an effect producing a closeable NIO resource into a `ZManaged` value.
+     */
+    def toManagedNio: ZManaged[R, E, A] = value.toManaged(_.close.ignore)
+
+    /**
+     * Provides bracketing for any effect producing a closeable NIO resource.
+     */
+    def bracketNio[R1 <: R, E1 >: E, B](use: A => ZIO[R1, E1, B]): ZIO[R1, E1, B] =
+      value.bracket(_.close.ignore, use)
+
+  }
 
 }

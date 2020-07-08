@@ -1,9 +1,11 @@
 package zio.nio.examples
 
+import java.io.IOException
+
 import zio._
 import zio.duration._
 import zio.nio.core.SocketAddress
-import zio.nio.channels._
+import zio.nio.core.channels._
 import zio.stream._
 
 object StreamsBasedServer extends App {
@@ -20,9 +22,9 @@ object StreamsBasedServer extends App {
       .orDie
       .exitCode
 
-  def server(port: Int): Managed[Exception, AsynchronousServerSocketChannel] =
+  def server(port: Int): Managed[IOException, AsynchronousServerSocketChannel] =
     for {
-      server        <- AsynchronousServerSocketChannel()
+      server        <- AsynchronousServerSocketChannel().toManagedNio
       socketAddress <- SocketAddress.inetSocketAddress(port).toManaged_
       _             <- server.bind(socketAddress).toManaged_
     } yield server
@@ -31,7 +33,7 @@ object StreamsBasedServer extends App {
     server: AsynchronousServerSocketChannel
   )(f: String => RIO[R, Unit]): ZStream[R, Throwable, Unit] =
     ZStream
-      .repeatEffect(server.accept.preallocate)
+      .repeatEffect(server.accept.toManagedNio.preallocate)
       .map(conn => ZStream.managed(conn.ensuring(console.putStrLn("Connection closed")).withEarlyRelease))
       .flatMapPar[R, Throwable, Unit](16) { connection =>
         connection
