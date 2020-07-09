@@ -279,9 +279,15 @@ object Files {
 
   def list(path: Path): ZStream[Blocking, Exception, Path] =
     ZStream
-      .fromEffect(effectBlocking(JFiles.list(path.javaPath).iterator()).refineToOrDie[IOException])
-      .flatMap(fromJavaIterator)
+      .fromJavaIteratorManaged(
+        ZManaged
+          .make(effectBlocking(JFiles.list(path.javaPath)))(stream => ZIO.effectTotal(stream.close()))
+          .map(_.iterator())
+      )
       .map(Path.fromJava)
+      .refineOrDie {
+        case io: IOException => io
+      }
 
   def walk(
     path: Path,
