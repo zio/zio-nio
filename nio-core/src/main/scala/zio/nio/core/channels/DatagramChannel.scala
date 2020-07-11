@@ -1,11 +1,11 @@
 package zio.nio.core.channels
 
 import java.io.IOException
-import java.net.{ DatagramSocket => JDatagramSocket, SocketAddress => JSocketAddress }
+import java.net.{ SocketOption, DatagramSocket => JDatagramSocket, SocketAddress => JSocketAddress }
 import java.nio.channels.{ DatagramChannel => JDatagramChannel }
 
 import zio.{ IO, UIO }
-import zio.nio.core.{ ByteBuffer, SocketAddress, SocketOption }
+import zio.nio.core.{ ByteBuffer, SocketAddress }
 
 /**
  * A [[java.nio.channels.DatagramChannel]] wrapper allowing for basic [[zio.ZIO]] interoperability.
@@ -104,7 +104,7 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    * @return the datagram channel with the given socket option set to the provided value
    */
   def setOption[T](name: SocketOption[T], value: T): IO[IOException, DatagramChannel] =
-    IO.effect(channel.setOption(name.jSocketOption, value)).refineToOrDie[IOException].map(new DatagramChannel(_))
+    IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].map(new DatagramChannel(_))
 
   /**
    * Returns a reference to this channel's underlying datagram socket.

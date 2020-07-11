@@ -1,7 +1,7 @@
 package zio.nio.channels
 
 import java.io.IOException
-import java.net.{ ServerSocket => JServerSocket, Socket => JSocket }
+import java.net.{ SocketOption, ServerSocket => JServerSocket, Socket => JSocket }
 import java.nio.channels.{
   SelectableChannel => JSelectableChannel,
   ServerSocketChannel => JServerSocketChannel,
@@ -10,7 +10,7 @@ import java.nio.channels.{
 import java.nio.{ ByteBuffer => JByteBuffer }
 
 import zio.nio.channels.spi.SelectorProvider
-import zio.nio.core.{ Buffer, SocketAddress, SocketOption }
+import zio.nio.core.{ Buffer, SocketAddress }
 import zio.nio.core.channels.SelectionKey
 import zio.nio.core.channels.SelectionKey.Operation
 import zio.{ IO, Managed, UIO }
@@ -66,7 +66,7 @@ final class SocketChannel private[channels] (override protected[channels] val ch
     IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
 
   final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.effect(channel.setOption(name.jSocketOption, value)).refineToOrDie[Exception].unit
+    IO.effect(channel.setOption(name, value)).refineToOrDie[Exception].unit
 
   final val shutdownInput: IO[IOException, Unit] =
     IO.effect(channel.shutdownInput()).refineToOrDie[IOException].unit
@@ -136,7 +136,7 @@ final class ServerSocketChannel private (override protected val channel: JServer
     IO.effect(channel.bind(local.jSocketAddress, backlog)).refineToOrDie[IOException].unit
 
   final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.effect(channel.setOption(name.jSocketOption, value)).refineToOrDie[Exception].unit
+    IO.effect(channel.setOption(name, value)).refineToOrDie[Exception].unit
 
   final val socket: UIO[JServerSocket] =
     IO.effectTotal(channel.socket())

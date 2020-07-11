@@ -2,6 +2,7 @@ package zio.nio.channels
 
 import java.io.IOException
 import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
+import java.net.SocketOption
 import java.nio.channels.{
   AsynchronousByteChannel => JAsynchronousByteChannel,
   AsynchronousServerSocketChannel => JAsynchronousServerSocketChannel,
@@ -11,7 +12,7 @@ import java.nio.{ ByteBuffer => JByteBuffer }
 import java.util.concurrent.TimeUnit
 
 import zio.duration._
-import zio.nio.core.{ Buffer, SocketAddress, SocketOption }
+import zio.nio.core.{ Buffer, SocketAddress }
 import zio.nio.core.channels.AsynchronousChannelGroup
 import zio.{ Chunk, IO, Managed, UIO, ZIO }
 import zio.interop.javaz._
@@ -83,7 +84,7 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
     IO.effect(channel.bind(address.jSocketAddress, backlog)).refineToOrDie[Exception].unit
 
   final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.effect(channel.setOption(name.jSocketOption, value)).refineToOrDie[Exception].unit
+    IO.effect(channel.setOption(name, value)).refineToOrDie[Exception].unit
 
   /**
    * Accepts a connection.
@@ -155,7 +156,7 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     IO.effect(channel.bind(address.jSocketAddress)).refineToOrDie[Exception].unit
 
   final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.effect(channel.setOption(name.jSocketOption, value)).refineToOrDie[Exception].unit
+    IO.effect(channel.setOption(name, value)).refineToOrDie[Exception].unit
 
   final def shutdownInput: IO[Exception, Unit] =
     IO.effect(channel.shutdownInput()).refineToOrDie[Exception].unit
