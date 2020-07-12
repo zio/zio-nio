@@ -5,19 +5,20 @@ object BuildHelper {
 
   private val SilencerVersion = "1.7.0"
 
-  def stdSettings(prjName: String) = Seq(
-    name := s"$prjName",
-    scalacOptions := stdOptions,
-    crossScalaVersions := Seq(Scala211, Scala212, Scala213),
-    scalaVersion in ThisBuild := Scala212,
-    scalacOptions := stdOptions ++ extraOptions(scalaVersion.value),
-    libraryDependencies ++=
-      Seq(
-        ("com.github.ghik" % "silencer-lib" % SilencerVersion % Provided).cross(CrossVersion.full),
-        compilerPlugin(("com.github.ghik" % "silencer-plugin" % SilencerVersion).cross(CrossVersion.full))
-      ),
-    incOptions ~= (_.withLogRecompileOnMacro(false))
-  )
+  def stdSettings(prjName: String) =
+    Seq(
+      name := s"$prjName",
+      scalacOptions := stdOptions,
+      crossScalaVersions := Seq(Scala211, Scala212, Scala213),
+      scalaVersion in ThisBuild := Scala212,
+      scalacOptions := stdOptions ++ extraOptions(scalaVersion.value),
+      libraryDependencies ++=
+        Seq(
+          ("com.github.ghik"                % "silencer-lib"    % SilencerVersion % Provided).cross(CrossVersion.full),
+          compilerPlugin(("com.github.ghik" % "silencer-plugin" % SilencerVersion).cross(CrossVersion.full))
+        ),
+      incOptions ~= (_.withLogRecompileOnMacro(false))
+    )
 
   val ZioCoreVersion = "1.0.0-RC21-2"
 
@@ -87,6 +88,6 @@ object BuildHelper {
           "-Xmax-classfile-name",
           "242"
         )
-      case _ => Seq.empty
+      case _             => Seq.empty
     }
 }

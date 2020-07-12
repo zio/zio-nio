@@ -29,11 +29,10 @@ final class IntBuffer(val intBuffer: JIntBuffer) extends Buffer[Int](intBuffer) 
 
   override def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[Int]] =
     IO.effect {
-        val array = Array.ofDim[Int](math.min(maxLength, intBuffer.remaining()))
-        intBuffer.get(array)
-        Chunk.fromArray(array)
-      }
-      .refineToOrDie[BufferUnderflowException]
+      val array = Array.ofDim[Int](math.min(maxLength, intBuffer.remaining()))
+      intBuffer.get(array)
+      Chunk.fromArray(array)
+    }.refineToOrDie[BufferUnderflowException]
 
   override def put(element: Int): IO[Exception, Unit] =
     IO.effect(intBuffer.put(element)).unit.refineToOrDie[Exception]
@@ -43,10 +42,9 @@ final class IntBuffer(val intBuffer: JIntBuffer) extends Buffer[Int](intBuffer) 
 
   override def putChunk(chunk: Chunk[Int]): IO[Exception, Unit] =
     IO.effect {
-        val array = chunk.toArray
-        intBuffer.put(array)
-      }
-      .unit
+      val array = chunk.toArray
+      intBuffer.put(array)
+    }.unit
       .refineToOrDie[Exception]
 
   override def asReadOnlyBuffer: IO[Nothing, IntBuffer] =

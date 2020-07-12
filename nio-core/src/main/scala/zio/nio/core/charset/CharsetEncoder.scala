@@ -23,9 +23,10 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
       out.withJavaBuffer(jOut => IO.effectTotal(CoderResult.fromJava(javaEncoder.encode(jIn, jOut, endOfInput))))
     }
 
-  def flush(out: ByteBuffer): UIO[CoderResult] = out.withJavaBuffer { jOut =>
-    UIO.effectTotal(CoderResult.fromJava(javaEncoder.flush(jOut)))
-  }
+  def flush(out: ByteBuffer): UIO[CoderResult] =
+    out.withJavaBuffer { jOut =>
+      UIO.effectTotal(CoderResult.fromJava(javaEncoder.flush(jOut)))
+    }
 
   def malformedInputAction: UIO[j.CodingErrorAction] =
     UIO.effectTotal(javaEncoder.malformedInputAction())
@@ -61,35 +62,35 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
         byteBuffer <- Buffer.byte(bufSize).toManaged_.orDie
       } yield {
 
-        def handleCoderResult(coderResult: CoderResult) = coderResult match {
-          case CoderResult.Underflow | CoderResult.Overflow =>
-            charBuffer.compact.orDie *>
-              byteBuffer.flip *>
-              byteBuffer.getChunk().orDie <*
-              byteBuffer.clear
-          case CoderResult.Malformed(length) =>
-            IO.fail(new MalformedInputException(length))
-          case CoderResult.Unmappable(length) =>
-            IO.fail(new UnmappableCharacterException(length))
-        }
+        def handleCoderResult(coderResult: CoderResult) =
+          coderResult match {
+            case CoderResult.Underflow | CoderResult.Overflow =>
+              charBuffer.compact.orDie *>
+                byteBuffer.flip *>
+                byteBuffer.getChunk().orDie <*
+                byteBuffer.clear
+            case CoderResult.Malformed(length)                =>
+              IO.fail(new MalformedInputException(length))
+            case CoderResult.Unmappable(length)               =>
+              IO.fail(new UnmappableCharacterException(length))
+          }
 
         (_: Option[Chunk[Char]])
           .map { inChunk =>
             def encodeChunk(inChars: Chunk[Char]): IO[j.CharacterCodingException, Chunk[Byte]] =
               for {
-                bufRemaining <- charBuffer.remaining
+                bufRemaining                 <- charBuffer.remaining
                 (decodeChars, remainingChars) = {
-                  if (inChars.length > bufRemaining) {
+                  if (inChars.length > bufRemaining)
                     inChars.splitAt(bufRemaining)
-                  } else {
+                  else
                     (inChars, Chunk.empty)
-                  }
                 }
-                _              <- charBuffer.putChunk(decodeChars).orDie
-                _              <- charBuffer.flip
-                result         <- encode(charBuffer, byteBuffer, endOfInput = false)
-                encodedBytes   <- handleCoderResult(result)
-                remainderBytes <- if (remainingChars.isEmpty) IO.succeed(Chunk.empty) else encodeChunk(remainingChars)
+                _                            <- charBuffer.putChunk(decodeChars).orDie
+                _                            <- charBuffer.flip
+                result                       <- encode(charBuffer, byteBuffer, endOfInput = false)
+                encodedBytes                 <- handleCoderResult(result)
+                remainderBytes               <- if (remainingChars.isEmpty) IO.succeed(Chunk.empty) else encodeChunk(remainingChars)
               } yield encodedBytes ++ remainderBytes
 
             encodeChunk(inChunk)

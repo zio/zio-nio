@@ -32,11 +32,10 @@ class ByteBuffer protected[nio] (protected[nio] val byteBuffer: JByteBuffer) ext
 
   final override def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[Byte]] =
     IO.effect {
-        val array = Array.ofDim[Byte](math.min(maxLength, byteBuffer.remaining()))
-        byteBuffer.get(array)
-        Chunk.fromArray(array)
-      }
-      .refineToOrDie[BufferUnderflowException]
+      val array = Array.ofDim[Byte](math.min(maxLength, byteBuffer.remaining()))
+      byteBuffer.get(array)
+      Chunk.fromArray(array)
+    }.refineToOrDie[BufferUnderflowException]
 
   final override def put(element: Byte): IO[Exception, Unit] =
     IO.effect(byteBuffer.put(element)).unit.refineToOrDie[Exception]
@@ -49,10 +48,9 @@ class ByteBuffer protected[nio] (protected[nio] val byteBuffer: JByteBuffer) ext
 
   final override def putChunk(chunk: Chunk[Byte]): IO[Exception, Unit] =
     IO.effect {
-        val array = chunk.toArray
-        byteBuffer.put(array)
-      }
-      .unit
+      val array = chunk.toArray
+      byteBuffer.put(array)
+    }.unit
       .refineToOrDie[Exception]
 
   final override def asReadOnlyBuffer: IO[Nothing, ByteBuffer] =

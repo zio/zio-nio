@@ -32,10 +32,11 @@ final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset
   def encode(charBuffer: CharBuffer): UIO[ByteBuffer] =
     charBuffer.withJavaBuffer(jBuf => UIO.effectTotal(Buffer.byteFromJava(javaCharset.encode(jBuf))))
 
-  override def equals(other: Any): Boolean = other match {
-    case cs: Charset => javaCharset.equals(cs.javaCharset)
-    case _           => false
-  }
+  override def equals(other: Any): Boolean =
+    other match {
+      case cs: Charset => javaCharset.equals(cs.javaCharset)
+      case _           => false
+    }
 
   override def hashCode: Int = javaCharset.hashCode()
 

@@ -66,17 +66,14 @@ abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffe
   )(
     hasArray: (Array[A], Int) => ZIO[R, E, B]
   ): ZIO[R, E, B] =
-    if (buffer.hasArray) {
+    if (buffer.hasArray)
       for {
         a      <- array.orDie
         offset <- IO.effect(buffer.arrayOffset()).orDie
         result <- hasArray(a, offset)
-      } yield {
-        result
-      }
-    } else {
+      } yield result
+    else
       noArray
-    }
 
   protected[nio] def array: IO[Exception, Array[A]]
 
@@ -99,9 +96,9 @@ abstract class Buffer[A: ClassTag] private[nio] (private[nio] val buffer: JBuffe
    */
   final def fillFromChunk(chunk: Chunk[A]): IO[Nothing, Chunk[A]] =
     for {
-      r                          <- remaining
+      r                         <- remaining
       (putChunk, remainderChunk) = chunk.splitAt(r)
-      _                          <- this.putChunk(putChunk).orDie
+      _                         <- this.putChunk(putChunk).orDie
     } yield remainderChunk
 
   def asReadOnlyBuffer: IO[Nothing, Buffer[A]]

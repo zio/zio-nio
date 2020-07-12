@@ -64,9 +64,8 @@ object AsynchronousFileChannel {
 
   def open(file: Path, options: OpenOption*): IO[Exception, AsynchronousFileChannel] =
     IO.effect(
-        new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*))
-      )
-      .refineToOrDie[Exception]
+      new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*))
+    ).refineToOrDie[Exception]
 
   def open(
     file: Path,
@@ -75,9 +74,8 @@ object AsynchronousFileChannel {
     attrs: Set[FileAttribute[_]]
   ): IO[Exception, AsynchronousFileChannel] =
     IO.effect(
-        new AsynchronousFileChannel(
-          JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
-        )
+      new AsynchronousFileChannel(
+        JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
       )
-      .refineToOrDie[Exception]
+    ).refineToOrDie[Exception]
 }

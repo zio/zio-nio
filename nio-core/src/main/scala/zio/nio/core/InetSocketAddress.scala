@@ -6,10 +6,11 @@ import zio.IO
 
 class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocketAddress) {
 
-  override def equals(obj: Any): Boolean = obj match {
-    case other: SocketAddress => other.jSocketAddress == this.jSocketAddress
-    case _                    => false
-  }
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case other: SocketAddress => other.jSocketAddress == this.jSocketAddress
+      case _                    => false
+    }
 
   override def hashCode(): Int = jSocketAddress.hashCode()
 
@@ -37,7 +38,7 @@ object SocketAddress {
     jSocketAddress match {
       case inet: JInetSocketAddress =>
         new InetSocketAddress(inet)
-      case other =>
+      case other                    =>
         new SocketAddress(other)
     }
 

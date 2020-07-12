@@ -29,11 +29,10 @@ final class CharBuffer(charBuffer: JCharBuffer) extends Buffer[Char](charBuffer)
 
   override def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[Char]] =
     IO.effect {
-        val array = Array.ofDim[Char](math.min(maxLength, charBuffer.remaining()))
-        charBuffer.get(array)
-        Chunk.fromArray(array)
-      }
-      .refineToOrDie[BufferUnderflowException]
+      val array = Array.ofDim[Char](math.min(maxLength, charBuffer.remaining()))
+      charBuffer.get(array)
+      Chunk.fromArray(array)
+    }.refineToOrDie[BufferUnderflowException]
 
   def getString: IO[Nothing, String] = IO.effectTotal(charBuffer.toString())
 
@@ -45,10 +44,9 @@ final class CharBuffer(charBuffer: JCharBuffer) extends Buffer[Char](charBuffer)
 
   override def putChunk(chunk: Chunk[Char]): IO[Exception, Unit] =
     IO.effect {
-        val array = chunk.toArray
-        charBuffer.put(array)
-      }
-      .unit
+      val array = chunk.toArray
+      charBuffer.put(array)
+    }.unit
       .refineToOrDie[Exception]
 
   override def asReadOnlyBuffer: IO[Nothing, CharBuffer] =
