@@ -6,7 +6,7 @@ import java.net.URI
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.{ file => jf }
 
-import zio.blocking.{ Blocking, effectBlocking, effectBlockingIO }
+import zio.blocking.{ Blocking, effectBlockingIO }
 import zio.{ IO, UIO, ZIO, ZManaged }
 
 import scala.jdk.CollectionConverters._
@@ -38,7 +38,7 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) exten
   def getUserPrincipalLookupService: UserPrincipalLookupService = javaFileSystem.getUserPrincipalLookupService
 
   def newWatchService: ZManaged[Blocking, IOException, WatchService] =
-    effectBlocking(WatchService.fromJava(javaFileSystem.newWatchService())).refineToOrDie[IOException].toNioManaged
+    effectBlockingIO(WatchService.fromJava(javaFileSystem.newWatchService())).toNioManaged
 }
 
 object FileSystem {
