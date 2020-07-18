@@ -29,11 +29,10 @@ final class FloatBuffer(floatBuffer: JFloatBuffer) extends Buffer[Float](floatBu
 
   override def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[Float]] =
     IO.effect {
-        val array = Array.ofDim[Float](math.min(maxLength, floatBuffer.remaining()))
-        floatBuffer.get(array)
-        Chunk.fromArray(array)
-      }
-      .refineToOrDie[BufferUnderflowException]
+      val array = Array.ofDim[Float](math.min(maxLength, floatBuffer.remaining()))
+      floatBuffer.get(array)
+      Chunk.fromArray(array)
+    }.refineToOrDie[BufferUnderflowException]
 
   override def put(element: Float): IO[Exception, Unit] =
     IO.effect(floatBuffer.put(element)).unit.refineToOrDie[Exception]
@@ -43,10 +42,9 @@ final class FloatBuffer(floatBuffer: JFloatBuffer) extends Buffer[Float](floatBu
 
   override def putChunk(chunk: Chunk[Float]): IO[Exception, Unit] =
     IO.effect {
-        val array = chunk.toArray
-        floatBuffer.put(array)
-      }
-      .unit
+      val array = chunk.toArray
+      floatBuffer.put(array)
+    }.unit
       .refineToOrDie[Exception]
 
   override def asReadOnlyBuffer: IO[Nothing, FloatBuffer] =

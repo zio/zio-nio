@@ -7,9 +7,10 @@ import zio.{ IO, UIO }
 
 final class FileLock private[channels] (javaLock: JFileLock) {
 
-  def acquiredBy: Channel = new Channel {
-    override protected val channel = javaLock.acquiredBy
-  }
+  def acquiredBy: Channel =
+    new Channel {
+      override protected val channel = javaLock.acquiredBy
+    }
 
   def position: Long = javaLock.position
 

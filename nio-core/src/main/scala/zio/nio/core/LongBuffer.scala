@@ -29,11 +29,10 @@ final class LongBuffer(val longBuffer: JLongBuffer) extends Buffer[Long](longBuf
 
   override def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[Long]] =
     IO.effect {
-        val array = Array.ofDim[Long](math.min(maxLength, longBuffer.remaining()))
-        longBuffer.get(array)
-        Chunk.fromArray(array)
-      }
-      .refineToOrDie[BufferUnderflowException]
+      val array = Array.ofDim[Long](math.min(maxLength, longBuffer.remaining()))
+      longBuffer.get(array)
+      Chunk.fromArray(array)
+    }.refineToOrDie[BufferUnderflowException]
 
   override def put(element: Long): IO[Exception, Unit] =
     IO.effect(longBuffer.put(element)).unit.refineToOrDie[Exception]
@@ -43,10 +42,9 @@ final class LongBuffer(val longBuffer: JLongBuffer) extends Buffer[Long](longBuf
 
   override def putChunk(chunk: Chunk[Long]): IO[Exception, Unit] =
     IO.effect {
-        val array = chunk.toArray
-        longBuffer.put(array)
-      }
-      .unit
+      val array = chunk.toArray
+      longBuffer.put(array)
+    }.unit
       .refineToOrDie[Exception]
 
   override def asReadOnlyBuffer: IO[Nothing, LongBuffer] =

@@ -42,7 +42,7 @@ object Files {
 
   def newDirectoryStream(dir: Path, filter: Path => Boolean): ZStream[Blocking, Exception, Path] = {
     val javaFilter: DirectoryStream.Filter[_ >: JPath] = javaPath => filter(Path.fromJava(javaPath))
-    val managed = ZManaged.fromAutoCloseable(
+    val managed                                        = ZManaged.fromAutoCloseable(
       effectBlocking(JFiles.newDirectoryStream(dir.javaPath, javaFilter)).refineToOrDie[Exception]
     )
     ZStream.managed(managed).mapM(dirStream => UIO(dirStream.iterator())).flatMap(fromJavaIterator).map(Path.fromJava)
@@ -127,7 +127,8 @@ object Files {
   def useFileAttributeView[A <: FileAttributeView: ClassTag, B](path: Path, linkOptions: LinkOption*)(
     f: A => ZIO[Blocking, Exception, B]
   ): ZIO[Blocking, Exception, B] = {
-    val viewClass = classTag[A].runtimeClass.asInstanceOf[Class[A]] // safe? because we know A is a subtype of FileAttributeView
+    val viewClass =
+      classTag[A].runtimeClass.asInstanceOf[Class[A]] // safe? because we know A is a subtype of FileAttributeView
     effectBlocking(JFiles.getFileAttributeView[A](path.javaPath, viewClass, linkOptions: _*)).orDie
       .flatMap(f)
   }
@@ -148,11 +149,12 @@ object Files {
 
   object Attribute {
 
-    def fromJava(javaAttribute: String): Option[Attribute] = javaAttribute.split(':').toList match {
-      case name :: Nil         => Some(Attribute(name))
-      case view :: name :: Nil => Some(Attribute(name, view))
-      case _                   => None
-    }
+    def fromJava(javaAttribute: String): Option[Attribute] =
+      javaAttribute.split(':').toList match {
+        case name :: Nil         => Some(Attribute(name))
+        case view :: name :: Nil => Some(Attribute(name, view))
+        case _                   => None
+      }
   }
 
   def setAttribute(
@@ -169,10 +171,11 @@ object Files {
 
   sealed trait AttributeNames {
 
-    def toJava: String = this match {
-      case AttributeNames.All         => "*"
-      case AttributeNames.List(names) => names.mkString(",")
-    }
+    def toJava: String =
+      this match {
+        case AttributeNames.All         => "*"
+        case AttributeNames.List(names) => names.mkString(",")
+      }
   }
 
   object AttributeNames {
@@ -180,10 +183,11 @@ object Files {
 
     case object All extends AttributeNames
 
-    def fromJava(javaNames: String): AttributeNames = javaNames.trim match {
-      case "*"  => All
-      case list => List(list.split(',').toList)
-    }
+    def fromJava(javaNames: String): AttributeNames =
+      javaNames.trim match {
+        case "*"  => All
+        case list => List(list.split(',').toList)
+      }
   }
 
   final case class Attributes(attributeNames: AttributeNames, viewName: String = "base") {
@@ -192,11 +196,12 @@ object Files {
 
   object Attributes {
 
-    def fromJava(javaAttributes: String): Option[Attributes] = javaAttributes.split(':').toList match {
-      case names :: Nil         => Some(Attributes(AttributeNames.fromJava(names)))
-      case view :: names :: Nil => Some(Attributes(AttributeNames.fromJava(names), view))
-      case _                    => None
-    }
+    def fromJava(javaAttributes: String): Option[Attributes] =
+      javaAttributes.split(':').toList match {
+        case names :: Nil         => Some(Attributes(AttributeNames.fromJava(names)))
+        case view :: names :: Nil => Some(Attributes(AttributeNames.fromJava(names), view))
+        case _                    => None
+      }
   }
 
   def readAttributes(

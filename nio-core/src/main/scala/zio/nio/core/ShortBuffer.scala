@@ -29,11 +29,10 @@ final class ShortBuffer(val shortBuffer: JShortBuffer) extends Buffer[Short](sho
 
   override def getChunk(maxLength: Int): IO[BufferUnderflowException, Chunk[Short]] =
     IO.effect {
-        val array = Array.ofDim[Short](math.min(maxLength, shortBuffer.remaining()))
-        shortBuffer.get(array)
-        Chunk.fromArray(array)
-      }
-      .refineToOrDie[BufferUnderflowException]
+      val array = Array.ofDim[Short](math.min(maxLength, shortBuffer.remaining()))
+      shortBuffer.get(array)
+      Chunk.fromArray(array)
+    }.refineToOrDie[BufferUnderflowException]
 
   override def put(element: Short): IO[Exception, Unit] =
     IO.effect(shortBuffer.put(element)).unit.refineToOrDie[Exception]
@@ -43,10 +42,9 @@ final class ShortBuffer(val shortBuffer: JShortBuffer) extends Buffer[Short](sho
 
   override def putChunk(chunk: Chunk[Short]): IO[Exception, Unit] =
     IO.effect {
-        val array = chunk.toArray
-        shortBuffer.put(array)
-      }
-      .unit
+      val array = chunk.toArray
+      shortBuffer.put(array)
+    }.unit
       .refineToOrDie[Exception]
 
   override def asReadOnlyBuffer: IO[Nothing, ShortBuffer] =

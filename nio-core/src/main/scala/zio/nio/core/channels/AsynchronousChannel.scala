@@ -32,11 +32,10 @@ class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
       b <- Buffer.byte(capacity)
       l <- readBuffer(b)
       a <- b.array
-      r <- if (l == -1) {
-            ZIO.fail(new IOException("Connection reset by peer"))
-          } else {
-            ZIO.succeed(Chunk.fromArray(a).take(l))
-          }
+      r <- if (l == -1)
+             ZIO.fail(new IOException("Connection reset by peer"))
+           else
+             ZIO.succeed(Chunk.fromArray(a).take(l))
     } yield r
 
   /**
@@ -101,9 +100,8 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    */
   final def localAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
-        Option(channel.getLocalAddress).map(SocketAddress(_))
-      )
-      .refineToOrDie[Exception]
+      Option(channel.getLocalAddress).map(SocketAddress(_))
+    ).refineToOrDie[Exception]
 
   /**
    * Closes this channel.
@@ -129,12 +127,10 @@ object AsynchronousServerSocketChannel {
     channelGroup: AsynchronousChannelGroup
   ): IO[Exception, AsynchronousServerSocketChannel] =
     IO.effect(
-        JAsynchronousServerSocketChannel.open(channelGroup.channelGroup)
-      )
-      .refineOrDie {
-        case e: Exception => e
-      }
-      .map(new AsynchronousServerSocketChannel(_))
+      JAsynchronousServerSocketChannel.open(channelGroup.channelGroup)
+    ).refineOrDie {
+      case e: Exception => e
+    }.map(new AsynchronousServerSocketChannel(_))
 }
 
 class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
@@ -154,17 +150,15 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
 
   final def remoteAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
-        Option(channel.getRemoteAddress)
-          .map(SocketAddress(_))
-      )
-      .refineToOrDie[Exception]
+      Option(channel.getRemoteAddress)
+        .map(SocketAddress(_))
+    ).refineToOrDie[Exception]
 
   final def localAddress: IO[Exception, Option[SocketAddress]] =
     IO.effect(
-        Option(channel.getLocalAddress)
-          .map(SocketAddress(_))
-      )
-      .refineToOrDie[Exception]
+      Option(channel.getLocalAddress)
+        .map(SocketAddress(_))
+    ).refineToOrDie[Exception]
 
   final def connect(socketAddress: SocketAddress): IO[Exception, Unit] =
     effectAsyncWithCompletionHandler[JVoid](h => channel.connect(socketAddress.jSocketAddress, (), h)).unit
@@ -186,11 +180,10 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
       b <- Buffer.byte(capacity)
       l <- readBuffer(b, timeout)
       a <- b.array
-      r <- if (l == -1) {
-            ZIO.fail(new IOException("Connection reset by peer"))
-          } else {
-            ZIO.succeed(Chunk.fromArray(a).take(l))
-          }
+      r <- if (l == -1)
+             ZIO.fail(new IOException("Connection reset by peer"))
+           else
+             ZIO.succeed(Chunk.fromArray(a).take(l))
     } yield r
 
   final private[nio] def readBuffer[A](
@@ -221,11 +214,10 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
       bs <- IO.collectAll(capacities.map(Buffer.byte))
       l  <- readBuffer(bs, offset, length, timeout)
       as <- IO.collectAll(bs.map(_.array))
-      r <- if (l == -1) {
-            ZIO.fail(new IOException("Connection reset by peer"))
-          } else {
-            ZIO.succeed(as.map(Chunk.fromArray))
-          }
+      r  <- if (l == -1)
+              ZIO.fail(new IOException("Connection reset by peer"))
+            else
+              ZIO.succeed(as.map(Chunk.fromArray))
     } yield r
 }
 
@@ -238,12 +230,10 @@ object AsynchronousSocketChannel {
 
   def apply(channelGroup: AsynchronousChannelGroup): IO[Exception, AsynchronousSocketChannel] =
     IO.effect(
-        JAsynchronousSocketChannel.open(channelGroup.channelGroup)
-      )
-      .refineOrDie {
-        case e: Exception => e
-      }
-      .map(new AsynchronousSocketChannel(_))
+      JAsynchronousSocketChannel.open(channelGroup.channelGroup)
+    ).refineOrDie {
+      case e: Exception => e
+    }.map(new AsynchronousSocketChannel(_))
 
   def apply(asyncSocketChannel: JAsynchronousSocketChannel): AsynchronousSocketChannel =
     new AsynchronousSocketChannel(asyncSocketChannel)

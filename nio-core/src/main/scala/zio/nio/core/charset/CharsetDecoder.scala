@@ -31,21 +31,21 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
       }
     }
 
-  def autoDetect: UIO[AutoDetect] = UIO.effectTotal {
-    if (javaDecoder.isAutoDetecting) {
-      if (javaDecoder.isCharsetDetected) {
-        AutoDetect.Detected(Charset.fromJava(javaDecoder.detectedCharset()))
-      } else {
-        AutoDetect.NotDetected
-      }
-    } else {
-      AutoDetect.NotSupported
+  def autoDetect: UIO[AutoDetect] =
+    UIO.effectTotal {
+      if (javaDecoder.isAutoDetecting)
+        if (javaDecoder.isCharsetDetected)
+          AutoDetect.Detected(Charset.fromJava(javaDecoder.detectedCharset()))
+        else
+          AutoDetect.NotDetected
+      else
+        AutoDetect.NotSupported
     }
-  }
 
-  def flush(out: CharBuffer): UIO[CoderResult] = out.withJavaBuffer { jOut =>
-    UIO.effectTotal(CoderResult.fromJava(javaDecoder.flush(jOut)))
-  }
+  def flush(out: CharBuffer): UIO[CoderResult] =
+    out.withJavaBuffer { jOut =>
+      UIO.effectTotal(CoderResult.fromJava(javaDecoder.flush(jOut)))
+    }
 
   def malformedInputAction: UIO[j.CodingErrorAction] =
     UIO.effectTotal(javaDecoder.malformedInputAction())
@@ -81,39 +81,39 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
         charBuffer <- Buffer.char((bufSize.toFloat * this.averageCharsPerByte).round).toManaged_.orDie
       } yield {
 
-        def handleCoderResult(coderResult: CoderResult) = coderResult match {
-          case CoderResult.Underflow | CoderResult.Overflow =>
-            byteBuffer.compact.orDie *>
-              charBuffer.flip *>
-              charBuffer.getChunk().orDie <*
-              charBuffer.clear
-          case CoderResult.Malformed(length) =>
-            IO.fail(new MalformedInputException(length))
-          case CoderResult.Unmappable(length) =>
-            IO.fail(new UnmappableCharacterException(length))
-        }
+        def handleCoderResult(coderResult: CoderResult) =
+          coderResult match {
+            case CoderResult.Underflow | CoderResult.Overflow =>
+              byteBuffer.compact.orDie *>
+                charBuffer.flip *>
+                charBuffer.getChunk().orDie <*
+                charBuffer.clear
+            case CoderResult.Malformed(length)                =>
+              IO.fail(new MalformedInputException(length))
+            case CoderResult.Unmappable(length)               =>
+              IO.fail(new UnmappableCharacterException(length))
+          }
 
         (_: Option[Chunk[Byte]])
           .map { inChunk =>
             def decodeChunk(inBytes: Chunk[Byte]): IO[j.CharacterCodingException, Chunk[Char]] =
               for {
-                bufRemaining <- byteBuffer.remaining
+                bufRemaining                 <- byteBuffer.remaining
                 (decodeBytes, remainingBytes) = {
-                  if (inBytes.length > bufRemaining) {
+                  if (inBytes.length > bufRemaining)
                     inBytes.splitAt(bufRemaining)
-                  } else {
+                  else
                     (inBytes, Chunk.empty)
-                  }
                 }
-                _ <- byteBuffer.putChunk(decodeBytes).orDie
-                _ <- byteBuffer.flip
-                result <- decode(
-                           byteBuffer,
-                           charBuffer,
-                           endOfInput = false
-                         )
-                decodedChars   <- handleCoderResult(result)
-                remainderChars <- if (remainingBytes.isEmpty) IO.succeed(Chunk.empty) else decodeChunk(remainingBytes)
+                _                            <- byteBuffer.putChunk(decodeBytes).orDie
+                _                            <- byteBuffer.flip
+                result                       <- decode(
+                                                  byteBuffer,
+                                                  charBuffer,
+                                                  endOfInput = false
+                                                )
+                decodedChars                 <- handleCoderResult(result)
+                remainderChars               <- if (remainingBytes.isEmpty) IO.succeed(Chunk.empty) else decodeChunk(remainingBytes)
               } yield decodedChars ++ remainderChars
 
             decodeChunk(inChunk)
@@ -121,11 +121,11 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
           .getOrElse {
             def endOfInput: IO[j.CharacterCodingException, Chunk[Char]] =
               for {
-                result <- decode(
-                           byteBuffer,
-                           charBuffer,
-                           endOfInput = true
-                         )
+                result         <- decode(
+                                    byteBuffer,
+                                    charBuffer,
+                                    endOfInput = true
+                                  )
                 decodedChars   <- handleCoderResult(result)
                 remainderChars <- if (result == CoderResult.Overflow) endOfInput else IO.succeed(Chunk.empty)
               } yield decodedChars ++ remainderChars

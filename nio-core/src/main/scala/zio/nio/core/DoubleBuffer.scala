@@ -31,11 +31,10 @@ final class DoubleBuffer(doubleBuffer: JDoubleBuffer) extends Buffer[Double](dou
     maxLength: Int = Int.MaxValue
   ): IO[BufferUnderflowException, Chunk[Double]] =
     IO.effect {
-        val array = Array.ofDim[Double](math.min(maxLength, doubleBuffer.remaining()))
-        doubleBuffer.get(array)
-        Chunk.fromArray(array)
-      }
-      .refineToOrDie[BufferUnderflowException]
+      val array = Array.ofDim[Double](math.min(maxLength, doubleBuffer.remaining()))
+      doubleBuffer.get(array)
+      Chunk.fromArray(array)
+    }.refineToOrDie[BufferUnderflowException]
 
   override def put(element: Double): IO[Exception, Unit] =
     IO.effect(doubleBuffer.put(element)).unit.refineToOrDie[Exception]
@@ -45,10 +44,9 @@ final class DoubleBuffer(doubleBuffer: JDoubleBuffer) extends Buffer[Double](dou
 
   override def putChunk(chunk: Chunk[Double]): IO[Exception, Unit] =
     IO.effect {
-        val array = chunk.toArray
-        doubleBuffer.put(array)
-      }
-      .unit
+      val array = chunk.toArray
+      doubleBuffer.put(array)
+    }.unit
       .refineToOrDie[Exception]
 
   override def asReadOnlyBuffer: IO[Nothing, DoubleBuffer] =

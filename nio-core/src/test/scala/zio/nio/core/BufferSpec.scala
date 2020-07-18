@@ -20,57 +20,58 @@ import zio.test.environment.TestEnvironment
 
 object BufferSpec extends BaseSpec {
 
-  def spec = suite("BufferSpec")(
-    commonBufferTests(
-      "ByteBuffer",
-      Buffer.byte,
-      Buffer.byte,
-      JByteBuffer.allocate,
-      _.toByte
-    ),
-    commonBufferTests(
-      "CharBuffer",
-      Buffer.char,
-      Buffer.char,
-      JCharBuffer.allocate,
-      _.toChar
-    ),
-    commonBufferTests(
-      "DoubleBuffer",
-      Buffer.double,
-      Buffer.double,
-      JDoubleBuffer.allocate,
-      _.toDouble
-    ),
-    commonBufferTests(
-      "FloatBuffer",
-      Buffer.float,
-      Buffer.float,
-      JFloatBuffer.allocate,
-      _.toFloat
-    ),
-    commonBufferTests(
-      "IntBuffer",
-      Buffer.int,
-      Buffer.int,
-      JIntBuffer.allocate,
-      identity
-    ),
-    commonBufferTests(
-      "LongBuffer",
-      Buffer.long,
-      Buffer.long,
-      JLongBuffer.allocate,
-      _.toLong
-    ),
-    commonBufferTests(
-      "ShortBuffer",
-      Buffer.short,
-      Buffer.short,
-      JShortBuffer.allocate,
-      _.toShort
+  def spec =
+    suite("BufferSpec")(
+      commonBufferTests(
+        "ByteBuffer",
+        Buffer.byte,
+        Buffer.byte,
+        JByteBuffer.allocate,
+        _.toByte
+      ),
+      commonBufferTests(
+        "CharBuffer",
+        Buffer.char,
+        Buffer.char,
+        JCharBuffer.allocate,
+        _.toChar
+      ),
+      commonBufferTests(
+        "DoubleBuffer",
+        Buffer.double,
+        Buffer.double,
+        JDoubleBuffer.allocate,
+        _.toDouble
+      ),
+      commonBufferTests(
+        "FloatBuffer",
+        Buffer.float,
+        Buffer.float,
+        JFloatBuffer.allocate,
+        _.toFloat
+      ),
+      commonBufferTests(
+        "IntBuffer",
+        Buffer.int,
+        Buffer.int,
+        JIntBuffer.allocate,
+        identity
+      ),
+      commonBufferTests(
+        "LongBuffer",
+        Buffer.long,
+        Buffer.long,
+        JLongBuffer.allocate,
+        _.toLong
+      ),
+      commonBufferTests(
+        "ShortBuffer",
+        Buffer.short,
+        Buffer.short,
+        JShortBuffer.allocate,
+        _.toShort
+      )
     )
-  )
 
   private def commonBufferTests[T, A: ClassTag, B <: JBuffer, C <: Buffer[A]](
     suiteName: String,
@@ -99,13 +100,13 @@ object BufferSpec extends BaseSpec {
       testM("capacity") {
         for {
           allocated <- allocate(initialCapacity)
-          capacity  = allocated.capacity
+          capacity   = allocated.capacity
         } yield assert(capacity)(equalTo(jAllocate(initialCapacity).capacity))
       },
       testM("capacity initialized") {
         for {
           allocated <- allocate(initialCapacity)
-          capacity  = allocated.capacity
+          capacity   = allocated.capacity
         } yield assert(capacity)(equalTo(initialCapacity))
       },
       testM("position is 0") {
@@ -130,7 +131,7 @@ object BufferSpec extends BaseSpec {
       testM("limit set") {
         for {
           buffer   <- Buffer.byte(initialCapacity)
-          limit    = 3
+          limit     = 3
           _        <- buffer.limit(limit)
           newLimit <- buffer.limit
         } yield assert(newLimit)(equalTo(limit))
@@ -138,7 +139,7 @@ object BufferSpec extends BaseSpec {
       testM("position reset") {
         for {
           buffer   <- Buffer.byte(initialCapacity)
-          newLimit = 3
+          newLimit  = 3
           _        <- buffer.position(newLimit + 1)
           _        <- buffer.limit(newLimit)
           position <- buffer.position

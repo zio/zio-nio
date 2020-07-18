@@ -34,9 +34,10 @@ trait Watchable {
 
 object Watchable {
 
-  def apply(jWatchable: JWatchable): Watchable = new Watchable {
-    override protected val javaWatchable = jWatchable
-  }
+  def apply(jWatchable: JWatchable): Watchable =
+    new Watchable {
+      override protected val javaWatchable = jWatchable
+    }
 }
 
 final class WatchKey private[file] (private val javaKey: JWatchKey) {
@@ -48,10 +49,11 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
 
   def cancel: UIO[Unit] = UIO.effectTotal(javaKey.cancel())
 
-  def watchable: UIO[Watchable] = UIO.effectTotal(javaKey.watchable()).map {
-    case javaPath: JPath => Path.fromJava(javaPath)
-    case javaWatchable   => Watchable(javaWatchable)
-  }
+  def watchable: UIO[Watchable] =
+    UIO.effectTotal(javaKey.watchable()).map {
+      case javaPath: JPath => Path.fromJava(javaPath)
+      case javaWatchable   => Watchable(javaWatchable)
+    }
 }
 
 final class WatchService private (private[file] val javaWatchService: JWatchService) {

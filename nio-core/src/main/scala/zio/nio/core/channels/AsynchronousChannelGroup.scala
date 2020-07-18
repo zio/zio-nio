@@ -15,28 +15,25 @@ object AsynchronousChannelGroup {
 
   def apply(executor: ExecutionContextExecutorService, initialSize: Int): IO[Exception, AsynchronousChannelGroup] =
     IO.effect(
-        new AsynchronousChannelGroup(
-          JAsynchronousChannelGroup.withCachedThreadPool(executor, initialSize)
-        )
+      new AsynchronousChannelGroup(
+        JAsynchronousChannelGroup.withCachedThreadPool(executor, initialSize)
       )
-      .refineToOrDie[Exception]
+    ).refineToOrDie[Exception]
 
   def apply(
     threadsNo: Int,
     threadsFactory: JThreadFactory
   ): IO[Exception, AsynchronousChannelGroup] =
     IO.effect(
-        new AsynchronousChannelGroup(
-          JAsynchronousChannelGroup.withFixedThreadPool(threadsNo, threadsFactory)
-        )
+      new AsynchronousChannelGroup(
+        JAsynchronousChannelGroup.withFixedThreadPool(threadsNo, threadsFactory)
       )
-      .refineToOrDie[Exception]
+    ).refineToOrDie[Exception]
 
   def apply(executor: ExecutionContextExecutorService): IO[Exception, AsynchronousChannelGroup] =
     IO.effect(
-        new AsynchronousChannelGroup(JAsynchronousChannelGroup.withThreadPool(executor))
-      )
-      .refineToOrDie[Exception]
+      new AsynchronousChannelGroup(JAsynchronousChannelGroup.withThreadPool(executor))
+    ).refineToOrDie[Exception]
 }
 
 class AsynchronousChannelGroup(val channelGroup: JAsynchronousChannelGroup) {
