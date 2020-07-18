@@ -46,4 +46,5 @@ package object core {
     def toNioManaged: ZManaged[R, E, A] = ZManaged.makeInterruptible(acquire)(_.close.ignore)
 
   }
+
 }
