@@ -3,13 +3,13 @@
     "Essentials": [
       "essentials/essentials_index",
       "essentials/essentials_files",
-      "essentials/essentials_sockets"
+      "essentials/essentials_sockets",
+      "essentials/essentials_charsets"
     ]
   },
   "usecases-sidebar": {
     "Use Cases": [
-      "usecases/usecases_index",
-      "usecases/usecases_client_server"
+      "usecases/usecases_index"
     ]
   }
 }
