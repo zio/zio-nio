@@ -42,7 +42,7 @@ object Files {
 
   def newDirectoryStream(dir: Path, filter: Path => Boolean): ZStream[Blocking, IOException, Path] = {
     val javaFilter: DirectoryStream.Filter[_ >: JPath] = javaPath => filter(Path.fromJava(javaPath))
-    val managed = ZManaged.fromAutoCloseable(
+    val managed                                        = ZManaged.fromAutoCloseable(
       effectBlocking(JFiles.newDirectoryStream(dir.javaPath, javaFilter)).refineToOrDie[IOException]
     )
     ZStream.managed(managed).mapM(dirStream => UIO(dirStream.iterator())).flatMap(fromJavaIterator).map(Path.fromJava)

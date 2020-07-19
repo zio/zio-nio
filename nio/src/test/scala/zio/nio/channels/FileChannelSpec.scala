@@ -27,7 +27,7 @@ object FileChannelSpec extends BaseSpec {
               _      <- channel.read(buffer, 0)
               _      <- buffer.flip
               array  <- buffer.array
-              text   = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
+              text    = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
             } yield assert(text)(equalTo("Hello World"))
           }
       },

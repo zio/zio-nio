@@ -92,7 +92,6 @@ import scala.reflect.ClassTag
  * {{{
  *   b.flip *> b.position(23) *> b.limit(42)
  * }}}
- *
  */
 @specialized // See if Specialized will work on return values, e.g. `get`
 abstract class Buffer[A: ClassTag] private[nio] (buffer: JBuffer) {
@@ -132,9 +131,9 @@ abstract class Buffer[A: ClassTag] private[nio] (buffer: JBuffer) {
    */
   final def movePosition(delta: Int): UIO[Int] =
     for {
-      pos    <- position
+      pos   <- position
       newPos = pos + delta
-      _      <- position(newPos)
+      _     <- position(newPos)
     } yield newPos
 
   /**
@@ -160,9 +159,9 @@ abstract class Buffer[A: ClassTag] private[nio] (buffer: JBuffer) {
    */
   final def moveLimit(delta: Int): UIO[Int] =
     for {
-      pos    <- limit
+      pos   <- limit
       newPos = pos + delta
-      _      <- limit(newPos)
+      _     <- limit(newPos)
     } yield newPos
 
   /**
@@ -377,9 +376,9 @@ abstract class Buffer[A: ClassTag] private[nio] (buffer: JBuffer) {
    */
   final def putChunk(chunk: Chunk[A]): UIO[Chunk[A]] =
     for {
-      r                          <- remaining
+      r                         <- remaining
       (putChunk, remainderChunk) = chunk.splitAt(r)
-      _                          <- this.putChunkAll(putChunk)
+      _                         <- this.putChunkAll(putChunk)
     } yield remainderChunk
 
   /**
@@ -422,7 +421,7 @@ object Buffer {
    * Dies with `IllegalArgumentException` if `capacity` is negative.
    *
    * @param capacity The number of bytes to allocate.
-   **/
+   */
   def byteDirect(capacity: Int): UIO[ByteBuffer] =
     UIO.effectTotal(byteFromJava(JByteBuffer.allocateDirect(capacity)))
 

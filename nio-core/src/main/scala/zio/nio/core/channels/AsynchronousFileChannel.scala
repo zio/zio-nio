@@ -84,9 +84,8 @@ object AsynchronousFileChannel {
 
   def open(file: Path, options: OpenOption*): IO[IOException, AsynchronousFileChannel] =
     IO.effect(
-        new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*))
-      )
-      .refineToOrDie[IOException]
+      new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*))
+    ).refineToOrDie[IOException]
 
   def open(
     file: Path,
@@ -95,11 +94,10 @@ object AsynchronousFileChannel {
     attrs: Set[FileAttribute[_]]
   ): IO[IOException, AsynchronousFileChannel] =
     IO.effect(
-        new AsynchronousFileChannel(
-          JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
-        )
+      new AsynchronousFileChannel(
+        JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
       )
-      .refineToOrDie[IOException]
+    ).refineToOrDie[IOException]
 
   def fromJava(javaAsynchronousFileChannel: JAsynchronousFileChannel): AsynchronousFileChannel =
     new AsynchronousFileChannel(javaAsynchronousFileChannel)

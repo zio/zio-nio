@@ -85,7 +85,7 @@ object CharsetSpec extends DefaultRunnableSpec {
       val charStream = Stream.fromIterable(arabic)
       for {
         byteChunks <- charStream.transduce(charset.newEncoder.transducer()).runCollect
-        byteStream = Stream.fromIterable(byteChunks)
+        byteStream  = Stream.fromIterable(byteChunks)
         chars      <- byteStream.transduce(charset.newDecoder.transducer()).runCollect
       } yield assert(chars)(equalTo(arabicChunk))
     }

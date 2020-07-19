@@ -40,52 +40,52 @@ object SelectorSpec extends BaseSpec {
       for {
         _            <- selector.select
         selectedKeys <- selector.selectedKeys
-        _ <- IO.foreach_(selectedKeys) { key =>
-              key.matchChannel { readyOps =>
-                {
-                  case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
-                    for {
-                      clientOpt <- channel.accept
-                      client    = clientOpt.get
-                      _         <- client.configureBlocking(false)
-                      _         <- client.register(selector, Operation.Read)
-                    } yield ()
-                  case client: SocketChannel if readyOps(Operation.Read) =>
-                    for {
-                      _     <- client.read(buffer)
-                      array <- buffer.array
-                      text  = byteArrayToString(array)
-                      _     <- buffer.flip
-                      _     <- client.write(buffer)
-                      _     <- buffer.clear
-                      _     <- client.close
-                    } yield ()
-                }
-              } *> selector.removeKey(key)
-            }
+        _            <- IO.foreach_(selectedKeys) { key =>
+                          key.matchChannel { readyOps =>
+                            {
+                              case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
+                                for {
+                                  clientOpt <- channel.accept
+                                  client     = clientOpt.get
+                                  _         <- client.configureBlocking(false)
+                                  _         <- client.register(selector, Operation.Read)
+                                } yield ()
+                              case client: SocketChannel if readyOps(Operation.Read)          =>
+                                for {
+                                  _     <- client.read(buffer)
+                                  array <- buffer.array
+                                  text   = byteArrayToString(array)
+                                  _     <- buffer.flip
+                                  _     <- client.write(buffer)
+                                  _     <- buffer.clear
+                                  _     <- client.close
+                                } yield ()
+                            }
+                          } *> selector.removeKey(key)
+                        }
       } yield ()
 
     for {
       address <- SocketAddress.inetSocketAddress(0)
-      _ <- Managed.make(Selector.make)(_.close.orDie).use { selector =>
-            Managed.make(ServerSocketChannel.open)(_.close.orDie).use { channel =>
-              for {
-                _      <- channel.bind(address)
-                _      <- channel.configureBlocking(false)
-                _      <- channel.register(selector, Operation.Accept)
-                buffer <- Buffer.byte(256)
-                addr   <- channel.localAddress
-                _      <- started.succeed(addr)
+      _       <- Managed.make(Selector.make)(_.close.orDie).use { selector =>
+                   Managed.make(ServerSocketChannel.open)(_.close.orDie).use { channel =>
+                     for {
+                       _      <- channel.bind(address)
+                       _      <- channel.configureBlocking(false)
+                       _      <- channel.register(selector, Operation.Accept)
+                       buffer <- Buffer.byte(256)
+                       addr   <- channel.localAddress
+                       _      <- started.succeed(addr)
 
-                /*
-                 *  we need to run the server loop twice:
-                 *  1. to accept the client request
-                 *  2. to read from the client channel
-                 */
-                _ <- serverLoop(selector, buffer).repeat(Schedule.once)
-              } yield ()
-            }
-          }
+                       /*
+                  *  we need to run the server loop twice:
+                  *  1. to accept the client request
+                  *  2. to read from the client channel
+                  */
+                       _ <- serverLoop(selector, buffer).repeat(Schedule.once)
+                     } yield ()
+                   }
+                 }
     } yield ()
   }
 
@@ -93,16 +93,16 @@ object SelectorSpec extends BaseSpec {
     val bytes = Chunk.fromArray("Hello world".getBytes)
     for {
       buffer <- Buffer.byte(bytes)
-      text <- Managed.make(SocketChannel.open(address))(_.close.orDie).use { client =>
-               for {
-                 _     <- client.write(buffer)
-                 _     <- buffer.clear
-                 _     <- client.read(buffer)
-                 array <- buffer.array
-                 text  = byteArrayToString(array)
-                 _     <- buffer.clear
-               } yield text
-             }
+      text   <- Managed.make(SocketChannel.open(address))(_.close.orDie).use { client =>
+                  for {
+                    _     <- client.write(buffer)
+                    _     <- buffer.clear
+                    _     <- client.read(buffer)
+                    array <- buffer.array
+                    text   = byteArrayToString(array)
+                    _     <- buffer.clear
+                  } yield text
+                }
     } yield text
   }
 }

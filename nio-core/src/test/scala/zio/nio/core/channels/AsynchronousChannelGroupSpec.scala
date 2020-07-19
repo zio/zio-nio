@@ -105,7 +105,7 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
 
         val jChannelGroup: JAsynchronousChannelGroup =
           JAsynchronousChannelGroup.withThreadPool(jExecutor)
-        val testObj = new AsynchronousChannelGroup(jChannelGroup)
+        val testObj                                  = new AsynchronousChannelGroup(jChannelGroup)
 
         def cleanFixture(): Unit = {
           jChannelGroup.shutdown()

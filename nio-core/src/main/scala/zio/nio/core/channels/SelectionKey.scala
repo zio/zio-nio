@@ -31,17 +31,18 @@ object SelectionKey {
 final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
   import SelectionKey._
 
-  def channel: SelectableChannel = selectionKey.channel() match {
-    case c: jc.SocketChannel       => new SocketChannel(c)
-    case c: jc.ServerSocketChannel => new ServerSocketChannel(c)
-    case c: jc.DatagramChannel     => new DatagramChannel(c)
-    case c: jc.Pipe.SinkChannel    => new channels.Pipe.SinkChannel(c)
-    case c: jc.Pipe.SourceChannel  => new core.channels.Pipe.SourceChannel(c)
-    case other =>
-      new SelectableChannel {
-        override protected val channel: nio.channels.SelectableChannel = other
-      }
-  }
+  def channel: SelectableChannel =
+    selectionKey.channel() match {
+      case c: jc.SocketChannel       => new SocketChannel(c)
+      case c: jc.ServerSocketChannel => new ServerSocketChannel(c)
+      case c: jc.DatagramChannel     => new DatagramChannel(c)
+      case c: jc.Pipe.SinkChannel    => new channels.Pipe.SinkChannel(c)
+      case c: jc.Pipe.SourceChannel  => new core.channels.Pipe.SourceChannel(c)
+      case other                     =>
+        new SelectableChannel {
+          override protected val channel: nio.channels.SelectableChannel = other
+        }
+    }
 
   /**
    * Convenience method for processing keys from the selected key set.
@@ -105,16 +106,16 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
 
   def interested(op: Operation): UIO[Set[Operation]] =
     for {
-      current     <- interestOps
+      current    <- interestOps
       newInterest = current + op
-      _           <- interestOps(newInterest)
+      _          <- interestOps(newInterest)
     } yield newInterest
 
   def notInterested(op: Operation): UIO[Set[Operation]] =
     for {
-      current     <- interestOps
+      current    <- interestOps
       newInterest = current - op
-      _           <- interestOps(newInterest)
+      _          <- interestOps(newInterest)
     } yield newInterest
 
   final def readyOps: UIO[Set[Operation]] =
