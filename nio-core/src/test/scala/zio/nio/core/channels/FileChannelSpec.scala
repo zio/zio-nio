@@ -24,7 +24,7 @@ object FileChannelSpec extends BaseSpec {
           _       <- channel.read(buffer, 0)
           _       <- buffer.flip
           array   <- buffer.array
-          text    = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
+          text     = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
         } yield assert(text)(equalTo("Hello World"))
       },
       testM("asynchronous file chunk read") {
@@ -35,7 +35,7 @@ object FileChannelSpec extends BaseSpec {
         } yield assert(bytes)(isSome(equalTo(Chunk.fromArray("Hello World".getBytes(StandardCharsets.UTF_8)))))
       },
       testM("asynchronous file write") {
-        val path = Path("nio-core/src/test/resources/async_file_write_test.txt")
+        val path     = Path("nio-core/src/test/resources/async_file_write_test.txt")
         val zChannel = AsynchronousFileChannel
           .open(
             path,
@@ -54,16 +54,16 @@ object FileChannelSpec extends BaseSpec {
       testM("memory mapped buffer") {
         val path = Path("nio-core/src/test/resources/async_file_read_test.txt")
         for {
-          env <- ZIO.environment[TestEnvironment]
+          env    <- ZIO.environment[TestEnvironment]
           result <- FileChannel
-                     .open(path, StandardOpenOption.READ)
-                     .provide(env)
-                     .bracket(_.close.ignore) { channel =>
-                       for {
-                         buffer <- channel.map(FileChannel.MapMode.READ_ONLY, 0L, 6L)
-                         bytes  <- buffer.getChunk()
-                       } yield assert(bytes)(equalTo(Chunk.fromArray("Hello ".getBytes(StandardCharsets.UTF_8))))
-                     }
+                      .open(path, StandardOpenOption.READ)
+                      .provide(env)
+                      .bracket(_.close.ignore) { channel =>
+                        for {
+                          buffer <- channel.map(FileChannel.MapMode.READ_ONLY, 0L, 6L)
+                          bytes  <- buffer.getChunk()
+                        } yield assert(bytes)(equalTo(Chunk.fromArray("Hello ".getBytes(StandardCharsets.UTF_8))))
+                      }
         } yield result
       }
     )

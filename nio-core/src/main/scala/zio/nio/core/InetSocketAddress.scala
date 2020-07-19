@@ -82,7 +82,7 @@ object SocketAddress {
     jSocketAddress match {
       case inet: JInetSocketAddress =>
         new InetSocketAddress(inet)
-      case other =>
+      case other                    =>
         new SocketAddress(other)
     }
 

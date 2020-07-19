@@ -50,10 +50,11 @@ final class InetAddress private[nio] (private[nio] val jInetAddress: JInetAddres
 
   override def hashCode(): Int = jInetAddress.hashCode()
 
-  override def equals(obj: Any): Boolean = obj match {
-    case other: InetAddress => jInetAddress.equals(other.jInetAddress)
-    case _                  => false
-  }
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case other: InetAddress => jInetAddress.equals(other.jInetAddress)
+      case _                  => false
+    }
 
   override def toString: String = jInetAddress.toString
 

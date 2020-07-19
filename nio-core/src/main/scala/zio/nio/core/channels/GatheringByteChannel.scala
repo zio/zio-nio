@@ -30,15 +30,16 @@ trait GatheringByteChannel extends Channel {
   final def writeChunks(srcs: List[Chunk[Byte]]): IO[IOException, Unit] =
     for {
       bs <- IO.foreach(srcs)(Buffer.byte)
-      _ <- {
+      _  <- {
         // Handle partial writes by dropping buffers where `hasRemaining` returns false,
         // meaning they've been completely written
-        def go(buffers: List[ByteBuffer]): IO[IOException, Unit] = write(buffers).flatMap { _ =>
-          IO.foreach(buffers)(b => b.hasRemaining.map(_ -> b)).flatMap { pairs =>
-            val remaining = pairs.dropWhile(!_._1).map(_._2)
-            if (remaining.isEmpty) IO.unit else go(remaining)
+        def go(buffers: List[ByteBuffer]): IO[IOException, Unit] =
+          write(buffers).flatMap { _ =>
+            IO.foreach(buffers)(b => b.hasRemaining.map(_ -> b)).flatMap { pairs =>
+              val remaining = pairs.dropWhile(!_._1).map(_._2)
+              if (remaining.isEmpty) IO.unit else go(remaining)
+            }
           }
-        }
         go(bs)
       }
     } yield ()

@@ -67,9 +67,9 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
                 byteBuffer.flip *>
                 byteBuffer.getChunk() <*
                 byteBuffer.clear
-            case CoderResult.Malformed(length) =>
+            case CoderResult.Malformed(length)                =>
               IO.fail(new MalformedInputException(length))
-            case CoderResult.Unmappable(length) =>
+            case CoderResult.Unmappable(length)               =>
               IO.fail(new UnmappableCharacterException(length))
           }
 
@@ -77,18 +77,18 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
           .map { inChunk =>
             def encodeChunk(inChars: Chunk[Char]): IO[j.CharacterCodingException, Chunk[Byte]] =
               for {
-                bufRemaining <- charBuffer.remaining
+                bufRemaining                 <- charBuffer.remaining
                 (decodeChars, remainingChars) = {
                   if (inChars.length > bufRemaining)
                     inChars.splitAt(bufRemaining)
                   else
                     (inChars, Chunk.empty)
                 }
-                _              <- charBuffer.putChunk(decodeChars)
-                _              <- charBuffer.flip
-                result         <- encode(charBuffer, byteBuffer, endOfInput = false)
-                encodedBytes   <- handleCoderResult(result)
-                remainderBytes <- if (remainingChars.isEmpty) IO.succeed(Chunk.empty) else encodeChunk(remainingChars)
+                _                            <- charBuffer.putChunk(decodeChars)
+                _                            <- charBuffer.flip
+                result                       <- encode(charBuffer, byteBuffer, endOfInput = false)
+                encodedBytes                 <- handleCoderResult(result)
+                remainderBytes               <- if (remainingChars.isEmpty) IO.succeed(Chunk.empty) else encodeChunk(remainingChars)
               } yield encodedBytes ++ remainderBytes
 
             encodeChunk(inChunk)
