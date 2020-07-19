@@ -95,7 +95,7 @@ object Charset {
   /**
    * Returns a charset object for the named charset.
    *
-   * @throws IllegalCharsetNameException if the given charset name is illegal
+   * @throws java.nio.charset.IllegalCharsetNameException if the given charset name is illegal
    * @throws java.nio.charset.UnsupportedCharsetException if no support for the named charset is available in this instance of the Java virtual machine
    */
   def forName(name: String): Charset = fromJava(j.Charset.forName(name))
@@ -103,7 +103,7 @@ object Charset {
   /**
    * Tells whether the named charset is supported.
    *
-   * @throws IllegalCharsetNameException if the given charset name is illegal
+   * @throws java.nio.charset.IllegalCharsetNameException if the given charset name is illegal
    */
   def isSupported(name: String): Boolean = j.Charset.isSupported(name)
 
