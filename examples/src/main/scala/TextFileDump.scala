@@ -44,8 +44,7 @@ object TextFileDump extends App {
       val charStream: ZStream[Blocking, Exception, Char] =
         inStream.transduce(charset.newDecoder.transducer())
 
-      console.putStrLn("ASCII file contents:") *>
-        charStream.foreachChunk(chars => console.putStr(chars.mkString))
+      charStream.foreachChunk(chars => console.putStr(chars.mkString))
     }
 
 }

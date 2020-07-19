@@ -57,9 +57,9 @@ import zio.blocking.Blocking
 import zio.console
 import zio.ZIO
 
-// dump a file encoded in US ASCII to the console
+// dump a file encoded in ISO8859 to the console
 
-FileChannel.open(Path("ascii.txt")).bracket(_.close.ignore) { fileChan =>
+FileChannel.open(Path("iso8859.txt")).bracket(_.close.ignore) { fileChan =>
   val inStream: ZStream[Blocking, Exception, Byte] = ZStream.repeatEffectChunkOption {
     fileChan.read(1000).asSomeError.flatMap { chunk =>
       if (chunk.isEmpty) ZIO.fail(None) else ZIO.succeed(chunk)
@@ -68,9 +68,9 @@ FileChannel.open(Path("ascii.txt")).bracket(_.close.ignore) { fileChan =>
 
   // apply decoding transducer
   val charStream: ZStream[Blocking, Exception, Char] =
-    inStream.transduce(Charset.Standard.usAscii.newDecoder.transducer())
+    inStream.transduce(Charset.Standard.iso8859_1.newDecoder.transducer())
 
-  console.putStrLn("ASCII file contents:") *>
+  console.putStrLn("ISO8859 file contents:") *>
     charStream.foreachChunk(chars => console.putStr(chars.mkString))
 }
 ``` 
