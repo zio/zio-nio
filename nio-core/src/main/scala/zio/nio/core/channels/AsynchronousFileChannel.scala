@@ -7,7 +7,7 @@ import java.nio.file.OpenOption
 
 import zio.{ Chunk, IO }
 import zio.interop.javaz._
-import zio.nio.core.{ Buffer, ByteBuffer, RichInt }
+import zio.nio.core.{ Buffer, ByteBuffer, eofCheck }
 import zio.nio.core.file.Path
 
 import scala.concurrent.ExecutionContextExecutorService
@@ -23,20 +23,34 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
       .map(new FileLock(_))
       .refineToOrDie[Exception]
 
-  final def read(dst: ByteBuffer, position: Long): IO[Exception, Option[Int]] =
+  /**
+   *  Reads data from this channel into buffer, returning the number of bytes read.
+   *
+   *  Fails with `java.io.EOFException` if end-of-stream is reached.
+   *
+   *  @param position The file position at which the transfer is to begin; must be non-negative
+   */
+  final def read(dst: ByteBuffer, position: Long): IO[Exception, Int] =
     dst.withJavaBuffer { buf =>
       effectAsyncWithCompletionHandler[Integer](channel.read(buf, position, (), _))
-        .map(_.intValue.eofCheck)
         .refineToOrDie[Exception]
+        .flatMap(eofCheck(_))
     }
 
-  final def readChunk(capacity: Int, position: Long): IO[Exception, Option[Chunk[Byte]]] =
-    (for {
+  /**
+   *  Reads data from this channel as a `Chunk`.
+   *
+   *  Fails with `java.io.EOFException` if end-of-stream is reached.
+   *
+   *  @param position The file position at which the transfer is to begin; must be non-negative
+   */
+  final def readChunk(capacity: Int, position: Long): IO[Exception, Chunk[Byte]] =
+    for {
       b     <- Buffer.byte(capacity)
-      _     <- read(b, position).some
+      _     <- read(b, position)
       _     <- b.flip
       chunk <- b.getChunk()
-    } yield chunk).optional
+    } yield chunk
 
   final val size: IO[IOException, Long] =
     IO.effect(channel.size()).refineToOrDie[IOException]
