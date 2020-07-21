@@ -13,27 +13,27 @@ import java.util.concurrent.TimeUnit
 import zio._
 import zio.duration._
 import zio.interop.javaz._
-import zio.nio.core.{ Buffer, ByteBuffer, RichInt, RichLong, SocketAddress }
+import zio.nio.core.{ Buffer, ByteBuffer, SocketAddress, eofCheck }
 import zio.nio.core.channels.AsynchronousChannelGroup
 
 class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
 
   /**
-   *  Reads data from this channel into buffer.
+   *  Reads data from this channel into buffer, returning the number of bytes read.
    *
-   *  @return The number of bytes read, or None if end-of-stream is reached.
+   *  Fails with `java.io.EOFException` if end-of-stream is reached.
    */
-  final def read(b: ByteBuffer): IO[Exception, Option[Int]] =
+  final def read(b: ByteBuffer): IO[Exception, Int] =
     effectAsyncWithCompletionHandler[JInteger](h => channel.read(b.byteBuffer, (), h))
-      .map(_.toInt.eofCheck)
       .refineToOrDie[Exception]
+      .flatMap(eofCheck(_))
 
   final def readChunk(capacity: Int): IO[Exception, Chunk[Byte]] =
     for {
       b <- Buffer.byte(capacity)
-      l <- read(b)
+      _ <- read(b)
       _ <- b.flip
-      r <- l.map(_ => b.getChunk()).getOrElse(ZIO.fail(new IOException("Connection reset by peer")))
+      r <- b.getChunk()
     } yield r
 
   /**
@@ -171,7 +171,12 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     effectAsyncWithCompletionHandler[JVoid](h => channel.connect(socketAddress.jSocketAddress, (), h)).unit
       .refineToOrDie[Exception]
 
-  final def read[A](dst: ByteBuffer, timeout: Duration): IO[Exception, Option[Int]] =
+  /**
+   *  Reads data from this channel into buffer, returning the number of bytes read.
+   *
+   *  Fails with `java.io.EOFException` if end-of-stream is reached.
+   */
+  final def read[A](dst: ByteBuffer, timeout: Duration): IO[Exception, Int] =
     effectAsyncWithCompletionHandler[JInteger] { h =>
       channel.read(
         dst.byteBuffer,
@@ -180,20 +185,27 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
         (),
         h
       )
-    }.map(_.toInt.eofCheck).refineToOrDie[Exception]
+    }
+      .refineToOrDie[Exception]
+      .flatMap(eofCheck(_))
 
   final def readChunk[A](capacity: Int, timeout: Duration): IO[Exception, Chunk[Byte]] =
     for {
       b <- Buffer.byte(capacity)
-      l <- read(b, timeout)
+      _ <- read(b, timeout)
       _ <- b.flip
-      r <- l.map(_ => b.getChunk()).getOrElse(ZIO.fail(new IOException("Connection reset by peer")))
+      r <- b.getChunk()
     } yield r
 
+  /**
+   *  Reads data from this channel into a set of buffers, returning the number of bytes read.
+   *
+   *  Fails with `java.io.EOFException` if end-of-stream is reached.
+   */
   final def read[A](
     dsts: List[ByteBuffer],
     timeout: Duration
-  ): IO[Exception, Option[Long]] =
+  ): IO[Exception, Long] =
     effectAsyncWithCompletionHandler[JLong] { h =>
       val a = dsts.map(_.byteBuffer).toArray
       channel.read(
@@ -205,7 +217,9 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
         (),
         h
       )
-    }.map(_.toLong.eofCheck).refineToOrDie[Exception]
+    }
+      .refineToOrDie[Exception]
+      .flatMap(eofCheck(_))
 
   final def readChunks[A](
     capacities: List[Int],
@@ -213,10 +227,9 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
   ): IO[Exception, List[Chunk[Byte]]] =
     for {
       bs     <- ZIO.foreach(capacities)(Buffer.byte)
-      l      <- read(bs, timeout)
+      _      <- read(bs, timeout)
       chunks <- ZIO.foreach(bs)(b => b.flip *> b.getChunk())
-      r      <- l.map(_ => ZIO.succeed(chunks)).getOrElse(ZIO.fail(new IOException("Connection reset by peer")))
-    } yield r
+    } yield chunks
 }
 
 object AsynchronousSocketChannel {

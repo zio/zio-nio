@@ -38,7 +38,7 @@ object FileChannelSpec extends BaseSpec {
           .use { channel =>
             for {
               bytes <- channel.readChunk(500, 0L)
-            } yield assert(bytes)(isSome(equalTo(Chunk.fromArray("Hello World".getBytes(StandardCharsets.UTF_8)))))
+            } yield assert(bytes)(equalTo(Chunk.fromArray("Hello World".getBytes(StandardCharsets.UTF_8))))
           }
       },
       testM("asynchronous file write") {

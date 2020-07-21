@@ -3,26 +3,26 @@ package zio.nio
 package channels
 
 import java.io.IOException
-import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
 import java.nio.{ ByteBuffer => JByteBuffer }
+import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
 
-import core.{ Buffer, ByteBuffer, RichLong }
-import zio.{ Chunk, IO, UIO }
+import zio.{ Chunk, IO }
+import zio.nio.core.{ Buffer, ByteBuffer, eofCheck }
 
 trait ScatteringByteChannel extends Channel {
   override protected[channels] val channel: JScatteringByteChannel
 
-  final def read(dsts: List[ByteBuffer]): IO[IOException, Option[Long]] =
-    IO.effect(channel.read(unwrap(dsts)).eofCheck).refineToOrDie[IOException]
+  final def read(dsts: List[ByteBuffer]): IO[IOException, Long] =
+    IO.effect(channel.read(unwrap(dsts))).refineToOrDie[IOException].flatMap(eofCheck)
 
-  final def read(dst: ByteBuffer): IO[IOException, Option[Long]] = read(List(dst))
+  final def read(dst: ByteBuffer): IO[IOException, Long] = read(List(dst))
 
   final def readChunk(capacity: Int): IO[IOException, Chunk[Byte]] =
     for {
-      buffer    <- Buffer.byte(capacity)
-      readCount <- read(buffer)
-      _         <- buffer.flip
-      chunk     <- readCount.map(count => buffer.getChunk(count.toInt)).getOrElse(UIO.succeed(Chunk.empty))
+      buffer <- Buffer.byte(capacity)
+      _      <- read(buffer)
+      _      <- buffer.flip
+      chunk  <- buffer.getChunk()
     } yield chunk
 
   private def unwrap(dsts: List[ByteBuffer]): Array[JByteBuffer] =
