@@ -10,11 +10,11 @@ import java.nio.file.{
 }
 import java.util.concurrent.TimeUnit
 
-import zio.{ IO, UIO, URIO, ZIO, ZManaged, blocking }
+import zio._
 import zio.blocking.Blocking
 import zio.duration.Duration
 import zio.nio.core.IOCloseable
-import zio.stream.{ ZSink, ZStream }
+import zio.stream.ZStream
 
 import scala.jdk.CollectionConverters._
 
@@ -41,14 +41,31 @@ object Watchable {
     }
 }
 
+/**
+ * A token representing the registration of a watchable object with a `WatchService`.
+ *
+ * [[https://docs.oracle.com/javase/8/docs/api/java/nio/file/WatchKey.html Java NIO API]].
+ */
 final class WatchKey private[file] (private val javaKey: JWatchKey) {
 
   def isValid: UIO[Boolean] = UIO.effectTotal(javaKey.isValid)
 
+  /**
+   * Retrieves and removes all pending events for this watch key.
+   *
+   * This does not block, it will immediately return an empty list if there are no events pending.
+   * Typically, this key should be reset after processing the returned events, the
+   * `pollEventsManaged` method can be used to do this automatically and reliably.
+   */
   def pollEvents: UIO[List[WatchEvent[_]]] = UIO.effectTotal(javaKey.pollEvents().asScala.toList)
 
-  def pollEventsStream: ZStream[Any, Nothing, WatchEvent[_]] =
-    ZStream.fromJavaIteratorTotal(javaKey.pollEvents().iterator())
+  /**
+   * Retrieves and removes all pending events for this watch key as a managed resource.
+   *
+   * This does not block, it will immediately return an empty list if there are no events pending.
+   * When the returned `Managed` completed, this key will be '''reset'''.
+   */
+  def pollEventsManaged: Managed[Nothing, List[WatchEvent[_]]] = pollEvents.toManaged_.ensuring(reset)
 
   def reset: UIO[Boolean] = UIO.effectTotal(javaKey.reset())
 
@@ -61,13 +78,27 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
     }
 
   /**
-   * Convenience method to process the events pending on this `WatchKey` with automatic reset.
+   * Convenience method to construct the complete path indicated by a `WatchEvent`.
    *
-   * Once all of the pending events have been processed by the provided sink, this `WatchKey` will be reset,
-   * making it available to be enqueued in the `WatchService` again.
+   * If both the following are true:
+   * 1. This key's watchable is a filesystem path
+   * 2. The event has a path as its context
+   *
+   * then this method returns a path with the event's path resolved against
+   * this key's path, `(key path) / (event path)`.
+   *
+   * If either of the above conditions don't hold, `None` is returned.
+   * The conditions will always hold when watching file system paths.
    */
-  def process[R, E, A](sink: ZSink[R, E, WatchEvent[_], Any, A]): ZIO[R, E, A] =
-    pollEventsStream.run(sink).ensuring(reset)
+  def resolveEventPath(event: WatchEvent[_]): Option[Path] =
+    for {
+      parent    <- javaKey.watchable() match {
+                     case javaPath: JPath => Some(Path.fromJava(javaPath))
+                     case _               => None
+                   }
+      eventPath <- event.asPath
+    } yield parent / eventPath
+
 }
 
 /**

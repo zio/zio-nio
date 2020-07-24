@@ -2,9 +2,9 @@ package zio.nio.core.file
 
 import java.io.{ File, IOError, IOException }
 import java.net.URI
-import java.nio.file.{ LinkOption, Paths, Path => JPath, Watchable => JWatchable }
+import java.nio.file.{ LinkOption, Paths, WatchEvent, Path => JPath, Watchable => JWatchable }
 
-import zio.ZIO
+import zio.{ Chunk, ZIO }
 import zio.blocking.Blocking
 
 import scala.jdk.CollectionConverters._
@@ -64,6 +64,31 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
   def toFile: File = javaPath.toFile
 
   def elements: List[Path] = javaPath.iterator().asScala.map(fromJava).toList
+
+  /**
+   * Convenience method to register all directories in a tree with a `WatchService`.
+   *
+   * Traverses the directory tree under this directory (including this), and calls
+   * `register` on each one. Specify `maxDepth` to limit how deep the traversal will go.
+   *
+   * Note that directories created after registration will ''not'' be watched.
+   *
+   * @param watcher The watch service that all directories will be registered with.
+   * @param events All directories found will be registered for these events.
+   * @param maxDepth The maximum directory depth the traversal will go, unlimited by default.
+   * @param modifiers All directories found will be registered with these modifiers.
+   * @return A `WatchKey` for each directory registered.
+   */
+  def registerTree(
+    watcher: WatchService,
+    events: Iterable[WatchEvent.Kind[_]],
+    maxDepth: Int = Int.MaxValue,
+    modifiers: Iterable[WatchEvent.Modifier] = Iterable.empty
+  ): ZIO[Blocking, IOException, Chunk[WatchKey]] =
+    Files
+      .find(path = this, maxDepth = maxDepth)((_, a) => a.isDirectory)
+      .mapM(dir => dir.register(watcher, events, modifiers.toSeq: _*))
+      .runCollect
 
   override protected def javaWatchable: JWatchable = javaPath
 

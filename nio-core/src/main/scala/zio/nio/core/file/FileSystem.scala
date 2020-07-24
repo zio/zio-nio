@@ -44,6 +44,16 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) exten
 object FileSystem {
   def fromJava(javaFileSystem: jf.FileSystem): FileSystem = new FileSystem(javaFileSystem)
 
+  /**
+   * The default filesystem.
+   *
+   * The default file system creates objects that provide access to the file systems accessible to the
+   * Java virtual machine. The working directory of the file system is the current user directory,
+   * named by the system property user.dir.
+   *
+   * '''Note:''' The default filesystem cannot be closed, and if its `close` is called it will die with
+   * `UnsupportedOperationException`. Therefore, do not use resource management with the default filesystem.
+   */
   def default: FileSystem = new FileSystem(jf.FileSystems.getDefault)
 
   def getFileSystem(uri: URI): ZIO[Blocking, Exception, FileSystem] =
