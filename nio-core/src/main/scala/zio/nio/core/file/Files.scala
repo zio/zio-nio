@@ -1,5 +1,4 @@
-package zio.nio
-package file
+package zio.nio.core.file
 
 import java.io.IOException
 import java.nio.file.{
@@ -17,9 +16,8 @@ import java.util.function.BiPredicate
 
 import zio.{ Chunk, ZIO, ZManaged }
 import zio.blocking._
-import zio.nio.core.ioExceptionOnly
 import zio.nio.core.charset.Charset
-import zio.nio.core.file.Path
+import zio.nio.core.ioExceptionOnly
 import zio.stream.ZStream
 
 import scala.jdk.CollectionConverters._

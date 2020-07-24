@@ -6,8 +6,7 @@ import java.nio.file.StandardOpenOption
 import zio.{ Chunk, ZIO }
 import zio.nio.BaseSpec
 import zio.nio.core.Buffer
-import zio.nio.core.file.Path
-import zio.nio.file.Files
+import zio.nio.core.file.{ Files, Path }
 import zio.test._
 import zio.test.Assertion._
 
