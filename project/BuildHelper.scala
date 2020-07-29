@@ -3,7 +3,7 @@ import sbt.Keys._
 
 object BuildHelper {
 
-  private val SilencerVersion = "1.7.0"
+  private val SilencerVersion = "1.7.1"
 
   def stdSettings(prjName: String) =
     Seq(
