@@ -7,7 +7,7 @@ import java.util.concurrent.{ ThreadFactory => JThreadFactory }
 import java.util.concurrent.TimeUnit
 
 import zio.{ IO, UIO }
-import zio.duration.Duration
+import zio.duration._
 
 import scala.concurrent.ExecutionContextExecutorService
 
