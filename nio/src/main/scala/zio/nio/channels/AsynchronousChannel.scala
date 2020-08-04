@@ -182,7 +182,7 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
     effectAsyncWithCompletionHandler[JInteger] { h =>
       channel.read(
         dst.buffer.asInstanceOf[JByteBuffer],
-        timeout.fold(Long.MaxValue, _.nanos),
+        timeout.fold(Long.MaxValue, _.toNanos),
         TimeUnit.NANOSECONDS,
         (),
         h
@@ -211,7 +211,7 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
         dsts.map(_.buffer.asInstanceOf[JByteBuffer]).toArray,
         offset,
         length,
-        timeout.fold(Long.MaxValue, _.nanos),
+        timeout.fold(Long.MaxValue, _.toNanos),
         TimeUnit.NANOSECONDS,
         (),
         h

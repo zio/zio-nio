@@ -138,7 +138,7 @@ object ChannelSpec extends BaseSpec {
             .catchSomeCause { case Cause.Interrupt(_) => ZIO.unit }
             .repeat(Schedule.recurs(20000))
         )
-        assertM(interruptAccept.run)(succeeds(equalTo(20000)))
+        assertM(interruptAccept.run)(succeeds(equalTo(20000L)))
       } @@ ignore
     )
 }
