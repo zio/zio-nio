@@ -23,7 +23,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
                             array <- buffer.array
                             text   = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
                           } yield text
-          buffs      <- IO.collectAll(Seq(Buffer.byte(5), Buffer.byte(5)))
+          buffs      <- IO.collectAll(List(Buffer.byte(5), Buffer.byte(5)))
           channel     = new FileChannel(fileChannel)
           _          <- channel.readBuffer(buffs)
           list       <- IO.collectAll(buffs.map(readLine))
@@ -37,7 +37,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
           fileChannel = raf.getChannel
 
           buffs  <- IO.collectAll(
-                      Seq(
+                      List(
                         Buffer.byte(Chunk.fromArray("Hello".getBytes)),
                         Buffer.byte(Chunk.fromArray("World".getBytes))
                       )
