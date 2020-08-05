@@ -24,7 +24,7 @@ trait ScatteringByteChannel extends Channel {
    *
    * @return The number of bytes read in total, possibly 0
    */
-  final def read(dsts: List[ByteBuffer]): IO[IOException, Long] =
+  final def read(dsts: Seq[ByteBuffer]): IO[IOException, Long] =
     IO.effect(channel.read(unwrap(dsts))).refineToOrDie[IOException].flatMap(eofCheck)
 
   /**
@@ -62,18 +62,18 @@ trait ScatteringByteChannel extends Channel {
    * @return A list with one `Chunk` per input size. Some chunks may be less than the requested size if the channel
    *         does not have enough data
    */
-  final def read(capacities: Seq[Int]): IO[IOException, List[Chunk[Byte]]] =
+  final def readChunks(capacities: Seq[Int]): IO[IOException, List[Chunk[Byte]]] =
     for {
       buffers <- IO.foreach(capacities)(Buffer.byte)
       _       <- read(buffers)
       chunks  <- IO.foreach(buffers.init)(buf => buf.flip *> buf.getChunk())
-    } yield chunks
+    } yield chunks.toList
 
 }
 
 object ScatteringByteChannel {
 
-  private def unwrap(dsts: List[ByteBuffer]): Array[JByteBuffer] =
+  private def unwrap(dsts: Seq[ByteBuffer]): Array[JByteBuffer] =
     dsts.map(d => d.byteBuffer).toArray
 
 }

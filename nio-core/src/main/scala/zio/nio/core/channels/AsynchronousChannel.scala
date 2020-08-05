@@ -11,6 +11,7 @@ import java.nio.channels.{
 import java.util.concurrent.TimeUnit
 
 import zio.{ Chunk, IO, Schedule, ZIO }
+import zio.clock.Clock
 import zio.duration._
 import zio.interop.javaz._
 import zio.nio.core.{ Buffer, ByteBuffer, SocketAddress, eofCheck }
@@ -54,10 +55,10 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
    *
    * More than one write operation may be performed to write out the entire chunk.
    */
-  final def writeChunk(chunk: Chunk[Byte]): IO[Exception, Unit] =
+  final def writeChunk(chunk: Chunk[Byte]): ZIO[Clock, Exception, Unit] =
     for {
       b <- Buffer.byte(chunk)
-      _ <- write(b).repeat(Schedule.doWhileM(_ => b.hasRemaining))
+      _ <- write(b).repeat(Schedule.recurWhileM(_ => b.hasRemaining))
     } yield ()
 
 }
