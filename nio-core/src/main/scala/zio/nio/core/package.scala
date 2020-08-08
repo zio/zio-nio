@@ -6,6 +6,9 @@ import com.github.ghik.silencer.silent
 import zio.ZManaged.ReleaseMap
 import zio.{ Fiber, IO, ZIO, ZManaged }
 
+/**
+ * ZIO-NIO, the API for using Java's NIO API in ZIO programs.
+ */
 package object core {
 
   /**
