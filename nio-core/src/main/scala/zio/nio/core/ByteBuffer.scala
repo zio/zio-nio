@@ -1,148 +1,347 @@
 package zio.nio.core
 
-import zio.{ Chunk, IO, UIO, ZIO }
-import java.nio.{ BufferUnderflowException, ByteOrder, ReadOnlyBufferException, ByteBuffer => JByteBuffer }
+import zio.{ Chunk, UIO, ZIO }
+import java.nio.{ ByteOrder, ByteBuffer => JByteBuffer }
 
-class ByteBuffer protected[nio] (protected[nio] val byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
+/**
+ * A mutable buffer of bytes.
+ */
+class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
 
-  final override protected[nio] def array: IO[UnsupportedOperationException, Array[Byte]] =
-    IO.effect(byteBuffer.array()).refineToOrDie[UnsupportedOperationException]
+  final override protected[nio] def array: UIO[Array[Byte]] =
+    UIO.effectTotal(byteBuffer.array())
 
-  final def order: ByteOrder = byteBuffer.order()
+  final def order: UIO[ByteOrder] = UIO.effectTotal(byteBuffer.order())
 
+  /**
+   * Changes the byte order used by this buffer for multi-byte reads and view buffers.
+   */
   def order(o: ByteOrder): UIO[Unit] =
     UIO.effectTotal(byteBuffer.order(o)).unit
 
-  final override def slice: IO[Nothing, ByteBuffer] =
-    IO.effectTotal(byteBuffer.slice()).map(new ByteBuffer(_))
+  final override def slice: UIO[ByteBuffer] =
+    UIO.effectTotal(new ByteBuffer(byteBuffer.slice()))
 
-  final override def compact: IO[ReadOnlyBufferException, Unit] =
-    IO.effect(byteBuffer.compact()).unit.refineToOrDie[ReadOnlyBufferException]
+  final override def compact: UIO[Unit] =
+    UIO.effectTotal(byteBuffer.compact()).unit
 
-  final override def duplicate: IO[Nothing, ByteBuffer] =
-    IO.effectTotal(new ByteBuffer(byteBuffer.duplicate()))
+  final override def duplicate: UIO[ByteBuffer] =
+    UIO.effectTotal(new ByteBuffer(byteBuffer.duplicate()))
 
+  /**
+   * Provides the underlying Java byte buffer for use in an effect.
+   *
+   * This is useful when using Java APIs that require a Java byte buffer to be provided.
+   *
+   * @return The effect value constructed by `f` using the underlying buffer.
+   */
   def withJavaBuffer[R, E, A](f: JByteBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(byteBuffer)
 
-  final override def get: IO[BufferUnderflowException, Byte] =
-    IO.effect(byteBuffer.get()).refineToOrDie[BufferUnderflowException]
+  final override def get: UIO[Byte] =
+    UIO.effectTotal(byteBuffer.get())
 
-  final override def get(i: Int): IO[IndexOutOfBoundsException, Byte] =
-    IO.effect(byteBuffer.get(i)).refineToOrDie[IndexOutOfBoundsException]
+  final override def get(i: Int): UIO[Byte] =
+    UIO.effectTotal(byteBuffer.get(i))
 
-  final override def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[Byte]] =
-    IO.effect {
+  /**
+   * Reads bytes from the current position and returns them in a `Chunk`.
+   *
+   * @param maxLength Defaults to `Int.MaxValue`, meaning all remaining
+   *                  elements will be read.
+   */
+  final override def getChunk(maxLength: Int = Int.MaxValue): UIO[Chunk[Byte]] =
+    UIO.effectTotal {
       val array = Array.ofDim[Byte](math.min(maxLength, byteBuffer.remaining()))
       byteBuffer.get(array)
       Chunk.fromArray(array)
-    }.refineToOrDie[BufferUnderflowException]
+    }
 
-  final override def put(element: Byte): IO[Exception, Unit] =
-    IO.effect(byteBuffer.put(element)).unit.refineToOrDie[Exception]
+  final override def put(element: Byte): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.put(element)).unit
 
-  final override def put(index: Int, element: Byte): IO[Exception, Unit] =
-    IO.effect(byteBuffer.put(index, element)).unit.refineToOrDie[Exception]
+  final override def put(index: Int, element: Byte): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.put(index, element)).unit
 
-  def putByteBuffer(source: ByteBuffer): IO[Exception, Unit] =
-    IO.effect(byteBuffer.put(source.byteBuffer)).unit.refineToOrDie[Exception]
+  def putByteBuffer(source: ByteBuffer): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.put(source.byteBuffer)).unit
 
-  final override def putChunk(chunk: Chunk[Byte]): IO[Exception, Unit] =
-    IO.effect {
+  final override protected def putChunkAll(chunk: Chunk[Byte]): UIO[Unit] =
+    UIO.effectTotal {
       val array = chunk.toArray
       byteBuffer.put(array)
     }.unit
-      .refineToOrDie[Exception]
 
-  final override def asReadOnlyBuffer: IO[Nothing, ByteBuffer] =
-    IO.effectTotal(byteBuffer.asReadOnlyBuffer()).map(new ByteBuffer(_))
+  final override def asReadOnlyBuffer: UIO[ByteBuffer] =
+    UIO.effectTotal(new ByteBuffer(byteBuffer.asReadOnlyBuffer()))
 
-  final def asCharBuffer: IO[Nothing, CharBuffer] =
-    IO.effectTotal(new CharBuffer(byteBuffer.asCharBuffer()))
+  final def asCharBuffer: UIO[CharBuffer] =
+    UIO.effectTotal(new CharBuffer(byteBuffer.asCharBuffer()))
 
-  final def asDoubleBuffer: IO[Nothing, DoubleBuffer] =
-    IO.effectTotal(new DoubleBuffer(byteBuffer.asDoubleBuffer()))
+  final def asDoubleBuffer: UIO[DoubleBuffer] =
+    UIO.effectTotal(new DoubleBuffer(byteBuffer.asDoubleBuffer()))
 
-  final def asFloatBuffer: IO[Nothing, FloatBuffer] =
-    IO.effectTotal(new FloatBuffer(byteBuffer.asFloatBuffer()))
+  final def asFloatBuffer: UIO[FloatBuffer] =
+    UIO.effectTotal(new FloatBuffer(byteBuffer.asFloatBuffer()))
 
-  final def asIntBuffer: IO[Nothing, IntBuffer] =
-    IO.effectTotal(new IntBuffer(byteBuffer.asIntBuffer()))
+  final def asIntBuffer: UIO[IntBuffer] =
+    UIO.effectTotal(new IntBuffer(byteBuffer.asIntBuffer()))
 
-  final def asLongBuffer: IO[Nothing, LongBuffer] =
-    IO.effectTotal(new LongBuffer(byteBuffer.asLongBuffer()))
+  final def asLongBuffer: UIO[LongBuffer] =
+    UIO.effectTotal(new LongBuffer(byteBuffer.asLongBuffer()))
 
-  final def asShortBuffer: IO[Nothing, ShortBuffer] =
-    IO.effectTotal(new ShortBuffer(byteBuffer.asShortBuffer()))
+  final def asShortBuffer: UIO[ShortBuffer] =
+    UIO.effectTotal(new ShortBuffer(byteBuffer.asShortBuffer()))
 
-  final def putChar(value: Char): IO[Exception, Unit] =
-    IO.effect(byteBuffer.putChar(value)).unit.refineToOrDie[Exception]
+  /**
+   * Relative put of a single character.
+   * Writes the character at the position using the current byte order
+   * and increments the position by 2.
+   *
+   * Dies with `BufferOverflowException` if there are fewer than 2 bytes remaining.
+   * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
+   */
+  final def putChar(value: Char): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.putChar(value)).unit
 
-  final def putChar(index: Int, value: Char): IO[Exception, Unit] =
-    IO.effect(byteBuffer.putChar(index, value)).unit.refineToOrDie[Exception]
+  /**
+   * Absolute put of a single character.
+   * Writes the character at the specified index using the current byte order.
+   * The position does not change.
+   *
+   * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-1.
+   * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
+   */
+  final def putChar(index: Int, value: Char): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.putChar(index, value)).unit
 
-  final def putDouble(value: Double): IO[Exception, Unit] =
-    IO.effect(byteBuffer.putDouble(value)).unit.refineToOrDie[Exception]
+  /**
+   * Relative put of a single double.
+   * Writes the double at the position using the current byte order
+   * and increments the position by 8.
+   *
+   * Dies with `BufferOverflowException` if there are fewer than 8 bytes remaining.
+   * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
+   */
+  final def putDouble(value: Double): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.putDouble(value)).unit
 
-  final def putDouble(index: Int, value: Double): IO[Exception, Unit] =
-    IO.effect(byteBuffer.putDouble(index, value)).unit.refineToOrDie[Exception]
+  /**
+   * Absolute put of a single double.
+   * Writes the double at the specified index using the current byte order.
+   * The position does not change.
+   *
+   * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-7.
+   * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
+   */
+  final def putDouble(index: Int, value: Double): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.putDouble(index, value)).unit
 
-  final def putFloat(value: Float): IO[Exception, Unit] =
-    IO.effect(byteBuffer.putFloat(value)).unit.refineToOrDie[Exception]
+  /**
+   * Relative put of a single float.
+   * Writes the float at the position using the current byte order
+   * and increments the position by 4.
+   *
+   * Dies with `BufferOverflowException` if there are fewer than 4 bytes remaining.
+   * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
+   */
+  final def putFloat(value: Float): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.putFloat(value)).unit
 
-  final def putFloat(index: Int, value: Float): IO[Exception, Unit] =
-    IO.effect(byteBuffer.putFloat(index, value)).unit.refineToOrDie[Exception]
+  /**
+   * Absolute put of a single float.
+   * Writes the float at the specified index using the current byte order.
+   * The position does not change.
+   *
+   * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-3.
+   * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
+   */
+  final def putFloat(index: Int, value: Float): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.putFloat(index, value)).unit
 
-  final def putInt(value: Int): IO[Exception, Unit] =
-    IO.effect(byteBuffer.putInt(value)).unit.refineToOrDie[Exception]
+  /**
+   * Relative put of a single int.
+   * Writes the int at the position using the current byte order
+   * and increments the position by 4.
+   *
+   * Dies with `BufferOverflowException` if there are fewer than 4 bytes remaining.
+   * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
+   */
+  final def putInt(value: Int): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.putInt(value)).unit
 
-  final def putInt(index: Int, value: Int): IO[Exception, Unit] =
-    IO.effect(byteBuffer.putInt(index, value)).unit.refineToOrDie[Exception]
+  /**
+   * Absolute put of a single int.
+   * Writes the int at the specified index using the current byte order.
+   * The position does not change.
+   *
+   * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-3.
+   * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
+   */
+  final def putInt(index: Int, value: Int): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.putInt(index, value)).unit
 
-  final def putLong(value: Long): IO[Exception, Unit] =
-    IO.effect(byteBuffer.putLong(value)).unit.refineToOrDie[Exception]
+  /**
+   * Relative put of a single long.
+   * Writes the long at the position using the current byte order
+   * and increments the position by 8.
+   *
+   * Dies with `BufferOverflowException` if there are fewer than 8 bytes remaining.
+   * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
+   */
+  final def putLong(value: Long): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.putLong(value)).unit
 
-  final def putLong(index: Int, value: Long): IO[Exception, Unit] =
-    IO.effect(byteBuffer.putLong(index, value)).unit.refineToOrDie[Exception]
+  /**
+   * Absolute put of a single long.
+   * Writes the long at the specified index using the current byte order.
+   * The position does not change.
+   *
+   * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-7.
+   * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
+   */
+  final def putLong(index: Int, value: Long): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.putLong(index, value)).unit
 
-  final def putShort(value: Short): IO[Exception, Unit] =
-    IO.effect(byteBuffer.putShort(value)).unit.refineToOrDie[Exception]
+  /**
+   * Relative put of a single short.
+   * Writes the short at the position using the current byte order
+   * and increments the position by 2.
+   *
+   * Dies with `BufferOverflowException` if there are fewer than 2 bytes remaining.
+   * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
+   */
+  final def putShort(value: Short): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.putShort(value)).unit
 
-  final def putShort(index: Int, value: Short): IO[Exception, Unit] =
-    IO.effect(byteBuffer.putShort(index, value)).unit.refineToOrDie[Exception]
+  /**
+   * Absolute put of a single short.
+   * Writes the short at the specified index using the current byte order.
+   * The position does not change.
+   *
+   * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-1.
+   * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
+   */
+  final def putShort(index: Int, value: Short): UIO[Unit] =
+    UIO.effectTotal(byteBuffer.putShort(index, value)).unit
 
-  final def getChar: IO[BufferUnderflowException, Char] =
-    IO.effect(byteBuffer.getChar()).refineToOrDie[BufferUnderflowException]
+  /**
+   * Relative get of a single character.
+   * Reads the character at the position using the current byte order
+   * and increments the position by 2.
+   *
+   * Dies with `BufferUnderflowException` If there are fewer than 2 bytes remaining.
+   */
+  final def getChar: UIO[Char] =
+    UIO.effectTotal(byteBuffer.getChar())
 
-  final def getChar(index: Int): IO[IndexOutOfBoundsException, Char] =
-    IO.effect(byteBuffer.getChar(index)).refineToOrDie[IndexOutOfBoundsException]
+  /**
+   * Absolute get of a single character.
+   * Reads the character at the given index using the current byte order.
+   * The position does not change.
+   *
+   * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-1.
+   */
+  final def getChar(index: Int): UIO[Char] =
+    UIO.effectTotal(byteBuffer.getChar(index))
 
-  final def getDouble: IO[BufferUnderflowException, Double] =
-    IO.effect(byteBuffer.getDouble()).refineToOrDie[BufferUnderflowException]
+  /**
+   * Relative get of a single double.
+   * Reads the double at the position using the current byte order
+   * and increments the position by 8.
+   *
+   * Dies with `BufferUnderflowException` If there are fewer than 8 bytes remaining.
+   */
+  final def getDouble: UIO[Double] =
+    UIO.effectTotal(byteBuffer.getDouble())
 
-  final def getDouble(index: Int): IO[IndexOutOfBoundsException, Double] =
-    IO.effect(byteBuffer.getDouble(index)).refineToOrDie[IndexOutOfBoundsException]
+  /**
+   * Absolute get of a single double.
+   * Reads the double at the given index using the current byte order.
+   * The position does not change.
+   *
+   * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-7.
+   */
+  final def getDouble(index: Int): UIO[Double] =
+    UIO.effectTotal(byteBuffer.getDouble(index))
 
-  final def getFloat: IO[BufferUnderflowException, Float] =
-    IO.effect(byteBuffer.getFloat()).refineToOrDie[BufferUnderflowException]
+  /**
+   * Relative get of a single float.
+   * Reads the float at the position using the current byte order
+   * and increments the position by 4.
+   *
+   * Dies with `BufferUnderflowException` If there are fewer than 4 bytes remaining.
+   */
+  final def getFloat: UIO[Float] =
+    UIO.effectTotal(byteBuffer.getFloat())
 
-  final def getFloat(index: Int): IO[IndexOutOfBoundsException, Float] =
-    IO.effect(byteBuffer.getFloat(index)).refineToOrDie[IndexOutOfBoundsException]
+  /**
+   * Absolute get of a single float.
+   * Reads the float at the given index using the current byte order.
+   * The position does not change.
+   *
+   * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-3.
+   */
+  final def getFloat(index: Int): UIO[Float] =
+    UIO.effectTotal(byteBuffer.getFloat(index))
 
-  final def getInt: IO[BufferUnderflowException, Int] =
-    IO.effect(byteBuffer.getInt()).refineToOrDie[BufferUnderflowException]
+  /**
+   * Relative get of a single int.
+   * Reads the int at the position using the current byte order
+   * and increments the position by 4.
+   *
+   * Dies with `BufferUnderflowException` If there are fewer than 4 bytes remaining.
+   */
+  final def getInt: UIO[Int] =
+    UIO.effectTotal(byteBuffer.getInt())
 
-  final def getInt(index: Int): IO[IndexOutOfBoundsException, Int] =
-    IO.effect(byteBuffer.getInt(index)).refineToOrDie[IndexOutOfBoundsException]
+  /**
+   * Absolute get of a single int.
+   * Reads the int at the given index using the current byte order.
+   * The position does not change.
+   *
+   * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-3.
+   */
+  final def getInt(index: Int): UIO[Int] =
+    UIO.effectTotal(byteBuffer.getInt(index))
 
-  final def getLong: IO[BufferUnderflowException, Long] =
-    IO.effect(byteBuffer.getLong()).refineToOrDie[BufferUnderflowException]
+  /**
+   * Relative get of a single long.
+   * Reads the long at the position using the current byte order
+   * and increments the position by 8.
+   *
+   * Dies with `BufferUnderflowException` If there are fewer than 8 bytes remaining.
+   */
+  final def getLong: UIO[Long] =
+    UIO.effectTotal(byteBuffer.getLong())
 
-  final def getLong(index: Int): IO[IndexOutOfBoundsException, Long] =
-    IO.effect(byteBuffer.getLong(index)).refineToOrDie[IndexOutOfBoundsException]
+  /**
+   * Absolute get of a single long.
+   * Reads the long at the given index using the current byte order.
+   * The position does not change.
+   *
+   * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-7.
+   */
+  final def getLong(index: Int): UIO[Long] =
+    UIO.effectTotal(byteBuffer.getLong(index))
 
-  final def getShort: IO[BufferUnderflowException, Short] =
-    IO.effect(byteBuffer.getShort()).refineToOrDie[BufferUnderflowException]
+  /**
+   * Relative get of a single short.
+   * Reads the short at the position using the current byte order
+   * and increments the position by 2.
+   *
+   * Dies with `BufferUnderflowException` If there are fewer than 2 bytes remaining.
+   */
+  final def getShort: UIO[Short] =
+    UIO.effectTotal(byteBuffer.getShort())
 
-  final def getShort(index: Int): IO[IndexOutOfBoundsException, Short] =
-    IO.effect(byteBuffer.getShort(index)).refineToOrDie[IndexOutOfBoundsException]
+  /**
+   * Absolute get of a single short.
+   * Reads the short at the given index using the current byte order.
+   * The position does not change.
+   *
+   * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-1.
+   */
+  final def getShort(index: Int): UIO[Short] =
+    UIO.effectTotal(byteBuffer.getShort(index))
+
 }

@@ -43,9 +43,7 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
     }
 
   def flush(out: CharBuffer): UIO[CoderResult] =
-    out.withJavaBuffer { jOut =>
-      UIO.effectTotal(CoderResult.fromJava(javaDecoder.flush(jOut)))
-    }
+    out.withJavaBuffer(jOut => UIO.effectTotal(CoderResult.fromJava(javaDecoder.flush(jOut))))
 
   def malformedInputAction: UIO[j.CodingErrorAction] =
     UIO.effectTotal(javaDecoder.malformedInputAction())
@@ -77,16 +75,16 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
   def transducer(bufSize: Int = 5000): Transducer[j.CharacterCodingException, Byte, Char] = {
     val push: Managed[Nothing, Option[Chunk[Byte]] => IO[j.CharacterCodingException, Chunk[Char]]] = {
       for {
-        byteBuffer <- Buffer.byte(bufSize).toManaged_.orDie
-        charBuffer <- Buffer.char((bufSize.toFloat * this.averageCharsPerByte).round).toManaged_.orDie
+        byteBuffer <- Buffer.byte(bufSize).toManaged_
+        charBuffer <- Buffer.char((bufSize.toFloat * this.averageCharsPerByte).round).toManaged_
       } yield {
 
         def handleCoderResult(coderResult: CoderResult) =
           coderResult match {
             case CoderResult.Underflow | CoderResult.Overflow =>
-              byteBuffer.compact.orDie *>
+              byteBuffer.compact *>
                 charBuffer.flip *>
-                charBuffer.getChunk().orDie <*
+                charBuffer.getChunk() <*
                 charBuffer.clear
             case CoderResult.Malformed(length)                =>
               IO.fail(new MalformedInputException(length))
@@ -105,7 +103,7 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
                   else
                     (inBytes, Chunk.empty)
                 }
-                _                            <- byteBuffer.putChunk(decodeBytes).orDie
+                _                            <- byteBuffer.putChunk(decodeBytes)
                 _                            <- byteBuffer.flip
                 result                       <- decode(
                                                   byteBuffer,

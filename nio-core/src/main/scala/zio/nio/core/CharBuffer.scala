@@ -1,54 +1,65 @@
 package zio.nio.core
 
-import zio.{ Chunk, IO, ZIO }
-import java.nio.{ BufferUnderflowException, ByteOrder, ReadOnlyBufferException, CharBuffer => JCharBuffer }
+import java.nio.{ ByteOrder, CharBuffer => JCharBuffer }
 
+import zio.{ Chunk, UIO, ZIO }
+
+/**
+ * A mutable buffer of characters.
+ */
 final class CharBuffer(charBuffer: JCharBuffer) extends Buffer[Char](charBuffer) {
 
-  override protected[nio] def array: IO[Exception, Array[Char]] =
-    IO.effect(charBuffer.array()).refineToOrDie[Exception]
+  override protected[nio] def array: UIO[Array[Char]] =
+    UIO.effectTotal(charBuffer.array())
 
-  override def order: ByteOrder = charBuffer.order()
+  override def order: UIO[ByteOrder] = UIO.effectTotal(charBuffer.order())
 
-  override def slice: IO[Nothing, CharBuffer] =
-    IO.effectTotal(charBuffer.slice()).map(new CharBuffer(_))
+  override def slice: UIO[CharBuffer] =
+    UIO.effectTotal(new CharBuffer(charBuffer.slice()))
 
-  override def compact: IO[ReadOnlyBufferException, Unit] =
-    IO.effect(charBuffer.compact()).unit.refineToOrDie[ReadOnlyBufferException]
+  override def compact: UIO[Unit] =
+    UIO.effectTotal(charBuffer.compact()).unit
 
-  override def duplicate: IO[Nothing, CharBuffer] =
-    IO.effectTotal(new CharBuffer(charBuffer.duplicate()))
+  override def duplicate: UIO[CharBuffer] =
+    UIO.effectTotal(new CharBuffer(charBuffer.duplicate()))
 
+  /**
+   * Provides the underlying Java character buffer for use in an effect.
+   *
+   * This is useful when using Java APIs that require a Java character buffer to be provided.
+   *
+   * @return The effect value constructed by `f` using the underlying buffer.
+   */
   def withJavaBuffer[R, E, A](f: JCharBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(charBuffer)
 
-  override def get: IO[BufferUnderflowException, Char] =
-    IO.effect(charBuffer.get()).refineToOrDie[BufferUnderflowException]
+  override def get: UIO[Char] =
+    UIO.effectTotal(charBuffer.get())
 
-  override def get(i: Int): IO[IndexOutOfBoundsException, Char] =
-    IO.effect(charBuffer.get(i)).refineToOrDie[IndexOutOfBoundsException]
+  override def get(i: Int): UIO[Char] =
+    UIO.effectTotal(charBuffer.get(i))
 
-  override def getChunk(maxLength: Int = Int.MaxValue): IO[BufferUnderflowException, Chunk[Char]] =
-    IO.effect {
+  override def getChunk(maxLength: Int = Int.MaxValue): UIO[Chunk[Char]] =
+    UIO.effectTotal {
       val array = Array.ofDim[Char](math.min(maxLength, charBuffer.remaining()))
       charBuffer.get(array)
       Chunk.fromArray(array)
-    }.refineToOrDie[BufferUnderflowException]
+    }
 
-  def getString: IO[Nothing, String] = IO.effectTotal(charBuffer.toString())
+  def getString: UIO[String] = UIO.effectTotal(charBuffer.toString())
 
-  override def put(element: Char): IO[Exception, Unit] =
-    IO.effect(charBuffer.put(element)).unit.refineToOrDie[Exception]
+  override def put(element: Char): UIO[Unit] =
+    UIO.effectTotal(charBuffer.put(element)).unit
 
-  override def put(index: Int, element: Char): IO[Exception, Unit] =
-    IO.effect(charBuffer.put(index, element)).unit.refineToOrDie[Exception]
+  override def put(index: Int, element: Char): UIO[Unit] =
+    UIO.effectTotal(charBuffer.put(index, element)).unit
 
-  override def putChunk(chunk: Chunk[Char]): IO[Exception, Unit] =
-    IO.effect {
+  override protected def putChunkAll(chunk: Chunk[Char]): UIO[Unit] =
+    UIO.effectTotal {
       val array = chunk.toArray
       charBuffer.put(array)
     }.unit
-      .refineToOrDie[Exception]
 
-  override def asReadOnlyBuffer: IO[Nothing, CharBuffer] =
-    IO.effectTotal(charBuffer.asReadOnlyBuffer()).map(new CharBuffer(_))
+  override def asReadOnlyBuffer: UIO[CharBuffer] =
+    UIO.effectTotal(new CharBuffer(charBuffer.asReadOnlyBuffer()))
+
 }

@@ -1,5 +1,6 @@
 package zio.nio.file
 
+import java.io.IOException
 import java.net.URI
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.{ file => jf }
@@ -13,8 +14,8 @@ import scala.jdk.CollectionConverters._
 final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
   def provider: jf.spi.FileSystemProvider = javaFileSystem.provider()
 
-  private def close: ZIO[Blocking, Exception, Unit] =
-    effectBlocking(javaFileSystem.close()).refineToOrDie[Exception]
+  private def close: ZIO[Blocking, IOException, Unit] =
+    effectBlocking(javaFileSystem.close()).refineToOrDie[IOException]
 
   def isOpen: UIO[Boolean] = UIO.effectTotal(javaFileSystem.isOpen())
 
@@ -34,8 +35,8 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
 
   def getUserPrincipalLookupService: UserPrincipalLookupService = javaFileSystem.getUserPrincipalLookupService
 
-  def newWatchService: ZIO[Blocking, Exception, WatchService] =
-    effectBlocking(WatchService.fromJava(javaFileSystem.newWatchService())).refineToOrDie[Exception]
+  def newWatchService: ZIO[Blocking, IOException, WatchService] =
+    effectBlocking(WatchService.fromJava(javaFileSystem.newWatchService())).refineToOrDie[IOException]
 }
 
 object FileSystem {
