@@ -61,7 +61,7 @@ import zio.ZIO
 
 FileChannel.open(Path("iso8859.txt")).bracket(_.close.ignore) { fileChan =>
   val inStream: ZStream[Blocking, Exception, Byte] = ZStream.repeatEffectChunkOption {
-    fileChan.read(1000).asSomeError.flatMap { chunk =>
+    fileChan.readChunk(1000).asSomeError.flatMap { chunk =>
       if (chunk.isEmpty) ZIO.fail(None) else ZIO.succeed(chunk)
     }
   }
