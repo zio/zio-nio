@@ -13,34 +13,34 @@ import scala.concurrent.ExecutionContextExecutorService
 
 object AsynchronousChannelGroup {
 
-  def apply(executor: ExecutionContextExecutorService, initialSize: Int): IO[Exception, AsynchronousChannelGroup] =
+  def apply(executor: ExecutionContextExecutorService, initialSize: Int): IO[IOException, AsynchronousChannelGroup] =
     IO.effect(
       new AsynchronousChannelGroup(
         JAsynchronousChannelGroup.withCachedThreadPool(executor, initialSize)
       )
-    ).refineToOrDie[Exception]
+    ).refineToOrDie[IOException]
 
   def apply(
     threadsNo: Int,
     threadsFactory: JThreadFactory
-  ): IO[Exception, AsynchronousChannelGroup] =
+  ): IO[IOException, AsynchronousChannelGroup] =
     IO.effect(
       new AsynchronousChannelGroup(
         JAsynchronousChannelGroup.withFixedThreadPool(threadsNo, threadsFactory)
       )
-    ).refineToOrDie[Exception]
+    ).refineToOrDie[IOException]
 
-  def apply(executor: ExecutionContextExecutorService): IO[Exception, AsynchronousChannelGroup] =
+  def apply(executor: ExecutionContextExecutorService): IO[IOException, AsynchronousChannelGroup] =
     IO.effect(
       new AsynchronousChannelGroup(JAsynchronousChannelGroup.withThreadPool(executor))
-    ).refineToOrDie[Exception]
+    ).refineToOrDie[IOException]
 }
 
-class AsynchronousChannelGroup(val channelGroup: JAsynchronousChannelGroup) {
+final class AsynchronousChannelGroup(val channelGroup: JAsynchronousChannelGroup) {
 
-  def awaitTermination(timeout: Duration): IO[Exception, Boolean] =
+  def awaitTermination(timeout: Duration): IO[InterruptedException, Boolean] =
     IO.effect(channelGroup.awaitTermination(timeout.asJava.toMillis, TimeUnit.MILLISECONDS))
-      .refineToOrDie[Exception]
+      .refineToOrDie[InterruptedException]
 
   val isShutdown: UIO[Boolean] = IO.effectTotal(channelGroup.isShutdown)
 

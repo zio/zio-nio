@@ -47,16 +47,6 @@ final class DatagramChannel private[channels] (override protected[channels] val 
     IO.effect(channel.getLocalAddress()).refineToOrDie[IOException].map(a => Option(a).map(new SocketAddress(_)))
 
   /**
-   * Reads a datagram into the given [[zio.nio.core.ByteBuffer]]. This effect can only succeed
-   * if the channel is connected, and it only accepts datagrams from the connected remote address.
-   *
-   * @param dst the destination buffer
-   * @return the number of bytes that were read from this channel
-   */
-  def read(dst: ByteBuffer): IO[IOException, Int] =
-    IO.effect(channel.read(dst.byteBuffer)).refineToOrDie[IOException]
-
-  /**
    * Receives a datagram via this channel into the given [[zio.nio.core.ByteBuffer]].
    *
    * @param dst the destination buffer
@@ -109,15 +99,6 @@ final class DatagramChannel private[channels] (override protected[channels] val 
   def validOps: UIO[Int] =
     UIO.effectTotal(channel.validOps())
 
-  /**
-   * Writes a datagram read from the given [[zio.nio.core.ByteBuffer]]. This effect can only succeed
-   * if the channel is connected, and it only sends datagrams to the connected remote address.
-   *
-   * @param src the source buffer from which the datagram is to be read
-   * @return the number of bytes that were written to this channel
-   */
-  def write(src: ByteBuffer): IO[IOException, Int] =
-    IO.effect(channel.write(src.byteBuffer)).refineToOrDie[IOException]
 }
 
 object DatagramChannel {

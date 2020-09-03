@@ -24,7 +24,7 @@ object FileChannelSpec extends BaseSpec {
           .use { channel =>
             for {
               buffer <- Buffer.byte(16)
-              _      <- channel.readBuffer(buffer, 0)
+              _      <- channel.read(buffer, 0)
               _      <- buffer.flip
               array  <- buffer.array
               text    = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
@@ -37,7 +37,7 @@ object FileChannelSpec extends BaseSpec {
           .open(path, StandardOpenOption.READ)
           .use { channel =>
             for {
-              bytes <- channel.read(500, 0L)
+              bytes <- channel.readChunk(500, 0L)
             } yield assert(bytes)(equalTo(Chunk.fromArray("Hello World".getBytes(StandardCharsets.UTF_8))))
           }
       },
@@ -52,7 +52,7 @@ object FileChannelSpec extends BaseSpec {
           .use { channel =>
             for {
               buffer <- Buffer.byte(Chunk.fromArray("Hello World".getBytes))
-              _      <- channel.writeBuffer(buffer, 0)
+              _      <- channel.write(buffer, 0)
               path   <- ZIO.effectTotal(Path("nio/src/test/resources/async_file_write_test.txt"))
               result <- ZIO.effect(Source.fromFile(path.toFile).getLines().toSeq)
               _      <- Files.delete(path)

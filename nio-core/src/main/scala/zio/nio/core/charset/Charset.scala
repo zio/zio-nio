@@ -56,21 +56,21 @@ final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset
     for {
       charBuf <- Buffer.char(chunk)
       byteBuf <- encode(charBuf)
-      chunk   <- byteBuf.getChunk().orDie
+      chunk   <- byteBuf.getChunk()
     } yield chunk
 
   def encodeString(s: CharSequence): UIO[Chunk[Byte]] =
     for {
       charBuf <- Buffer.char(s)
       byteBuf <- encode(charBuf)
-      chunk   <- byteBuf.getChunk().orDie
+      chunk   <- byteBuf.getChunk()
     } yield chunk
 
   def decodeChunk(chunk: Chunk[Byte]): UIO[Chunk[Char]] =
     for {
       byteBuf <- Buffer.byte(chunk)
       charBuf <- decode(byteBuf)
-      chunk   <- charBuf.getChunk().orDie
+      chunk   <- charBuf.getChunk()
     } yield chunk
 
   def decodeString(chunk: Chunk[Byte]): UIO[String] =

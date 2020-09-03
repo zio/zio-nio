@@ -26,75 +26,79 @@ import scala.reflect._
 
 object Files {
 
-  def fromJavaIterator[A](iterator: JIterator[A]): ZStream[Blocking, RuntimeException, A] =
+  def fromJavaIterator[A](iterator: JIterator[A]): ZStream[Blocking, Nothing, A] =
     ZStream.unfoldM(()) { _ =>
       effectBlocking {
         if (iterator.hasNext) Some((iterator.next(), ())) else None
-      }.refineToOrDie[RuntimeException]
+      }.orDie
     }
 
-  def newDirectoryStream(dir: Path, glob: String = "*"): ZStream[Blocking, Exception, Path] = {
+  def newDirectoryStream(dir: Path, glob: String = "*"): ZStream[Blocking, IOException, Path] = {
     val managed = ZManaged.fromAutoCloseable(
-      effectBlocking(JFiles.newDirectoryStream(dir.javaPath, glob)).refineToOrDie[Exception]
+      effectBlocking(JFiles.newDirectoryStream(dir.javaPath, glob)).refineToOrDie[IOException]
     )
     ZStream.managed(managed).mapM(dirStream => UIO(dirStream.iterator())).flatMap(fromJavaIterator).map(Path.fromJava)
   }
 
-  def newDirectoryStream(dir: Path, filter: Path => Boolean): ZStream[Blocking, Exception, Path] = {
+  def newDirectoryStream(dir: Path, filter: Path => Boolean): ZStream[Blocking, IOException, Path] = {
     val javaFilter: DirectoryStream.Filter[_ >: JPath] = javaPath => filter(Path.fromJava(javaPath))
     val managed                                        = ZManaged.fromAutoCloseable(
-      effectBlocking(JFiles.newDirectoryStream(dir.javaPath, javaFilter)).refineToOrDie[Exception]
+      effectBlocking(JFiles.newDirectoryStream(dir.javaPath, javaFilter)).refineToOrDie[IOException]
     )
     ZStream.managed(managed).mapM(dirStream => UIO(dirStream.iterator())).flatMap(fromJavaIterator).map(Path.fromJava)
   }
 
-  def createFile(path: Path, attrs: FileAttribute[_]*): ZIO[Blocking, Exception, Unit] =
-    effectBlocking(JFiles.createFile(path.javaPath, attrs: _*)).unit.refineToOrDie[Exception]
+  def createFile(path: Path, attrs: FileAttribute[_]*): ZIO[Blocking, IOException, Unit] =
+    effectBlocking(JFiles.createFile(path.javaPath, attrs: _*)).unit.refineToOrDie[IOException]
 
-  def createDirectory(path: Path, attrs: FileAttribute[_]*): ZIO[Blocking, Exception, Unit] =
-    effectBlocking(JFiles.createDirectory(path.javaPath, attrs: _*)).unit.refineToOrDie[Exception]
+  def createDirectory(path: Path, attrs: FileAttribute[_]*): ZIO[Blocking, IOException, Unit] =
+    effectBlocking(JFiles.createDirectory(path.javaPath, attrs: _*)).unit.refineToOrDie[IOException]
 
-  def createDirectories(path: Path, attrs: FileAttribute[_]*): ZIO[Blocking, Exception, Unit] =
-    effectBlocking(JFiles.createDirectories(path.javaPath, attrs: _*)).unit.refineToOrDie[Exception]
+  def createDirectories(path: Path, attrs: FileAttribute[_]*): ZIO[Blocking, IOException, Unit] =
+    effectBlocking(JFiles.createDirectories(path.javaPath, attrs: _*)).unit.refineToOrDie[IOException]
 
   def createTempFileIn(
     dir: Path,
     suffix: String = ".tmp",
     prefix: Option[String],
     fileAttributes: Iterable[FileAttribute[_]]
-  ): ZIO[Blocking, Exception, Path] =
+  ): ZIO[Blocking, IOException, Path] =
     effectBlocking(Path.fromJava(JFiles.createTempFile(dir.javaPath, prefix.orNull, suffix, fileAttributes.toSeq: _*)))
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
   def createTempFile(
     suffix: String = ".tmp",
     prefix: Option[String],
     fileAttributes: Iterable[FileAttribute[_]]
-  ): ZIO[Blocking, Exception, Path] =
+  ): ZIO[Blocking, IOException, Path] =
     effectBlocking(Path.fromJava(JFiles.createTempFile(prefix.orNull, suffix, fileAttributes.toSeq: _*)))
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
   def createTempDirectory(
     dir: Path,
     prefix: Option[String],
     fileAttributes: Iterable[FileAttribute[_]]
-  ): ZIO[Blocking, Exception, Path] =
+  ): ZIO[Blocking, IOException, Path] =
     effectBlocking(Path.fromJava(JFiles.createTempDirectory(dir.javaPath, prefix.orNull, fileAttributes.toSeq: _*)))
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
   def createTempDirectory(
     prefix: Option[String],
     fileAttributes: Iterable[FileAttribute[_]]
-  ): ZIO[Blocking, Exception, Path] =
+  ): ZIO[Blocking, IOException, Path] =
     effectBlocking(Path.fromJava(JFiles.createTempDirectory(prefix.orNull, fileAttributes.toSeq: _*)))
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
-  def createSymbolicLink(link: Path, target: Path, fileAttributes: FileAttribute[_]*): ZIO[Blocking, Exception, Unit] =
+  def createSymbolicLink(
+    link: Path,
+    target: Path,
+    fileAttributes: FileAttribute[_]*
+  ): ZIO[Blocking, IOException, Unit] =
     effectBlocking(JFiles.createSymbolicLink(link.javaPath, target.javaPath, fileAttributes: _*)).unit
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
-  def createLink(link: Path, existing: Path): ZIO[Blocking, Exception, Unit] =
-    effectBlocking(JFiles.createLink(link.javaPath, existing.javaPath)).unit.refineToOrDie[Exception]
+  def createLink(link: Path, existing: Path): ZIO[Blocking, IOException, Unit] =
+    effectBlocking(JFiles.createLink(link.javaPath, existing.javaPath)).unit.refineToOrDie[IOException]
 
   def delete(path: Path): ZIO[Blocking, IOException, Unit] =
     effectBlocking(JFiles.delete(path.javaPath)).refineToOrDie[IOException]
@@ -102,15 +106,15 @@ object Files {
   def deleteIfExists(path: Path): ZIO[Blocking, IOException, Boolean] =
     effectBlocking(JFiles.deleteIfExists(path.javaPath)).refineToOrDie[IOException]
 
-  def copy(source: Path, target: Path, copyOptions: CopyOption*): ZIO[Blocking, Exception, Unit] =
+  def copy(source: Path, target: Path, copyOptions: CopyOption*): ZIO[Blocking, IOException, Unit] =
     effectBlocking(JFiles.copy(source.javaPath, target.javaPath, copyOptions: _*)).unit
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
-  def move(source: Path, target: Path, copyOptions: CopyOption*): ZIO[Blocking, Exception, Unit] =
-    effectBlocking(JFiles.move(source.javaPath, target.javaPath, copyOptions: _*)).unit.refineToOrDie[Exception]
+  def move(source: Path, target: Path, copyOptions: CopyOption*): ZIO[Blocking, IOException, Unit] =
+    effectBlocking(JFiles.move(source.javaPath, target.javaPath, copyOptions: _*)).unit.refineToOrDie[IOException]
 
-  def readSymbolicLink(link: Path): ZIO[Blocking, Exception, Path] =
-    effectBlocking(Path.fromJava(JFiles.readSymbolicLink(link.javaPath))).refineToOrDie[Exception]
+  def readSymbolicLink(link: Path): ZIO[Blocking, IOException, Path] =
+    effectBlocking(Path.fromJava(JFiles.readSymbolicLink(link.javaPath))).refineToOrDie[IOException]
 
   def getFileStore(path: Path): ZIO[Blocking, IOException, FileStore] =
     effectBlocking(JFiles.getFileStore(path.javaPath)).refineToOrDie[IOException]
@@ -124,9 +128,9 @@ object Files {
   def probeContentType(path: Path): ZIO[Blocking, IOException, String] =
     effectBlocking(JFiles.probeContentType(path.javaPath)).refineToOrDie[IOException]
 
-  def useFileAttributeView[A <: FileAttributeView: ClassTag, B](path: Path, linkOptions: LinkOption*)(
-    f: A => ZIO[Blocking, Exception, B]
-  ): ZIO[Blocking, Exception, B] = {
+  def useFileAttributeView[A <: FileAttributeView: ClassTag, B, E](path: Path, linkOptions: LinkOption*)(
+    f: A => ZIO[Blocking, E, B]
+  ): ZIO[Blocking, E, B] = {
     val viewClass =
       classTag[A].runtimeClass.asInstanceOf[Class[A]] // safe? because we know A is a subtype of FileAttributeView
     effectBlocking(JFiles.getFileAttributeView[A](path.javaPath, viewClass, linkOptions: _*)).orDie
@@ -136,11 +140,11 @@ object Files {
   def readAttributes[A <: BasicFileAttributes: ClassTag](
     path: Path,
     linkOptions: LinkOption*
-  ): ZIO[Blocking, Exception, A] = {
+  ): ZIO[Blocking, IOException, A] = {
     // safe? because we know A is a subtype of BasicFileAttributes
     val attributeClass = classTag[A].runtimeClass.asInstanceOf[Class[A]]
     effectBlocking(JFiles.readAttributes(path.javaPath, attributeClass, linkOptions: _*))
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
   }
 
   final case class Attribute(attributeName: String, viewName: String = "basic") {
@@ -166,8 +170,8 @@ object Files {
     effectBlocking(JFiles.setAttribute(path.javaPath, attribute.toJava, value, linkOptions: _*)).unit
       .refineToOrDie[Exception]
 
-  def getAttribute(path: Path, attribute: Attribute, linkOptions: LinkOption*): ZIO[Blocking, Exception, Object] =
-    effectBlocking(JFiles.getAttribute(path.javaPath, attribute.toJava, linkOptions: _*)).refineToOrDie[Exception]
+  def getAttribute(path: Path, attribute: Attribute, linkOptions: LinkOption*): ZIO[Blocking, IOException, Object] =
+    effectBlocking(JFiles.getAttribute(path.javaPath, attribute.toJava, linkOptions: _*)).refineToOrDie[IOException]
 
   sealed trait AttributeNames {
 
@@ -208,28 +212,28 @@ object Files {
     path: Path,
     attributes: Attributes,
     linkOptions: LinkOption*
-  ): ZIO[Blocking, Exception, Map[String, AnyRef]] =
+  ): ZIO[Blocking, IOException, Map[String, AnyRef]] =
     effectBlocking(JFiles.readAttributes(path.javaPath, attributes.toJava, linkOptions: _*))
       .map(_.asScala.toMap)
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
   def getPosixFilePermissions(
     path: Path,
     linkOptions: LinkOption*
-  ): ZIO[Blocking, Exception, Set[PosixFilePermission]] =
+  ): ZIO[Blocking, IOException, Set[PosixFilePermission]] =
     effectBlocking(JFiles.getPosixFilePermissions(path.javaPath, linkOptions: _*))
       .map(_.asScala.toSet)
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
-  def setPosixFilePermissions(path: Path, permissions: Set[PosixFilePermission]): ZIO[Blocking, Exception, Unit] =
+  def setPosixFilePermissions(path: Path, permissions: Set[PosixFilePermission]): ZIO[Blocking, IOException, Unit] =
     effectBlocking(JFiles.setPosixFilePermissions(path.javaPath, permissions.asJava)).unit
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
-  def getOwner(path: Path, linkOptions: LinkOption*): ZIO[Blocking, Exception, UserPrincipal] =
-    effectBlocking(JFiles.getOwner(path.javaPath, linkOptions: _*)).refineToOrDie[Exception]
+  def getOwner(path: Path, linkOptions: LinkOption*): ZIO[Blocking, IOException, UserPrincipal] =
+    effectBlocking(JFiles.getOwner(path.javaPath, linkOptions: _*)).refineToOrDie[IOException]
 
-  def setOwner(path: Path, owner: UserPrincipal): ZIO[Blocking, Exception, Unit] =
-    effectBlocking(JFiles.setOwner(path.javaPath, owner)).unit.refineToOrDie[Exception]
+  def setOwner(path: Path, owner: UserPrincipal): ZIO[Blocking, IOException, Unit] =
+    effectBlocking(JFiles.setOwner(path.javaPath, owner)).unit.refineToOrDie[IOException]
 
   def isSymbolicLink(path: Path): ZIO[Blocking, Nothing, Boolean] =
     effectBlocking(JFiles.isSymbolicLink(path.javaPath)).orDie
@@ -270,19 +274,19 @@ object Files {
   def readAllLines(path: Path, charset: Charset = StandardCharsets.UTF_8): ZIO[Blocking, IOException, List[String]] =
     effectBlocking(JFiles.readAllLines(path.javaPath, charset).asScala.toList).refineToOrDie[IOException]
 
-  def writeBytes(path: Path, bytes: Chunk[Byte], openOptions: OpenOption*): ZIO[Blocking, Exception, Unit] =
-    effectBlocking(JFiles.write(path.javaPath, bytes.toArray, openOptions: _*)).unit.refineToOrDie[Exception]
+  def writeBytes(path: Path, bytes: Chunk[Byte], openOptions: OpenOption*): ZIO[Blocking, IOException, Unit] =
+    effectBlocking(JFiles.write(path.javaPath, bytes.toArray, openOptions: _*)).unit.refineToOrDie[IOException]
 
   def writeLines(
     path: Path,
     lines: Iterable[CharSequence],
     charset: Charset = StandardCharsets.UTF_8,
     openOptions: Set[OpenOption] = Set.empty
-  ): ZIO[Blocking, Exception, Unit] =
+  ): ZIO[Blocking, IOException, Unit] =
     effectBlocking(JFiles.write(path.javaPath, lines.asJava, charset, openOptions.toSeq: _*)).unit
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
-  def list(path: Path): ZStream[Blocking, Exception, Path] =
+  def list(path: Path): ZStream[Blocking, IOException, Path] =
     ZStream
       .fromJavaIteratorManaged(
         ZManaged
@@ -298,7 +302,7 @@ object Files {
     path: Path,
     maxDepth: Int = Int.MaxValue,
     visitOptions: Set[FileVisitOption] = Set.empty
-  ): ZStream[Blocking, Exception, Path] =
+  ): ZStream[Blocking, IOException, Path] =
     ZStream
       .fromEffect(
         effectBlocking(JFiles.walk(path.javaPath, maxDepth, visitOptions.toSeq: _*).iterator())
@@ -309,7 +313,7 @@ object Files {
 
   def find(path: Path, maxDepth: Int = Int.MaxValue, visitOptions: Set[FileVisitOption] = Set.empty)(
     test: (Path, BasicFileAttributes) => Boolean
-  ): ZStream[Blocking, Exception, Path] = {
+  ): ZStream[Blocking, IOException, Path] = {
     val matcher: BiPredicate[JPath, BasicFileAttributes] = (path, attr) => test(Path.fromJava(path), attr)
     ZStream
       .fromEffect(

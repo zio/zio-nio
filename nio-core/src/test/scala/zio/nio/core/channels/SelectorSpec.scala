@@ -1,13 +1,14 @@
 package zio.nio.core.channels
 
-import java.nio.channels.{ CancelledKeyException, SocketChannel => JSocketChannel }
+import java.nio.channels.CancelledKeyException
 
 import zio._
+import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.nio.core.channels.SelectionKey.Operation
-import zio.nio.core.{ BaseSpec, Buffer, SocketAddress }
-import zio.test._
+import zio.nio.core.{ BaseSpec, Buffer, ByteBuffer, SocketAddress }
 import zio.test.Assertion._
+import zio.test._
 
 object SelectorSpec extends BaseSpec {
 
@@ -31,38 +32,36 @@ object SelectorSpec extends BaseSpec {
   def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
     statusCheck.fold(_ => false, identity)
 
-  def server(started: Promise[Nothing, SocketAddress]): ZIO[Clock, Exception, Unit] = {
+  def server(started: Promise[Nothing, SocketAddress]): ZIO[Clock with Blocking, Exception, Unit] = {
     def serverLoop(
       selector: Selector,
-      channel: ServerSocketChannel,
-      buffer: Buffer[Byte]
-    ): IO[Exception, Unit] =
+      buffer: ByteBuffer
+    ): ZIO[Blocking, Exception, Unit] =
       for {
         _            <- selector.select
         selectedKeys <- selector.selectedKeys
-        _            <- IO.foreach(selectedKeys) { key =>
-                          IO.whenM(safeStatusCheck(key.isAcceptable)) {
-                            for {
-                              clientOpt <- channel.accept
-                              client     = clientOpt.get
-                              _         <- client.configureBlocking(false)
-                              _         <- client.register(selector, Operation.Read)
-                            } yield ()
-                          } *>
-                            IO.whenM(safeStatusCheck(key.isReadable)) {
-                              for {
-                                sClient <- key.channel
-                                client   = new SocketChannel(sClient.asInstanceOf[JSocketChannel])
-                                _       <- client.read(buffer)
-                                array   <- buffer.array
-                                text     = byteArrayToString(array)
-                                _       <- buffer.flip
-                                _       <- client.write(buffer)
-                                _       <- buffer.clear
-                                _       <- client.close
-                              } yield ()
-                            } *>
-                            selector.removeKey(key)
+        _            <- IO.foreach_(selectedKeys) { key =>
+                          key.matchChannel { readyOps =>
+                            {
+                              case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
+                                for {
+                                  clientOpt <- channel.accept
+                                  client     = clientOpt.get
+                                  _         <- client.configureBlocking(false)
+                                  _         <- client.register(selector, Operation.Read)
+                                } yield ()
+                              case client: SocketChannel if readyOps(Operation.Read)          =>
+                                for {
+                                  _     <- client.read(buffer)
+                                  array <- buffer.array
+                                  text   = byteArrayToString(array)
+                                  _     <- buffer.flip
+                                  _     <- client.write(buffer)
+                                  _     <- buffer.clear
+                                  _     <- client.close
+                                } yield ()
+                            }
+                          } *> selector.removeKey(key)
                         }
       } yield ()
 
@@ -83,7 +82,7 @@ object SelectorSpec extends BaseSpec {
                   *  1. to accept the client request
                   *  2. to read from the client channel
                   */
-                       _ <- serverLoop(selector, channel, buffer).repeat(Schedule.once)
+                       _ <- serverLoop(selector, buffer).repeat(Schedule.once)
                      } yield ()
                    }
                  }
