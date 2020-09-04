@@ -41,7 +41,7 @@ object StreamsBasedServer extends App {
                 _    <- console.putStrLn("Received connection")
                 data <- ZStream
                           .fromEffectOption(
-                            channel.read(64).tap(_ => console.putStrLn("Read chunk")).orElse(ZIO.fail(None))
+                            channel.readChunk(64).tap(_ => console.putStrLn("Read chunk")).orElse(ZIO.fail(None))
                           )
                           .flattenChunks
                           .take(4)

@@ -7,13 +7,15 @@ import java.nio.channels.{
   ServerSocketChannel => JServerSocketChannel,
   SocketChannel => JSocketChannel
 }
-import java.nio.{ ByteBuffer => JByteBuffer }
 
+import zio.{ IO, UIO }
 import zio.nio.core.channels.SelectionKey.Operation
 import zio.nio.core.channels.spi.SelectorProvider
-import zio.nio.core.{ Buffer, SocketAddress }
-import zio.{ IO, UIO }
+import zio.nio.core.SocketAddress
 
+/**
+ * A channel that can be multiplexed via a [[zio.nio.core.channels.Selector]].
+ */
 trait SelectableChannel extends Channel {
   protected val channel: JSelectableChannel
 
@@ -61,71 +63,65 @@ final class SocketChannel(override protected[channels] val channel: JSocketChann
     with GatheringByteChannel
     with ScatteringByteChannel {
 
-  final def bind(local: SocketAddress): IO[IOException, Unit] =
+  def bind(local: SocketAddress): IO[IOException, Unit] =
     IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
 
-  final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.effect(channel.setOption(name, value)).refineToOrDie[Exception].unit
+  def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
+    IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
-  final val shutdownInput: IO[IOException, Unit] =
+  val shutdownInput: IO[IOException, Unit] =
     IO.effect(channel.shutdownInput()).refineToOrDie[IOException].unit
 
-  final val shutdownOutput: IO[IOException, Unit] =
+  val shutdownOutput: IO[IOException, Unit] =
     IO.effect(channel.shutdownOutput()).refineToOrDie[IOException].unit
 
-  final val socket: UIO[JSocket] =
+  val socket: UIO[JSocket] =
     IO.effectTotal(channel.socket())
 
-  final val isConnected: UIO[Boolean] =
+  val isConnected: UIO[Boolean] =
     IO.effectTotal(channel.isConnected)
 
-  final val isConnectionPending: UIO[Boolean] =
+  val isConnectionPending: UIO[Boolean] =
     IO.effectTotal(channel.isConnectionPending)
 
-  final def connect(remote: SocketAddress): IO[IOException, Boolean] =
+  def connect(remote: SocketAddress): IO[IOException, Boolean] =
     IO.effect(channel.connect(remote.jSocketAddress)).refineToOrDie[IOException]
 
-  final val finishConnect: IO[IOException, Boolean] =
+  val finishConnect: IO[IOException, Boolean] =
     IO.effect(channel.finishConnect()).refineToOrDie[IOException]
 
-  final val remoteAddress: IO[IOException, SocketAddress] =
-    IO.effect(SocketAddress(channel.getRemoteAddress())).refineToOrDie[IOException]
+  val remoteAddress: IO[IOException, SocketAddress] =
+    IO.effect(SocketAddress.fromJava(channel.getRemoteAddress())).refineToOrDie[IOException]
 
-  final def read(b: Buffer[Byte]): IO[IOException, Int] =
-    IO.effect(channel.read(b.buffer.asInstanceOf[JByteBuffer])).refineToOrDie[IOException]
-
-  final def write(b: Buffer[Byte]): IO[Exception, Int] =
-    IO.effect(channel.write(b.buffer.asInstanceOf[JByteBuffer])).refineToOrDie[IOException]
-
-  final val localAddress: IO[IOException, Option[SocketAddress]] =
-    IO.effect(Option(channel.getLocalAddress()).map(SocketAddress(_)))
+  val localAddress: IO[IOException, Option[SocketAddress]] =
+    IO.effect(Option(channel.getLocalAddress()).map(SocketAddress.fromJava))
       .refineToOrDie[IOException]
 }
 
 object SocketChannel {
 
-  final def fromJava(javaSocketChannel: JSocketChannel): IO[IOException, SocketChannel] =
-    IO.effect(new SocketChannel(javaSocketChannel)).refineToOrDie[IOException]
+  def fromJava(javaSocketChannel: JSocketChannel): SocketChannel =
+    new SocketChannel(javaSocketChannel)
 
-  final val open: IO[IOException, SocketChannel] =
+  val open: IO[IOException, SocketChannel] =
     IO.effect(new SocketChannel(JSocketChannel.open())).refineToOrDie[IOException]
 
-  final def open(remote: SocketAddress): IO[IOException, SocketChannel] =
+  def open(remote: SocketAddress): IO[IOException, SocketChannel] =
     IO.effect(new SocketChannel(JSocketChannel.open(remote.jSocketAddress))).refineToOrDie[IOException]
 }
 
 final class ServerSocketChannel(override protected val channel: JServerSocketChannel) extends SelectableChannel {
 
-  final def bind(local: SocketAddress): IO[IOException, Unit] =
+  def bind(local: SocketAddress): IO[IOException, Unit] =
     IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
 
-  final def bind(local: SocketAddress, backlog: Int): IO[IOException, Unit] =
+  def bind(local: SocketAddress, backlog: Int): IO[IOException, Unit] =
     IO.effect(channel.bind(local.jSocketAddress, backlog)).refineToOrDie[IOException].unit
 
-  final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.effect(channel.setOption(name, value)).refineToOrDie[Exception].unit
+  def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
+    IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
-  final val socket: UIO[JServerSocket] =
+  val socket: UIO[JServerSocket] =
     IO.effectTotal(channel.socket())
 
   /**
@@ -135,18 +131,18 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
    *
    * @return None if this socket is in non-blocking mode and no connection is currently available to be accepted.
    */
-  final def accept: IO[IOException, Option[SocketChannel]] =
+  def accept: IO[IOException, Option[SocketChannel]] =
     IO.effect(Option(channel.accept()).map(new SocketChannel(_))).refineToOrDie[IOException]
 
-  final val localAddress: IO[IOException, SocketAddress] =
+  val localAddress: IO[IOException, SocketAddress] =
     IO.effect(new SocketAddress(channel.getLocalAddress())).refineToOrDie[IOException]
 }
 
 object ServerSocketChannel {
 
-  final val open: IO[IOException, ServerSocketChannel] =
+  val open: IO[IOException, ServerSocketChannel] =
     IO.effect(new ServerSocketChannel(JServerSocketChannel.open())).refineToOrDie[IOException]
 
-  def fromJava(javaChannel: JServerSocketChannel): IO[IOException, ServerSocketChannel] =
-    IO.effect(new ServerSocketChannel(javaChannel)).refineToOrDie[IOException]
+  def fromJava(javaChannel: JServerSocketChannel): ServerSocketChannel =
+    new ServerSocketChannel(javaChannel)
 }

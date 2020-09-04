@@ -13,56 +13,69 @@ import zio.{ IO, ZIO }
 
 import scala.collection.JavaConverters._
 
+/**
+ * A channel for reading, writing, mapping, and manipulating a file.
+ *
+ * Unlike network channels, file channels are ''seekable'' with a current position that can be changed.
+ * Read and write calls operate at the current position.
+ */
 final class FileChannel private[channels] (override protected[channels] val channel: JFileChannel)
     extends GatheringByteChannel
     with ScatteringByteChannel {
+
   def position: IO[IOException, Long] = IO.effect(channel.position()).refineToOrDie[IOException]
 
-  def position(newPosition: Long): IO[Exception, Unit] =
-    IO.effect(channel.position(newPosition)).unit.refineToOrDie[Exception]
+  def position(newPosition: Long): IO[IOException, Unit] =
+    IO.effect(channel.position(newPosition)).unit.refineToOrDie[IOException]
 
   def size: IO[IOException, Long] = IO.effect(channel.size()).refineToOrDie[IOException]
 
-  def truncate(size: Long): ZIO[Blocking, Exception, Unit] =
-    effectBlocking(channel.truncate(size)).unit.refineToOrDie[Exception]
+  def truncate(size: Long): ZIO[Blocking, IOException, Unit] =
+    effectBlocking(channel.truncate(size)).unit.refineToOrDie[IOException]
 
+  /**
+   * Forces any updates to this channel's file to be written to the storage device that contains it.
+   *
+   * @param metadata If true then this method is required to force changes to both the file's content and metadata to
+   *                 be written to storage; otherwise, it need only force content changes to be written
+   */
   def force(metadata: Boolean): ZIO[Blocking, IOException, Unit] =
     effectBlocking(channel.force(metadata)).refineToOrDie[IOException]
 
-  def transferTo(position: Long, count: Long, target: GatheringByteChannel): ZIO[Blocking, Exception, Long] =
-    effectBlocking(channel.transferTo(position, count, target.channel)).refineToOrDie[Exception]
+  def transferTo(position: Long, count: Long, target: GatheringByteChannel): ZIO[Blocking, IOException, Long] =
+    effectBlocking(channel.transferTo(position, count, target.channel)).refineToOrDie[IOException]
 
-  def transferFrom(src: ScatteringByteChannel, position: Long, count: Long): ZIO[Blocking, Exception, Long] =
-    effectBlocking(channel.transferFrom(src.channel, position, count)).refineToOrDie[Exception]
+  def transferFrom(src: ScatteringByteChannel, position: Long, count: Long): ZIO[Blocking, IOException, Long] =
+    effectBlocking(channel.transferFrom(src.channel, position, count)).refineToOrDie[IOException]
 
-  def read(dst: ByteBuffer, position: Long): ZIO[Blocking, Exception, Int] =
+  def read(dst: ByteBuffer, position: Long): ZIO[Blocking, IOException, Int] =
     dst
       .withJavaBuffer[Blocking, Throwable, Int](buffer => effectBlocking(channel.read(buffer, position)))
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
-  def write(src: ByteBuffer, position: Long): ZIO[Blocking, Exception, Int] =
+  def write(src: ByteBuffer, position: Long): ZIO[Blocking, IOException, Int] =
     src
       .withJavaBuffer[Blocking, Throwable, Int](buffer => effectBlocking(channel.write(buffer, position)))
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
-  def map(mode: JFileChannel.MapMode, position: Long, size: Long): ZIO[Blocking, Exception, MappedByteBuffer] =
+  def map(mode: JFileChannel.MapMode, position: Long, size: Long): ZIO[Blocking, IOException, MappedByteBuffer] =
     ZIO
       .accessM[Blocking](_.get.effectBlocking(new MappedByteBuffer(channel.map(mode, position, size))))
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
   def lock(
     position: Long = 0L,
     size: Long = Long.MaxValue,
     shared: Boolean = false
-  ): ZIO[Blocking, Exception, FileLock] =
-    effectBlocking(new FileLock(channel.lock(position, size, shared))).refineToOrDie[Exception]
+  ): ZIO[Blocking, IOException, FileLock] =
+    effectBlocking(new FileLock(channel.lock(position, size, shared))).refineToOrDie[IOException]
 
   def tryLock(
     position: Long = 0L,
     size: Long = Long.MaxValue,
     shared: Boolean = false
-  ): IO[Exception, Option[FileLock]] =
-    ZIO.effect(Option(channel.tryLock(position, size, shared)).map(new FileLock(_))).refineToOrDie[Exception]
+  ): IO[IOException, Option[FileLock]] =
+    ZIO.effect(Option(channel.tryLock(position, size, shared)).map(new FileLock(_))).refineToOrDie[IOException]
 }
 
 object FileChannel {
@@ -72,16 +85,15 @@ object FileChannel {
     path: Path,
     options: Set[_ <: OpenOption],
     attrs: FileAttribute[_]*
-  ): ZIO[Blocking, Exception, FileChannel] =
+  ): ZIO[Blocking, IOException, FileChannel] =
     effectBlocking(new FileChannel(JFileChannel.open(path.javaPath, options.asJava, attrs: _*)))
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
-  def open(path: Path, options: OpenOption*): ZIO[Blocking, Exception, FileChannel] =
+  def open(path: Path, options: OpenOption*): ZIO[Blocking, IOException, FileChannel] =
     effectBlocking(new FileChannel(JFileChannel.open(path.javaPath, options: _*)))
-      .refineToOrDie[Exception]
+      .refineToOrDie[IOException]
 
-  def fromJava(javaFileChannel: JFileChannel): ZIO[Blocking, Nothing, FileChannel] =
-    effectBlocking(new FileChannel(javaFileChannel)).orDie
+  def fromJava(javaFileChannel: JFileChannel): FileChannel = new FileChannel(javaFileChannel)
 
   type MapMode = JFileChannel.MapMode
 
