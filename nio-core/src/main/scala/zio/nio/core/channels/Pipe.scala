@@ -6,12 +6,12 @@ import java.nio.channels.{ Pipe => JPipe }
 import zio.nio.core.channels
 import zio.{ IO, UIO }
 
-class Pipe(private val pipe: JPipe) {
+final class Pipe private (private val pipe: JPipe) {
 
-  final val source: UIO[Pipe.SourceChannel] =
+  val source: UIO[Pipe.SourceChannel] =
     IO.effectTotal(new channels.Pipe.SourceChannel(pipe.source()))
 
-  final val sink: UIO[Pipe.SinkChannel] =
+  val sink: UIO[Pipe.SinkChannel] =
     IO.effectTotal(new Pipe.SinkChannel(pipe.sink()))
 }
 
@@ -25,6 +25,9 @@ object Pipe {
       extends ScatteringByteChannel
       with SelectableChannel
 
-  final val open: IO[IOException, Pipe] =
+  val open: IO[IOException, Pipe] =
     IO.effect(new Pipe(JPipe.open())).refineToOrDie[IOException]
+
+  def fromJava(javaPipe: JPipe): Pipe = new Pipe(javaPipe)
+
 }

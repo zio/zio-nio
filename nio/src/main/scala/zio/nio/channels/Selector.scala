@@ -3,11 +3,13 @@ package zio.nio.channels
 import java.io.IOException
 import java.nio.channels.{ ClosedSelectorException, Selector => JSelector, SelectionKey => JSelectionKey }
 
+import zio.{ IO, Managed, UIO, ZIO }
 import com.github.ghik.silencer.silent
 import zio.duration.Duration
 import zio.nio.channels.spi.SelectorProvider
 import zio.nio.core.channels.SelectionKey
-import zio.{ IO, Managed, UIO }
+import zio.blocking
+import zio.blocking.Blocking
 
 import scala.jdk.CollectionConverters._
 
@@ -42,17 +44,21 @@ class Selector(private[nio] val selector: JSelector) {
   /**
    * Can throw IOException and ClosedSelectorException.
    */
-  final def select(timeout: Duration): IO[Exception, Int] =
-    IO.effect(selector.select(timeout.toMillis)).refineToOrDie[Exception]
+  final def select(timeout: Duration): ZIO[Blocking, Exception, Int] =
+    blocking
+      .effectBlockingCancelable(selector.select(timeout.toMillis))(wakeup)
+      .refineToOrDie[Exception]
 
   /**
    * Can throw IOException and ClosedSelectorException.
    */
-  final val select: IO[Exception, Int] =
-    IO.effect(selector.select()).refineToOrDie[IOException]
+  final def select: ZIO[Blocking, Exception, Int] =
+    blocking
+      .effectBlockingCancelable(selector.select())(wakeup)
+      .refineToOrDie[IOException]
 
-  final val wakeup: IO[Nothing, Selector] =
-    IO.effectTotal(selector.wakeup()).map(new Selector(_))
+  final val wakeup: IO[Nothing, Unit] =
+    IO.effectTotal(selector.wakeup()).unit
 
   final private[channels] val close: IO[IOException, Unit] =
     IO.effect(selector.close()).refineToOrDie[IOException].unit
