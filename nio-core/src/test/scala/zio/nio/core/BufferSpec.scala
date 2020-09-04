@@ -199,7 +199,7 @@ object BufferSpec extends BaseSpec {
               _    <- b.reset
               mark <- b.position
             } yield assert(mark)(isWithin(0, position)) && assert(limit)(isWithin(position, capacity)))
-              .catchSome {
+              .catchSomeDefect {
                 case _: IllegalArgumentException | _: IllegalStateException =>
                   IO.effectTotal(assertCompletes)
               }

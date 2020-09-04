@@ -34,8 +34,14 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
 
   def normalize: Path = fromJava(javaPath.normalize)
 
+  /**
+   * Resolves the given path against this path.
+   */
   def / (other: Path): Path = fromJava(javaPath.resolve(other.javaPath))
 
+  /**
+   * Resolves the given path against this path.
+   */
   def / (other: String): Path = fromJava(javaPath.resolve(other))
 
   def resolveSibling(other: Path): Path = fromJava(javaPath.resolveSibling(other.javaPath))

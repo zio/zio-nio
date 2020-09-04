@@ -5,6 +5,7 @@ package charset
 
 import java.nio.{ charset => j }
 import java.{ util => ju }
+import java.nio.charset.IllegalCharsetNameException
 
 import com.github.ghik.silencer.silent
 
@@ -55,21 +56,21 @@ final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset
     for {
       charBuf <- Buffer.char(chunk)
       byteBuf <- encode(charBuf)
-      chunk   <- byteBuf.getChunk().orDie
+      chunk   <- byteBuf.getChunk()
     } yield chunk
 
-  def encodeString(s: String): UIO[Chunk[Byte]] =
+  def encodeString(s: CharSequence): UIO[Chunk[Byte]] =
     for {
       charBuf <- Buffer.char(s)
       byteBuf <- encode(charBuf)
-      chunk   <- byteBuf.getChunk().orDie
+      chunk   <- byteBuf.getChunk()
     } yield chunk
 
   def decodeChunk(chunk: Chunk[Byte]): UIO[Chunk[Char]] =
     for {
       byteBuf <- Buffer.byte(chunk)
       charBuf <- decode(byteBuf)
-      chunk   <- charBuf.getChunk().orDie
+      chunk   <- charBuf.getChunk()
     } yield chunk
 
   def decodeString(chunk: Chunk[Byte]): UIO[String] =
@@ -91,9 +92,33 @@ object Charset {
 
   val defaultCharset: Charset = fromJava(j.Charset.defaultCharset())
 
+  /**
+   * Returns a charset object for the named charset.
+   *
+   * @throws java.nio.charset.IllegalCharsetNameException if the given charset name is illegal
+   * @throws java.nio.charset.UnsupportedCharsetException if no support for the named charset is available in this instance of the Java virtual machine
+   */
   def forName(name: String): Charset = fromJava(j.Charset.forName(name))
 
+  /**
+   * Tells whether the named charset is supported.
+   *
+   * @throws java.nio.charset.IllegalCharsetNameException if the given charset name is illegal
+   */
   def isSupported(name: String): Boolean = j.Charset.isSupported(name)
+
+  /**
+   * Tells whether the name is a legal charset name, ans is support by the JVM.
+   */
+  def isLegalAndSupported(name: String): Boolean =
+    util.control.Exception.failAsValue(classOf[IllegalCharsetNameException])(false)(isSupported(name))
+
+  /**
+   * Returns a charset for the given name, if it is a legal name supported by the JVM.
+   *
+   * @return The charset if it is supported, otherwise `None`
+   */
+  def forNameIfSupported(name: String): Option[Charset] = if (isLegalAndSupported(name)) Some(forName(name)) else None
 
   object Standard {
 

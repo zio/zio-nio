@@ -1,11 +1,12 @@
 package zio.nio.channels
 
-import java.nio.channels.{ CancelledKeyException, SocketChannel => JSocketChannel }
+import java.nio.channels.CancelledKeyException
 
 import zio._
+import zio.blocking.Blocking
 import zio.clock.Clock
+import zio.nio.core.{ Buffer, ByteBuffer, SocketAddress }
 import zio.nio.core.channels.SelectionKey.Operation
-import zio.nio.core.{ Buffer, SocketAddress }
 import zio.nio.BaseSpec
 import zio.test._
 import zio.test.Assertion._
@@ -32,12 +33,12 @@ object SelectorSpec extends BaseSpec {
   def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
     statusCheck.fold(_ => false, identity)
 
-  def server(started: Promise[Nothing, SocketAddress]): ZIO[Clock, Exception, Unit] = {
+  def server(started: Promise[Nothing, SocketAddress]): ZIO[Clock with Blocking, Exception, Unit] = {
     def serverLoop(
       selector: Selector,
       channel: ServerSocketChannel,
-      buffer: Buffer[Byte]
-    ): IO[Exception, Unit] =
+      buffer: ByteBuffer
+    ): ZIO[Blocking, Exception, Unit] =
       for {
         _            <- selector.select
         selectedKeys <- selector.selectedKeys
@@ -51,17 +52,17 @@ object SelectorSpec extends BaseSpec {
                             } yield ()
                           } *>
                             IO.whenM(safeStatusCheck(key.isReadable)) {
-                              for {
-                                sClient <- key.channel
-                                client   = new SocketChannel(sClient.asInstanceOf[JSocketChannel])
-                                _       <- client.read(buffer)
-                                array   <- buffer.array
-                                text     = byteArrayToString(array)
-                                _       <- buffer.flip
-                                _       <- client.write(buffer)
-                                _       <- buffer.clear
-                                _       <- client.close
-                              } yield ()
+                              IO.effectSuspendTotal {
+                                val sClient = key.channel
+                                val client  = sClient.asInstanceOf[zio.nio.core.channels.SocketChannel]
+                                for {
+                                  _ <- client.read(buffer)
+                                  _ <- buffer.flip
+                                  _ <- client.write(buffer)
+                                  _ <- buffer.clear
+                                  _ <- client.close
+                                } yield ()
+                              }
                             } *>
                             selector.removeKey(key)
                         }
@@ -91,19 +92,21 @@ object SelectorSpec extends BaseSpec {
     } yield ()
   }
 
-  def client(address: SocketAddress): IO[Exception, String] = {
+  def client(address: SocketAddress): ZIO[Blocking, Exception, String] = {
     val bytes = Chunk.fromArray("Hello world".getBytes)
     for {
       buffer <- Buffer.byte(bytes)
-      text   <- SocketChannel.open(address).use { client =>
-                  for {
-                    _     <- client.write(buffer)
-                    _     <- buffer.clear
-                    _     <- client.read(buffer)
-                    array <- buffer.array
-                    text   = byteArrayToString(array)
-                    _     <- buffer.clear
-                  } yield text
+      text   <- blocking.blocking {
+                  SocketChannel.open(address).use { client =>
+                    for {
+                      _     <- client.write(buffer)
+                      _     <- buffer.clear
+                      _     <- client.read(buffer)
+                      array <- buffer.array
+                      text   = byteArrayToString(array)
+                      _     <- buffer.clear
+                    } yield text
+                  }
                 }
     } yield text
   }

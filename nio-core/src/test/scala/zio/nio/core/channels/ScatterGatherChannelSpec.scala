@@ -25,8 +25,8 @@ object ScatterGatherChannelSpec extends BaseSpec {
                           } yield text
           buffs      <- IO.collectAll(List(Buffer.byte(5), Buffer.byte(5)))
           channel     = new FileChannel(fileChannel)
-          _          <- channel.readBuffer(buffs)
-          list       <- IO.collectAll(buffs.map(readLine))
+          _          <- channel.read(buffs)
+          list       <- ZIO.foreach(buffs)(readLine)
           _          <- channel.close
         } yield assert(list)(equalTo("Hello" :: "World" :: Nil))
       },
@@ -43,7 +43,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
                       )
                     )
           channel = new FileChannel(fileChannel)
-          _      <- channel.writeBuffer(buffs)
+          _      <- channel.write(buffs)
           _      <- channel.close
           result  = Source.fromFile(file).getLines().toSeq
           _       = file.delete()

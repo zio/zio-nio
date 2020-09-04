@@ -1,14 +1,14 @@
 package zio.nio.core.channels
 
+import java.io.EOFException
 import java.nio.charset.StandardCharsets
 import java.nio.file.{ Files, StandardOpenOption }
 
+import zio.{ Chunk, ZIO }
+import zio.nio.core.{ BaseSpec, Buffer }
 import zio.nio.core.file.Path
 import zio.test._
 import zio.test.Assertion._
-import zio.test.environment.TestEnvironment
-import zio.nio.core.{ BaseSpec, Buffer }
-import zio.{ Chunk, ZIO }
 
 import scala.io.Source
 
@@ -21,7 +21,7 @@ object FileChannelSpec extends BaseSpec {
         for {
           channel <- AsynchronousFileChannel.open(path, StandardOpenOption.READ)
           buffer  <- Buffer.byte(16)
-          _       <- channel.readBuffer(buffer, 0)
+          _       <- channel.read(buffer, 0)
           _       <- buffer.flip
           array   <- buffer.array
           text     = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
@@ -31,7 +31,7 @@ object FileChannelSpec extends BaseSpec {
         val path = Path("nio-core/src/test/resources/async_file_read_test.txt")
         for {
           channel <- AsynchronousFileChannel.open(path, StandardOpenOption.READ)
-          bytes   <- channel.read(500, 0L)
+          bytes   <- channel.readChunk(500, 0L)
         } yield assert(bytes)(equalTo(Chunk.fromArray("Hello World".getBytes(StandardCharsets.UTF_8))))
       },
       testM("asynchronous file write") {
@@ -45,7 +45,7 @@ object FileChannelSpec extends BaseSpec {
         for {
           channel <- zChannel
           buffer  <- Buffer.byte(Chunk.fromArray("Hello World".getBytes))
-          _       <- channel.writeBuffer(buffer, 0)
+          _       <- channel.write(buffer, 0)
           path    <- ZIO.effectTotal(Path("nio-core/src/test/resources/async_file_write_test.txt"))
           result  <- ZIO.effect(Source.fromFile(path.toFile).getLines().toSeq)
           _       <- ZIO.effect(Files.delete(path.javaPath))
@@ -54,10 +54,8 @@ object FileChannelSpec extends BaseSpec {
       testM("memory mapped buffer") {
         val path = Path("nio-core/src/test/resources/async_file_read_test.txt")
         for {
-          env    <- ZIO.environment[TestEnvironment]
           result <- FileChannel
                       .open(path, StandardOpenOption.READ)
-                      .provide(env)
                       .bracket(_.close.ignore) { channel =>
                         for {
                           buffer <- channel.map(FileChannel.MapMode.READ_ONLY, 0L, 6L)
@@ -65,6 +63,20 @@ object FileChannelSpec extends BaseSpec {
                         } yield assert(bytes)(equalTo(Chunk.fromArray("Hello ".getBytes(StandardCharsets.UTF_8))))
                       }
         } yield result
+      },
+      testM("end of stream") {
+        val path = Path("nio-core/src/test/resources/async_file_read_test.txt")
+        FileChannel
+          .open(path, StandardOpenOption.READ)
+          .bracket(_.close.ignore) { channel =>
+            for {
+              size <- channel.size
+              _    <- channel.readChunk(size.toInt)
+              _    <- channel.readChunk(1)
+            } yield ()
+          }
+          .flip
+          .map(assert(_)(isSubtype[EOFException](anything)))
       }
     )
 }

@@ -23,9 +23,9 @@ object ChannelSpec extends BaseSpec {
                              addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
                              _    <- started.succeed(addr)
                              _    <- Managed.make(server.accept)(_.close.orDie).use { worker =>
-                                       worker.readBuffer(sink) *>
+                                       worker.read(sink) *>
                                          sink.flip *>
-                                         worker.writeBuffer(sink)
+                                         worker.write(sink)
                                      }
                            } yield ()
                          }
@@ -40,9 +40,9 @@ object ChannelSpec extends BaseSpec {
                           _        <- client.connect(address)
                           sent     <- src.array
                           _         = sent.update(0, 1)
-                          _        <- client.writeBuffer(src)
+                          _        <- client.write(src)
                           _        <- src.flip
-                          _        <- client.readBuffer(src)
+                          _        <- client.read(src)
                           received <- src.array
                         } yield sent.sameElements(received)
                       }
@@ -68,9 +68,9 @@ object ChannelSpec extends BaseSpec {
                              _      <- started.succeed(addr)
                              result <- Managed
                                          .make(server.accept)(_.close.orDie)
-                                         .use(worker => worker.read(3) *> worker.read(3) *> ZIO.succeed(false))
-                                         .catchAll {
-                                           case ex: java.io.IOException if ex.getMessage == "Connection reset by peer" =>
+                                         .use(worker => worker.readChunk(3) *> worker.readChunk(3) *> ZIO.succeed(false))
+                                         .catchSome {
+                                           case _: java.io.EOFException =>
                                              ZIO.succeed(true)
                                          }
                            } yield result
@@ -83,7 +83,7 @@ object ChannelSpec extends BaseSpec {
             _ <- Managed.make(AsynchronousSocketChannel())(_.close.orDie).use { client =>
                    for {
                      _ <- client.connect(address)
-                     _  = client.write(Chunk.fromArray(Array[Byte](1, 1, 1)))
+                     _  = client.writeChunk(Chunk.fromArray(Array[Byte](1, 1, 1)))
                    } yield ()
                  }
           } yield ()
