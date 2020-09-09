@@ -5,7 +5,7 @@ import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, 
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.OpenOption
 
-import zio.{ Chunk, IO }
+import zio.{ Chunk, IO, Managed }
 import zio.interop.javaz._
 import zio.nio.core.{ Buffer, ByteBuffer, eofCheck }
 import zio.nio.core.file.Path
@@ -96,22 +96,23 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
 
 object AsynchronousFileChannel {
 
-  def open(file: Path, options: OpenOption*): IO[IOException, AsynchronousFileChannel] =
-    IO.effect(
-      new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*))
-    ).refineToOrDie[IOException]
+  def open(file: Path, options: OpenOption*): Managed[IOException, AsynchronousFileChannel] =
+    IO.effect(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*)))
+      .refineToOrDie[IOException]
+      .toNioManaged
 
   def open(
     file: Path,
     options: Set[OpenOption],
     executor: Option[ExecutionContextExecutorService],
     attrs: Set[FileAttribute[_]]
-  ): IO[IOException, AsynchronousFileChannel] =
+  ): Managed[IOException, AsynchronousFileChannel] =
     IO.effect(
       new AsynchronousFileChannel(
         JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
       )
     ).refineToOrDie[IOException]
+      .toNioManaged
 
   def fromJava(javaAsynchronousFileChannel: JAsynchronousFileChannel): AsynchronousFileChannel =
     new AsynchronousFileChannel(javaAsynchronousFileChannel)
