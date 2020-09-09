@@ -4,15 +4,15 @@ import java.io.IOException
 import java.nio.channels.{ Pipe => JPipe }
 
 import zio.nio.core.channels
-import zio.{ IO, UIO }
+import zio.{ IO, Managed }
 
 final class Pipe private (private val pipe: JPipe) {
 
-  val source: UIO[Pipe.SourceChannel] =
-    IO.effectTotal(new channels.Pipe.SourceChannel(pipe.source()))
+  val source: Managed[Nothing, Pipe.SourceChannel] =
+    IO.effectTotal(new channels.Pipe.SourceChannel(pipe.source())).toNioManaged
 
-  val sink: UIO[Pipe.SinkChannel] =
-    IO.effectTotal(new Pipe.SinkChannel(pipe.sink()))
+  val sink: Managed[Nothing, Pipe.SinkChannel] =
+    IO.effectTotal(new Pipe.SinkChannel(pipe.sink())).toNioManaged
 }
 
 object Pipe {

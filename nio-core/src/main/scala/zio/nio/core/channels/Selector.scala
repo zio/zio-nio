@@ -1,12 +1,13 @@
 package zio.nio.core.channels
 
 import java.io.IOException
-import java.nio.channels.{ Selector => JSelector, SelectionKey => JSelectionKey }
+import java.nio.channels.{ SelectionKey => JSelectionKey, Selector => JSelector }
 
 import com.github.ghik.silencer.silent
 import zio.duration.Duration
+import zio.nio.core.IOCloseable
 import zio.nio.core.channels.spi.SelectorProvider
-import zio.{ IO, UIO }
+import zio.{ IO, Managed, UIO }
 
 import scala.jdk.CollectionConverters._
 
@@ -17,7 +18,9 @@ import scala.jdk.CollectionConverters._
  * [[https://docs.oracle.com/javase/8/docs/api/java/nio/channels/Selector.html the documentation for the underlying Java]]
  * API before attempting to use this.
  */
-final class Selector(private[nio] val selector: JSelector) {
+final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
+
+  type Env = Any
 
   val isOpen: UIO[Boolean] = IO.effectTotal(selector.isOpen)
 
@@ -112,7 +115,10 @@ final class Selector(private[nio] val selector: JSelector) {
 
 object Selector {
 
-  val make: IO[IOException, Selector] =
-    IO.effect(new Selector(JSelector.open())).refineToOrDie[IOException]
+  /**
+   * Opens a selector.
+   */
+  val open: Managed[IOException, Selector] =
+    IO.effect(new Selector(JSelector.open())).refineToOrDie[IOException].toNioManaged
 
 }

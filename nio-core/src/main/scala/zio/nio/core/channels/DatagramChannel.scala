@@ -4,7 +4,7 @@ import java.io.IOException
 import java.net.{ SocketOption, DatagramSocket => JDatagramSocket, SocketAddress => JSocketAddress }
 import java.nio.channels.{ DatagramChannel => JDatagramChannel }
 
-import zio.{ IO, UIO }
+import zio.{ IO, Managed, UIO }
 import zio.nio.core.{ ByteBuffer, SocketAddress }
 
 /**
@@ -111,8 +111,10 @@ object DatagramChannel {
    *
    * @return a new datagram channel
    */
-  def open: IO[IOException, DatagramChannel] =
-    IO.effect(new DatagramChannel(JDatagramChannel.open())).refineToOrDie[IOException]
+  def open: Managed[IOException, DatagramChannel] =
+    IO.effect(new DatagramChannel(JDatagramChannel.open()))
+      .refineToOrDie[IOException]
+      .toNioManaged
 
   def fromJava(javaDatagramChannel: JDatagramChannel): DatagramChannel = new DatagramChannel(javaDatagramChannel)
 
