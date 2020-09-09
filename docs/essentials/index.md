@@ -34,7 +34,8 @@ libraryDependencies += "dev.zio" %% "zio-nio" % "1.0.0-RC10"
 ## Main abstractions
 
  - **[File Channel](files.md)** — For processing files that are available locally. For every operation a new fiber is started to perform the operation.
- - **[Socket Channel](sockets.md)** — Provides an API for remote communication with `InetSocket`s. 
+ - **[Socket Channel](sockets.md)** — Provides anAPI for remote communication with `InetSocket`s. 
+ - **[Resource Management](resources.md)** - Avoiding resource leaks
  - **[Character Sets](charsets.md)** - For encoding or decoding character data.
 
 ## References
