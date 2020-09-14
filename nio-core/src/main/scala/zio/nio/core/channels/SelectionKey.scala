@@ -12,10 +12,10 @@ object SelectionKey {
   sealed abstract class Operation(val intVal: Int)
 
   object Operation {
-    final case object Read    extends Operation(jc.SelectionKey.OP_READ)
-    final case object Write   extends Operation(jc.SelectionKey.OP_WRITE)
-    final case object Connect extends Operation(jc.SelectionKey.OP_CONNECT)
-    final case object Accept  extends Operation(jc.SelectionKey.OP_ACCEPT)
+    case object Read    extends Operation(jc.SelectionKey.OP_READ)
+    case object Write   extends Operation(jc.SelectionKey.OP_WRITE)
+    case object Connect extends Operation(jc.SelectionKey.OP_CONNECT)
+    case object Accept  extends Operation(jc.SelectionKey.OP_ACCEPT)
 
     final val fullSet: Set[Operation] = Set(Read, Write, Connect, Accept)
 
