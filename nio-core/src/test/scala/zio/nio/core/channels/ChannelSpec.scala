@@ -1,6 +1,8 @@
 package zio.nio.core.channels
 
-import zio.nio.core.{ BaseSpec, Buffer, SocketAddress }
+import java.io.{ EOFException, FileNotFoundException, IOException }
+
+import zio.nio.core.{ BaseSpec, Buffer, EffectOps, SocketAddress }
 import zio.test.{ suite, testM }
 import zio.{ IO, _ }
 import zio.test._
@@ -131,6 +133,18 @@ object ChannelSpec extends BaseSpec {
           _             <- client(addr)
           _             <- s2.join
         } yield assertCompletes
-      }
+      },
+      suite("explicit end-of-stream")(
+        testM("converts EOFException to None") {
+          assertM(IO.fail(new EOFException).eofCheck.run)(fails(isNone))
+        },
+        testM("converts non EOFException to Some") {
+          val e: IOException = new FileNotFoundException()
+          assertM(IO.fail(e).eofCheck.run)(fails(isSome(equalTo(e))))
+        },
+        testM("passes through success") {
+          assertM(IO.succeed(42).eofCheck.run)(succeeds(equalTo(42)))
+        }
+      )
     )
 }
