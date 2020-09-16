@@ -124,6 +124,17 @@ object ChannelSpec extends BaseSpec {
           _             <- s2.join
         } yield assertCompletes
       },
+      testM("accept should be interruptible") {
+        AsynchronousServerSocketChannel().use { server =>
+          for {
+            addr   <- SocketAddress.inetSocketAddress(0)
+            _      <- server.bind(addr)
+            fiber  <- server.accept.useNow.fork
+            _      <- fiber.interrupt
+            result <- fiber.await
+          } yield assert(result)(isInterrupted)
+        }
+      },
       // this would best be tagged as an regression test. for now just run manually when suspicious.
       testM("accept should not leak resources") {
         val server          = for {
