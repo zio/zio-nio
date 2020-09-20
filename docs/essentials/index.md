@@ -55,7 +55,7 @@ val read100: ZIO[Blocking, Option[IOException], Chunk[Byte]] =
     .flatMap(_.readChunk(100).eofCheck)
 ```
 
-If the error is `None` if end-of-stream is reached, and it is `Some` if the read failed.
+End-of-stream will be signalled with `None`. Any errors will be wrapped in `Some`.
 
 ## References
 
