@@ -87,7 +87,7 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    */
   final val accept: Managed[Exception, AsynchronousSocketChannel] =
     Managed
-      .make(
+      .makeInterruptible(
         effectAsyncWithCompletionHandler[JAsynchronousSocketChannel](h => channel.accept((), h))
           .map(AsynchronousSocketChannel(_))
       )(_.close.orDie)
