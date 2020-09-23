@@ -1,4 +1,5 @@
-package zio.nio.core.file
+package zio.nio.core
+package file
 
 import java.io.IOException
 import java.net.URI
@@ -6,7 +7,6 @@ import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.{ file => jf }
 
 import zio.blocking.{ Blocking, effectBlocking, effectBlockingIO }
-import zio.nio.core.IOCloseable
 import zio.{ UIO, ZIO, ZManaged }
 
 import scala.jdk.CollectionConverters._

@@ -1,11 +1,11 @@
-package zio.nio.core.channels
+package zio.nio.core
+package channels
 
 import java.io.IOException
 import java.nio.channels.{ SelectionKey => JSelectionKey, Selector => JSelector }
 
 import com.github.ghik.silencer.silent
 import zio.duration.Duration
-import zio.nio.core.IOCloseable
 import zio.nio.core.channels.spi.SelectorProvider
 import zio.{ IO, Managed, UIO }
 

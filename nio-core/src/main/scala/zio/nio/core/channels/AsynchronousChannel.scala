@@ -1,4 +1,5 @@
-package zio.nio.core.channels
+package zio.nio.core
+package channels
 
 import java.io.IOException
 import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
@@ -14,7 +15,6 @@ import zio.{ Chunk, IO, Managed, Schedule, ZIO }
 import zio.clock.Clock
 import zio.duration._
 import zio.interop.javaz._
-import zio.nio.core.{ Buffer, ByteBuffer, SocketAddress, eofCheck }
 
 /**
  * A byte channel that reads and writes asynchronously.
