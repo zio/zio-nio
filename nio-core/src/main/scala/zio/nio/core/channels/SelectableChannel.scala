@@ -1,4 +1,5 @@
-package zio.nio.core.channels
+package zio.nio.core
+package channels
 
 import java.io.IOException
 import java.net.{ SocketOption, ServerSocket => JServerSocket, Socket => JSocket }
@@ -11,7 +12,6 @@ import java.nio.channels.{
 import zio.{ IO, Managed, UIO }
 import zio.nio.core.channels.SelectionKey.Operation
 import zio.nio.core.channels.spi.SelectorProvider
-import zio.nio.core.SocketAddress
 
 /**
  * A channel that can be multiplexed via a [[zio.nio.core.channels.Selector]].
@@ -126,7 +126,8 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
   /**
    * Accepts a socket connection.
    *
-   * Not you must manually manage the lifecyle of the returned socket, calling `close` when you're finished with it.
+   * Note that the accept operation is not performed until the returned managed resource is
+   * actually used. `Managed.preallocate` can be used to preform the accept immediately.
    *
    * @return None if this socket is in non-blocking mode and no connection is currently available to be accepted.
    */
