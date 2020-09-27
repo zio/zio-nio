@@ -2,18 +2,16 @@ package zio.nio.core
 
 import java.io.IOException
 
-import zio.ZIO
+import zio.IO
 
 /**
  * A resource with an effect to close or release the resource.
  */
 trait IOCloseable {
 
-  type Env
-
   /**
    * Closes this resource.
    */
-  def close: ZIO[Env, IOException, Unit]
+  def close: IO[IOException, Unit]
 
 }

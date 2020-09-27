@@ -39,6 +39,15 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
       case other                     =>
         new SelectableChannel {
           override protected val channel: nio.channels.SelectableChannel = other
+
+          override type BlockingOps = Nothing
+
+          override type NonBlockingOps = Nothing
+
+          override protected def makeBlockingOps = ???
+
+          override protected def makeNonBlockingOps = ???
+
         }
     }
 

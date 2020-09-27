@@ -10,11 +10,11 @@ import zio.{ Chunk, IO }
 /**
  * A channel that can write bytes from a sequence of buffers.
  */
-trait GatheringByteChannel extends Channel {
+trait GatheringByteOps {
 
-  import GatheringByteChannel._
+  import GatheringByteOps._
 
-  override protected[channels] val channel: JGatheringByteChannel
+  protected[channels] def channel: JGatheringByteChannel
 
   final def write(srcs: List[ByteBuffer]): IO[IOException, Long] =
     IO.effect(channel.write(unwrap(srcs))).refineToOrDie[IOException]
@@ -34,12 +34,14 @@ trait GatheringByteChannel extends Channel {
         // Handle partial writes by dropping buffers where `hasRemaining` returns false,
         // meaning they've been completely written
         def go(buffers: List[ByteBuffer]): IO[IOException, Unit] =
-          write(buffers).flatMap { _ =>
-            IO.foreach(buffers)(b => b.hasRemaining.map(_ -> b)).flatMap { pairs =>
+          for {
+            _     <- write(buffers)
+            pairs <- IO.foreach(buffers)(b => b.hasRemaining.map(_ -> b))
+            r     <- {
               val remaining = pairs.dropWhile(!_._1).map(_._2)
-              if (remaining.isEmpty) IO.unit else go(remaining)
+              go(remaining).unless(remaining.isEmpty)
             }
-          }
+          } yield r
         go(bs)
       }
     } yield ()
@@ -53,7 +55,7 @@ trait GatheringByteChannel extends Channel {
 
 }
 
-object GatheringByteChannel {
+object GatheringByteOps {
 
   private def unwrap(srcs: List[ByteBuffer]): Array[JByteBuffer] = srcs.map(d => d.byteBuffer).toArray
 

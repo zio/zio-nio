@@ -39,11 +39,11 @@ A scope is itself a managed resource. Other managed resources can be attached to
 ZManaged.scope.use { scope =>
 
   val channel: IO[IOException, SocketChannel] = scope(SocketChannel.open).map {
-    case (earlyRelease @ _, channel) => channel
+    case (earlyrelease @ _, channel) => channel
   }
 
   // use channel, perhaps with a Selector
-  channel.flatMap(_.readChunk(10))
+  channel.flatMap(_.useNonBlocking(_.readChunk(10)))
 
 }
 // the scope has now been released, as have all the resources attached to it

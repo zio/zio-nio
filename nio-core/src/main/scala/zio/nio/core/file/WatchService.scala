@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
 import zio.blocking.Blocking
 import zio.duration.Duration
 import zio.nio.core.IOCloseable
-import zio.{ IO, UIO, ZIO, ZManaged }
+import zio._
 
 import scala.jdk.CollectionConverters._
 
@@ -58,20 +58,19 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
 
 final class WatchService private (private[file] val javaWatchService: JWatchService) extends IOCloseable {
 
-  type Env = Any
-
   def close: IO[IOException, Unit] = IO.effect(javaWatchService.close()).refineToOrDie[IOException]
 
   def poll: UIO[Option[WatchKey]] = IO.effectTotal(Option(javaWatchService.poll()).map(new WatchKey(_)))
 
-  def poll(timeout: Duration): IO[InterruptedException, Option[WatchKey]] =
-    IO.effect(Option(javaWatchService.poll(timeout.toNanos, TimeUnit.NANOSECONDS)).map(new WatchKey(_)))
-      .refineToOrDie[InterruptedException]
+  def poll(timeout: Duration): URIO[Blocking, Option[WatchKey]] =
+    blocking
+      .effectBlockingInterrupt(
+        Option(javaWatchService.poll(timeout.toNanos, TimeUnit.NANOSECONDS)).map(new WatchKey(_))
+      )
+      .orDie
 
-  def take: ZIO[Blocking, InterruptedException, WatchKey] =
-    ZIO
-      .accessM[Blocking](_.get.effectBlocking(new WatchKey(javaWatchService.take())))
-      .refineToOrDie[InterruptedException]
+  def take: URIO[Blocking, WatchKey] = blocking.effectBlockingInterrupt(new WatchKey(javaWatchService.take())).orDie
+
 }
 
 object WatchService {
@@ -79,4 +78,5 @@ object WatchService {
   def forDefaultFileSystem: ZManaged[Blocking, IOException, WatchService] = FileSystem.default.newWatchService
 
   def fromJava(javaWatchService: JWatchService): WatchService = new WatchService(javaWatchService)
+
 }
