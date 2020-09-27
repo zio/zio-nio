@@ -39,11 +39,11 @@ package object core {
       }
   }
 
-  implicit final private[nio] class IOCloseableManagement[-R, +E, +A <: IOCloseable { type Env >: R }](
+  implicit final private[nio] class IOCloseableManagement[-R, +E, +A <: IOCloseable](
     val acquire: ZIO[R, E, A]
   ) extends AnyVal {
 
-    def toNioManaged: ZManaged[R, E, A] = acquire.toManaged[R](_.close.ignore)
+    def toNioManaged: ZManaged[R, E, A] = ZManaged.makeInterruptible(acquire)(_.close.ignore)
 
   }
 }

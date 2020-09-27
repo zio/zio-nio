@@ -11,7 +11,6 @@ Required imports for snippets:
 import zio._
 import zio.clock._
 import zio.console._
-import zio.nio._
 import zio.nio.channels._
 import zio.nio.core._
 ```

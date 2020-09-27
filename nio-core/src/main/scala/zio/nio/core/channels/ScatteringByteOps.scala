@@ -11,11 +11,11 @@ import zio.{ Chunk, IO }
 /**
  * A channel that can read bytes into a sequence of buffers.
  */
-trait ScatteringByteChannel extends Channel {
+trait ScatteringByteOps {
 
-  import ScatteringByteChannel._
+  import ScatteringByteOps._
 
-  override protected[channels] val channel: JScatteringByteChannel
+  protected[channels] def channel: JScatteringByteChannel
 
   /**
    * Reads a sequence of bytes from this channel into the provided list of buffers, in order.
@@ -71,7 +71,7 @@ trait ScatteringByteChannel extends Channel {
 
 }
 
-object ScatteringByteChannel {
+object ScatteringByteOps {
 
   private def unwrap(dsts: Seq[ByteBuffer]): Array[JByteBuffer] =
     dsts.map(d => d.byteBuffer).toArray
