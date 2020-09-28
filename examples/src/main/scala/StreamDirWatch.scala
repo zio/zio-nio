@@ -4,7 +4,6 @@ package examples
 
 import java.nio.file.{ StandardWatchEventKinds, WatchEvent }
 
-import zio.nio.core._
 import zio.nio.core.file.{ Path, WatchService }
 
 /**
@@ -16,7 +15,7 @@ import zio.nio.core.file.{ Path, WatchService }
 object StreamDirWatch extends App {
 
   private def watch(dir: Path) =
-    WatchService.forDefaultFileSystem.bracketNio { service =>
+    WatchService.forDefaultFileSystem.use { service =>
       for {
         _ <- dir.registerTree(
                watcher = service,

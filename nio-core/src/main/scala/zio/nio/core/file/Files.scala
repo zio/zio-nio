@@ -17,7 +17,6 @@ import java.util.function.BiPredicate
 import zio.{ Chunk, ZIO, ZManaged }
 import zio.blocking._
 import zio.nio.core.charset.Charset
-import zio.nio.core.ioExceptionOnly
 import zio.stream.ZStream
 
 import scala.jdk.CollectionConverters._
@@ -29,7 +28,7 @@ object Files {
     val managed = ZManaged
       .fromAutoCloseable(effectBlocking(JFiles.newDirectoryStream(dir.javaPath, glob)))
       .map(_.iterator())
-    ZStream.fromJavaIteratorManaged(managed).map(Path.fromJava).refineOrDie(ioExceptionOnly)
+    ZStream.fromJavaIteratorManaged(managed).map(Path.fromJava).refineToOrDie[IOException]
   }
 
   def newDirectoryStream(dir: Path, filter: Path => Boolean): ZStream[Blocking, IOException, Path] = {
@@ -37,7 +36,7 @@ object Files {
     val managed                                        = ZManaged
       .fromAutoCloseable(effectBlocking(JFiles.newDirectoryStream(dir.javaPath, javaFilter)))
       .map(_.iterator())
-    ZStream.fromJavaIteratorManaged(managed).map(Path.fromJava).refineOrDie(ioExceptionOnly)
+    ZStream.fromJavaIteratorManaged(managed).map(Path.fromJava).refineToOrDie[IOException]
   }
 
   def createFile(path: Path, attrs: FileAttribute[_]*): ZIO[Blocking, IOException, Unit] =
@@ -283,7 +282,7 @@ object Files {
       .fromJavaStreamManaged(
         ZManaged.fromAutoCloseable(effectBlocking(JFiles.lines(path.javaPath, charset.javaCharset)))
       )
-      .refineOrDie(ioExceptionOnly)
+      .refineToOrDie[IOException]
 
   def list(path: Path): ZStream[Blocking, IOException, Path] =
     ZStream
@@ -291,7 +290,7 @@ object Files {
         ZManaged.fromAutoCloseable(effectBlocking(JFiles.list(path.javaPath)))
       )
       .map(Path.fromJava)
-      .refineOrDie(ioExceptionOnly)
+      .refineToOrDie[IOException]
 
   def walk(
     path: Path,
@@ -303,7 +302,7 @@ object Files {
         ZManaged.fromAutoCloseable(effectBlocking(JFiles.walk(path.javaPath, maxDepth, visitOptions.toSeq: _*)))
       )
       .map(Path.fromJava)
-      .refineOrDie(ioExceptionOnly)
+      .refineToOrDie[IOException]
 
   def find(path: Path, maxDepth: Int = Int.MaxValue, visitOptions: Set[FileVisitOption] = Set.empty)(
     test: (Path, BasicFileAttributes) => Boolean
@@ -316,7 +315,7 @@ object Files {
         )
       )
       .map(Path.fromJava)
-      .refineOrDie(ioExceptionOnly)
+      .refineToOrDie[IOException]
   }
 
   def copy(
