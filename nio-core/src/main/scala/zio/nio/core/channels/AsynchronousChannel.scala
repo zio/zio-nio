@@ -1,7 +1,7 @@
 package zio.nio.core
 package channels
 
-import java.io.IOException
+import java.io.{ EOFException, IOException }
 import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
 import java.net.SocketOption
 import java.nio.channels.{
@@ -11,10 +11,11 @@ import java.nio.channels.{
 }
 import java.util.concurrent.TimeUnit
 
-import zio.{ Chunk, IO, Managed, Schedule, ZIO }
 import zio.clock.Clock
 import zio.duration._
 import zio.interop.javaz._
+import zio.stream.{ Stream, ZSink, ZStream }
+import zio._
 
 /**
  * A byte channel that reads and writes asynchronously.
@@ -58,8 +59,74 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
   final def writeChunk(chunk: Chunk[Byte]): ZIO[Clock, Exception, Unit] =
     for {
       b <- Buffer.byte(chunk)
-      _ <- write(b).repeat(Schedule.recurWhileM(_ => b.hasRemaining))
+      _ <- write(b).repeatWhileM(_ => b.hasRemaining)
     } yield ()
+
+  /**
+   * A sink that will write all the bytes it receives to this channel.
+   *
+   * @param bufferConstruct Optional, overrides how to construct the buffer used to transfer bytes received by the sink to this channel.
+   */
+  def sink(
+    bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
+  ): ZSink[Clock, Exception, Byte, Byte, Long] =
+    ZSink {
+      for {
+        buffer   <- bufferConstruct.toManaged_
+        countRef <- Ref.makeManaged(0L)
+      } yield (_: Option[Chunk[Byte]])
+        .map { chunk =>
+          def doWrite(total: Int, c: Chunk[Byte]): ZIO[Any with Clock, Exception, Int] = {
+            val x = for {
+              remaining <- buffer.putChunk(c)
+              _         <- buffer.flip
+              count     <- ZStream
+                             .repeatEffectWith(write(buffer), Schedule.recurWhileM(Function.const(buffer.hasRemaining)))
+                             .runSum
+              _         <- buffer.clear
+            } yield (count + total, remaining)
+            x.flatMap {
+              case (result, remaining) if remaining.isEmpty => ZIO.succeed(result)
+              case (result, remaining)                      => doWrite(result, remaining)
+            }
+          }
+
+          doWrite(0, chunk).foldM(
+            e => buffer.getChunk().flatMap(c => ZIO.fail((Left(e), c))),
+            count => countRef.update(_ + count.toLong)
+          )
+        }
+        .getOrElse(
+          countRef.get.flatMap[Clock, (Either[Exception, Long], Chunk[Byte]), Unit](count =>
+            ZIO.fail((Right(count), Chunk.empty))
+          )
+        )
+    }
+
+  /**
+   * A `ZStream` that reads from this channel.
+   * The stream terminates without error if the channel reaches end-of-stream.
+   *
+   * @param bufferConstruct Optional, overrides how to construct the buffer used to transfer bytes read from this channel into the stream.
+   */
+  def stream(
+    bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
+  ): Stream[Exception, Byte] =
+    ZStream {
+      bufferConstruct.toManaged_
+        .map { buffer =>
+          val doRead = for {
+            _     <- read(buffer)
+            _     <- buffer.flip
+            chunk <- buffer.getChunk()
+            _     <- buffer.clear
+          } yield chunk
+          doRead.mapError {
+            case _: EOFException => None
+            case e               => Some(e)
+          }
+        }
+    }
 
 }
 

@@ -2,11 +2,12 @@ package zio.nio.core
 
 package channels
 
-import java.io.IOException
-import java.nio.{ ByteBuffer => JByteBuffer }
+import java.io.{ EOFException, IOException }
 import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
+import java.nio.{ ByteBuffer => JByteBuffer }
 
-import zio.{ Chunk, IO }
+import zio.stream.{ Stream, ZStream }
+import zio.{ Chunk, IO, UIO }
 
 /**
  * A channel that can read bytes into a sequence of buffers.
@@ -68,6 +69,35 @@ trait ScatteringByteOps {
       _       <- read(buffers)
       chunks  <- IO.foreach(buffers.init)(buf => buf.flip *> buf.getChunk())
     } yield chunks.toList
+
+  /**
+   * A `ZStream` that reads from this channel.
+   * '''Note:''' This method does not work well with a channel in non-blocking mode, as it will busy-wait whenever
+   * the channel is not ready for reads. The returned stream should be run within the context of a `useBlocking`
+   * call for correct blocking and interruption support.
+   *
+   * The stream terminates without error if the channel reaches end-of-stream.
+   *
+   * @param bufferConstruct Optional, overrides how to construct the buffer used to transfer bytes read from this channel into the stream.
+   */
+  def stream(
+    bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
+  ): Stream[IOException, Byte] =
+    ZStream {
+      bufferConstruct.toManaged_
+        .map { buffer =>
+          val doRead = for {
+            _     <- read(buffer)
+            _     <- buffer.flip
+            chunk <- buffer.getChunk()
+            _     <- buffer.clear
+          } yield chunk
+          doRead.mapError {
+            case _: EOFException => None
+            case e               => Some(e)
+          }
+        }
+    }
 
 }
 
