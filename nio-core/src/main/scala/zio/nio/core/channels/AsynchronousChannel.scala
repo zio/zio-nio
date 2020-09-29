@@ -170,7 +170,7 @@ final class AsynchronousServerSocketChannel(protected val channel: JAsynchronous
 
 object AsynchronousServerSocketChannel {
 
-  def open(): Managed[IOException, AsynchronousServerSocketChannel] =
+  def open: Managed[IOException, AsynchronousServerSocketChannel] =
     IO.effect(new AsynchronousServerSocketChannel(JAsynchronousServerSocketChannel.open()))
       .refineToOrDie[IOException]
       .toNioManaged
@@ -281,7 +281,7 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
 
 object AsynchronousSocketChannel {
 
-  def open(): Managed[IOException, AsynchronousSocketChannel] =
+  def open: Managed[IOException, AsynchronousSocketChannel] =
     IO.effect(new AsynchronousSocketChannel(JAsynchronousSocketChannel.open()))
       .refineToOrDie[IOException]
       .toNioManaged
