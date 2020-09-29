@@ -8,6 +8,14 @@ import java.nio.charset.{ MalformedInputException, UnmappableCharacterException 
 
 import zio.stream.{ Transducer, ZTransducer }
 
+/**
+ * An engine that can transform a sequence of sixteen-bit Unicode characters into a sequence of bytes in a specific charset.
+ *
+ * '''Important:''' an encoder instance is ''stateful'', as it internally tracks the state of the current encoding operation.
+ *   - an encoder instance cannot be used concurrently, it can only encode a single sequence of characters at a time
+ *   - after an encode operation is completed, the `reset` method must be used to reset the decoder before using it again
+ *     on a new sequence of characters
+ */
 final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends AnyVal {
 
   def averageBytesPerChar: Float = javaEncoder.averageBytesPerChar()
@@ -45,10 +53,15 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
   def replaceWith(replacement: Chunk[Byte]): UIO[Unit] =
     UIO.effectTotal(javaEncoder.replaceWith(replacement.toArray)).unit
 
+  /**
+   * Resets this decoder, clearing any internal state.
+   */
   def reset: UIO[Unit] = UIO.effectTotal(javaEncoder.reset()).unit
 
   /**
    * Encodes a stream of characters into bytes according to this character set's encoding.
+   *
+   * Note the returned transducer is tied to this encoder and cannot be used concurrently.
    *
    * @param bufSize The size of the internal buffer used for encoding.
    *                Must be at least 50.
@@ -56,6 +69,7 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
   def transducer(bufSize: Int = 5000): Transducer[j.CharacterCodingException, Char, Byte] = {
     val push: Managed[Nothing, Option[Chunk[Char]] => IO[j.CharacterCodingException, Chunk[Byte]]] = {
       for {
+        _          <- reset.toManaged_
         charBuffer <- Buffer.char((bufSize.toFloat / this.averageBytesPerChar).round).toManaged_
         byteBuffer <- Buffer.byte(bufSize).toManaged_
       } yield {

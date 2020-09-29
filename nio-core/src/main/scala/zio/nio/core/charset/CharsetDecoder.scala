@@ -8,6 +8,14 @@ import java.nio.charset.{ MalformedInputException, UnmappableCharacterException 
 
 import zio.stream.{ Transducer, ZTransducer }
 
+/**
+ * An engine that can transform a sequence of bytes in a specific charset into a sequence of sixteen-bit Unicode characters.
+ *
+ * '''Important:''' a decoder instance is ''stateful'', as it internally tracks the state of the current decoding operation.
+ *   - a decoder instance cannot be used concurrently, it can only decode a single sequence of bytes at a time
+ *   - after a decode operation is completed, the `reset` method must be used to reset the decoder before using it again
+ *     on a new sequence of bytes
+ */
 final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends AnyVal {
 
   def averageCharsPerByte: Float = javaDecoder.averageCharsPerByte()
@@ -64,10 +72,15 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
   def replaceWith(replacement: String): UIO[Unit] =
     UIO.effectTotal(javaDecoder.replaceWith(replacement)).unit
 
+  /**
+   * Resets this decoder, clearing any internal state.
+   */
   def reset: UIO[Unit] = UIO.effectTotal(javaDecoder.reset()).unit
 
   /**
    * Decodes a stream of bytes into characters according to this character set's encoding.
+   *
+   * Note the returned transducer is tied to this decoder and cannot be used concurrently.
    *
    * @param bufSize The size of the internal buffer used for encoding.
    *                Must be at least 50.
@@ -75,6 +88,7 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
   def transducer(bufSize: Int = 5000): Transducer[j.CharacterCodingException, Byte, Char] = {
     val push: Managed[Nothing, Option[Chunk[Byte]] => IO[j.CharacterCodingException, Chunk[Char]]] = {
       for {
+        _          <- reset.toManaged_
         byteBuffer <- Buffer.byte(bufSize).toManaged_
         charBuffer <- Buffer.char((bufSize.toFloat * this.averageCharsPerByte).round).toManaged_
       } yield {

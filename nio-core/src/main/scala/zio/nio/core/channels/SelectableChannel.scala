@@ -10,7 +10,7 @@ import java.nio.channels.{
 }
 
 import zio.blocking.Blocking
-import zio.{ IO, Managed, UIO, ZIO, ZManaged }
+import zio.{ Fiber, IO, Managed, UIO, ZIO, ZManaged }
 import zio.nio.core.channels.SelectionKey.Operation
 import zio.nio.core.channels.spi.SelectorProvider
 
@@ -171,8 +171,26 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
 
   final class BlockingServerSocketOps private[ServerSocketChannel] () {
 
+    /**
+     * Accepts a socket connection.
+     *
+     * Note that the accept operation is not performed until the returned managed resource is
+     * actually used. `Managed.preallocate` can be used to preform the accept immediately.
+     *
+     * @return The channel for the accepted socket connection.
+     */
     def accept: Managed[IOException, SocketChannel] =
       IO.effect(new SocketChannel(channel.accept())).refineToOrDie[IOException].toNioManaged
+
+    /**
+     * Accepts a connection and uses it to perform an effect on a forked fiber.
+     *
+     * @param use Uses the accepted socket channel to produce an effect value, which will be run on a forked fiber.
+     * @return The fiber running the effect.
+     */
+    def acceptAndFork[R, A](
+      use: SocketChannel => ZIO[R, IOException, A]
+    ): ZIO[R, IOException, Fiber[IOException, A]] = accept.useForked(use)
 
   }
 
@@ -186,7 +204,7 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
      * Note that the accept operation is not performed until the returned managed resource is
      * actually used. `Managed.preallocate` can be used to preform the accept immediately.
      *
-     * @return None if this socket is in non-blocking mode and no connection is currently available to be accepted.
+     * @return None if no connection is currently available to be accepted.
      */
     def accept: Managed[IOException, Option[SocketChannel]] =
       IO.effect(Option(channel.accept()).map(new SocketChannel(_)))

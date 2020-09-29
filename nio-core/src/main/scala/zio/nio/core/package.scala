@@ -3,7 +3,8 @@ package zio.nio
 import java.io.EOFException
 
 import com.github.ghik.silencer.silent
-import zio.{ IO, ZIO, ZManaged }
+import zio.ZManaged.ReleaseMap
+import zio.{ Fiber, IO, ZIO, ZManaged }
 
 package object core {
 
@@ -44,6 +45,22 @@ package object core {
   ) extends AnyVal {
 
     def toNioManaged: ZManaged[R, E, A] = ZManaged.makeInterruptible(acquire)(_.close.ignore)
+
+  }
+
+  implicit final class ManagedOps[-R, +E, +A](private val managed: ZManaged[R, E, A]) extends AnyVal {
+
+    /**
+     * Use this managed resource in an effect running in a forked fiber.
+     * The resource will be released on the forked fiber after the effect exits,
+     * whether it succeeds, fails or is interrupted.
+     *
+     * @param f The effect to run in a forked fiber. The resource is only valid within this effect.
+     */
+    def useForked[R2 <: R, E2 >: E, B](f: A => ZIO[R2, E2, B]): ZIO[R2, E, Fiber[E2, B]] =
+      ReleaseMap.make.flatMap { releaseMap =>
+        managed.zio.provideSome[R]((_, releaseMap)).flatMap { case (finalizer, a) => f(a).onExit(finalizer).fork }
+      }
 
   }
 
