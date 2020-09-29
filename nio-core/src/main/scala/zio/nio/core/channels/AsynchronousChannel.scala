@@ -132,19 +132,16 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
 
 final class AsynchronousServerSocketChannel(protected val channel: JAsynchronousServerSocketChannel) extends Channel {
 
-  /**
-   * Binds the channel's socket to a local address and configures the socket
-   * to listen for connections.
-   */
-  def bind(address: SocketAddress): IO[IOException, Unit] =
-    IO.effect(channel.bind(address.jSocketAddress)).refineToOrDie[IOException].unit
+  def bindTo(local: SocketAddress, backlog: Int = 0): IO[IOException, Unit] = bind(Some(local), backlog)
+
+  def bindAuto(backlog: Int = 0): IO[IOException, Unit] = bind(None, backlog)
 
   /**
    * Binds the channel's socket to a local address and configures the socket
    * to listen for connections, up to backlog pending connection.
    */
-  def bind(address: SocketAddress, backlog: Int): IO[IOException, Unit] =
-    IO.effect(channel.bind(address.jSocketAddress, backlog)).refineToOrDie[IOException].unit
+  def bind(address: Option[SocketAddress], backlog: Int = 0): IO[IOException, Unit] =
+    IO.effect(channel.bind(address.map(_.jSocketAddress).orNull, backlog)).refineToOrDie[IOException].unit
 
   def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
     IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
@@ -186,13 +183,17 @@ object AsynchronousServerSocketChannel {
       .toNioManaged
 }
 
-class AsynchronousSocketChannel(override protected val channel: JAsynchronousSocketChannel)
+final class AsynchronousSocketChannel(override protected val channel: JAsynchronousSocketChannel)
     extends AsynchronousByteChannel(channel) {
 
-  final def bind(address: SocketAddress): IO[IOException, Unit] =
-    IO.effect(channel.bind(address.jSocketAddress)).refineToOrDie[IOException].unit
+  def bindTo(address: SocketAddress): IO[IOException, Unit] = bind(Some(address))
 
-  final def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
+  def bindAuto: IO[IOException, Unit] = bind(None)
+
+  def bind(address: Option[SocketAddress]): IO[IOException, Unit] =
+    IO.effect(channel.bind(address.map(_.jSocketAddress).orNull)).refineToOrDie[IOException].unit
+
+  def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
     IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
   final def shutdownInput: IO[IOException, Unit] =

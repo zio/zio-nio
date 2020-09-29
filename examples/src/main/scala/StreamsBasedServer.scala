@@ -2,8 +2,8 @@ package zio.nio.examples
 
 import zio._
 import zio.duration._
-import zio.nio.core.SocketAddress
 import zio.nio.channels._
+import zio.nio.core.InetSocketAddress
 import zio.stream._
 
 object StreamsBasedServer extends App {
@@ -23,7 +23,7 @@ object StreamsBasedServer extends App {
   def server(port: Int): Managed[Exception, AsynchronousServerSocketChannel] =
     for {
       server        <- AsynchronousServerSocketChannel()
-      socketAddress <- SocketAddress.inetSocketAddress(port).toManaged_
+      socketAddress <- InetSocketAddress.wildCard(port).toManaged_
       _             <- server.bind(socketAddress).toManaged_
     } yield server
 

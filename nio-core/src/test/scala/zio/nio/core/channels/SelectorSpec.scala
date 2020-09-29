@@ -70,13 +70,12 @@ object SelectorSpec extends BaseSpec {
       } yield ()
 
     for {
-      address  <- SocketAddress.inetSocketAddress(0).toManaged_
       scope    <- Managed.scope
       selector <- Selector.open
       channel  <- ServerSocketChannel.open
       _        <- Managed.fromEffect {
                     for {
-                      _      <- channel.bind(address)
+                      _      <- channel.bindAuto()
                       _      <- channel.configureBlocking(false)
                       _      <- channel.register(selector, Operation.Accept)
                       buffer <- Buffer.byte(256)

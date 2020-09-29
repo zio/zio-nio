@@ -53,10 +53,10 @@ object ToUppercaseAsAService extends App {
       .getOrElse(7777)
 
     ServerSocketChannel.open.useNioBlocking { (serverChannel, ops) =>
-      SocketAddress.inetSocketAddress(port).flatMap { socketAddress =>
-        serverChannel.bind(socketAddress) *>
+      InetSocketAddress.wildCard(port).flatMap { socketAddress =>
+        serverChannel.bindTo(socketAddress) *>
           console.putStrLn(s"Listening on $socketAddress") *>
-          ops.accept.useForked(handleConnection).forever
+          ops.acceptAndFork(handleConnection).forever
       }
     }.exitCode
 

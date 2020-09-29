@@ -15,23 +15,22 @@ object ChannelSpec extends BaseSpec {
       testM("read/write") {
         def echoServer(started: Promise[Nothing, SocketAddress]): IO[Exception, Unit] =
           for {
-            address <- SocketAddress.inetSocketAddress(0)
-            sink    <- Buffer.byte(3)
-            _       <- AsynchronousServerSocketChannel
-                         .open()
-                         .use { server =>
-                           for {
-                             _    <- server.bind(address)
-                             addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
-                             _    <- started.succeed(addr)
-                             _    <- server.accept.use { worker =>
-                                       worker.read(sink) *>
-                                         sink.flip *>
-                                         worker.write(sink)
-                                     }
-                           } yield ()
-                         }
-                         .fork
+            sink <- Buffer.byte(3)
+            _    <- AsynchronousServerSocketChannel
+                      .open()
+                      .use { server =>
+                        for {
+                          _    <- server.bindAuto()
+                          addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                          _    <- started.succeed(addr)
+                          _    <- server.accept.use { worker =>
+                                    worker.read(sink) *>
+                                      sink.flip *>
+                                      worker.write(sink)
+                                  }
+                        } yield ()
+                      }
+                      .fork
           } yield ()
 
         def echoClient(address: SocketAddress): IO[Exception, Boolean] =
@@ -60,23 +59,22 @@ object ChannelSpec extends BaseSpec {
       testM("read should fail when connection close") {
         def server(started: Promise[Nothing, SocketAddress]): IO[Exception, Fiber[Exception, Boolean]] =
           for {
-            address <- SocketAddress.inetSocketAddress(0)
-            result  <- AsynchronousServerSocketChannel
-                         .open()
-                         .use { server =>
-                           for {
-                             _      <- server.bind(address)
-                             addr   <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
-                             _      <- started.succeed(addr)
-                             result <- server.accept
-                                         .use(worker => worker.readChunk(3) *> worker.readChunk(3) *> ZIO.succeed(false))
-                                         .catchSome {
-                                           case _: java.io.EOFException =>
-                                             ZIO.succeed(true)
-                                         }
-                           } yield result
-                         }
-                         .fork
+            result <- AsynchronousServerSocketChannel
+                        .open()
+                        .use { server =>
+                          for {
+                            _      <- server.bindAuto()
+                            addr   <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                            _      <- started.succeed(addr)
+                            result <- server.accept
+                                        .use(worker => worker.readChunk(3) *> worker.readChunk(3) *> ZIO.succeed(false))
+                                        .catchSome {
+                                          case _: java.io.EOFException =>
+                                            ZIO.succeed(true)
+                                        }
+                          } yield result
+                        }
+                        .fork
           } yield result
 
         def client(address: SocketAddress): IO[Exception, Unit] =
@@ -104,25 +102,23 @@ object ChannelSpec extends BaseSpec {
           }
 
         def server(
-          address: SocketAddress,
           started: Promise[Nothing, SocketAddress]
         ): Managed[IOException, Fiber[Exception, Unit]] =
           for {
             server <- AsynchronousServerSocketChannel.open()
-            _      <- server.bind(address).toManaged_
+            _      <- server.bindAuto().toManaged_
             addr   <- server.localAddress.someOrElseM(IO.die(new NoSuchElementException)).toManaged_
             _      <- started.succeed(addr).toManaged_
             worker <- server.accept.unit.fork
           } yield worker
 
         for {
-          address        <- SocketAddress.inetSocketAddress(0)
           serverStarted1 <- Promise.make[Nothing, SocketAddress]
-          _              <- server(address, serverStarted1).use { s1 =>
+          _              <- server(serverStarted1).use { s1 =>
                               serverStarted1.await.flatMap(client).zipRight(s1.join)
                             }
           serverStarted2 <- Promise.make[Nothing, SocketAddress]
-          _              <- server(address, serverStarted2).use { s2 =>
+          _              <- server(serverStarted2).use { s2 =>
                               serverStarted2.await.flatMap(client).zipRight(s2.join)
                             }
         } yield assertCompletes

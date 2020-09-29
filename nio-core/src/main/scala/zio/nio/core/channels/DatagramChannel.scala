@@ -74,6 +74,10 @@ final class DatagramChannel private[channels] (override protected val channel: J
 
   override protected def makeNonBlockingOps: NonBlockingDatagramOps = new NonBlockingDatagramOps
 
+  def bindTo(local: SocketAddress): IO[IOException, Unit] = bind(Some(local))
+
+  def bindAuto: IO[IOException, Unit] = bind(None)
+
   /**
    * Binds this channel's underlying socket to the given local address. Passing `None` binds to an
    * automatically assigned local address.
