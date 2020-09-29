@@ -1,7 +1,7 @@
 package zio.nio.channels
 
 import zio.nio._
-import zio.nio.core.{ Buffer, SocketAddress }
+import zio.nio.core.{ Buffer, InetSocketAddress, SocketAddress }
 import zio.test.Assertion._
 import zio.test._
 import zio._
@@ -13,7 +13,7 @@ object DatagramChannelSpec extends BaseSpec {
       testM("read/write") {
         def echoServer(started: Promise[Nothing, SocketAddress]): IO[Exception, Unit] =
           for {
-            address <- SocketAddress.inetSocketAddress(0)
+            address <- InetSocketAddress.wildCard(0)
             sink    <- Buffer.byte(3)
             _       <- DatagramChannel
                          .bind(Some(address))
@@ -72,7 +72,7 @@ object DatagramChannelSpec extends BaseSpec {
           } yield worker
 
         for {
-          address       <- SocketAddress.inetSocketAddress(0)
+          address       <- InetSocketAddress.wildCard(0)
           serverStarted <- Promise.make[Nothing, SocketAddress]
           s1            <- server(address, serverStarted)
           addr          <- serverStarted.await

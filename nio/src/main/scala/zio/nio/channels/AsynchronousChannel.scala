@@ -67,17 +67,22 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
 
   /**
    * Binds the channel's socket to a local address and configures the socket
-   * to listen for connections.
+   * to listen for connections, up to backlog pending connection.
    */
-  final def bind(address: SocketAddress): IO[IOException, Unit] =
-    IO.effect(channel.bind(address.jSocketAddress)).refineToOrDie[IOException].unit
+  final def bindTo(local: SocketAddress, backlog: Int = 0): IO[IOException, Unit] = bind(Some(local), backlog)
+
+  /**
+   * Binds the channel's socket to an automatically assigned local address and configures the socket
+   * to listen for connections, up to backlog pending connection.
+   */
+  final def bindAuto(backlog: Int = 0): IO[IOException, Unit] = bind(None, backlog)
 
   /**
    * Binds the channel's socket to a local address and configures the socket
    * to listen for connections, up to backlog pending connection.
    */
-  final def bind(address: SocketAddress, backlog: Int): IO[IOException, Unit] =
-    IO.effect(channel.bind(address.jSocketAddress, backlog)).refineToOrDie[IOException].unit
+  final def bind(address: Option[SocketAddress], backlog: Int = 0): IO[IOException, Unit] =
+    IO.effect(channel.bind(address.map(_.jSocketAddress).orNull, backlog)).refineToOrDie[IOException].unit
 
   final def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
     IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit

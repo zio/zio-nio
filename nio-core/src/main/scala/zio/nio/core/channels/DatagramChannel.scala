@@ -15,6 +15,10 @@ final class DatagramChannel private[channels] (override protected[channels] val 
     with SelectableChannel
     with ScatteringByteChannel {
 
+  def bindTo(local: SocketAddress): IO[IOException, Unit] = bind(Some(local))
+
+  def bindAuto: IO[IOException, Unit] = bind(None)
+
   /**
    * Binds this channel's underlying socket to the given local address. Passing `None` binds to an
    * automatically assigned local address.

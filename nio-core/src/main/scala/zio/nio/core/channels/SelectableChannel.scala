@@ -63,8 +63,12 @@ final class SocketChannel(override protected[channels] val channel: JSocketChann
     with GatheringByteChannel
     with ScatteringByteChannel {
 
-  def bind(local: SocketAddress): IO[IOException, Unit] =
-    IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
+  def bindTo(address: SocketAddress): IO[IOException, Unit] = bind(Some(address))
+
+  def bindAuto: IO[IOException, Unit] = bind(None)
+
+  def bind(local: Option[SocketAddress]): IO[IOException, Unit] =
+    IO.effect(channel.bind(local.map(_.jSocketAddress).orNull)).refineToOrDie[IOException].unit
 
   def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
     IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
@@ -110,12 +114,12 @@ object SocketChannel {
 }
 
 final class ServerSocketChannel(override protected val channel: JServerSocketChannel) extends SelectableChannel {
+  def bindTo(local: SocketAddress, backlog: Int = 0): IO[IOException, Unit] = bind(Some(local), backlog)
 
-  def bind(local: SocketAddress): IO[IOException, Unit] =
-    IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
+  def bindAuto(backlog: Int = 0): IO[IOException, Unit] = bind(None, backlog)
 
-  def bind(local: SocketAddress, backlog: Int): IO[IOException, Unit] =
-    IO.effect(channel.bind(local.jSocketAddress, backlog)).refineToOrDie[IOException].unit
+  def bind(local: Option[SocketAddress], backlog: Int = 0): IO[IOException, Unit] =
+    IO.effect(channel.bind(local.map(_.jSocketAddress).orNull, backlog)).refineToOrDie[IOException].unit
 
   def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
     IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit

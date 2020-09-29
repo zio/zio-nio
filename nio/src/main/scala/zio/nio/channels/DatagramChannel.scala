@@ -110,6 +110,21 @@ object DatagramChannel {
   def bind(local: Option[SocketAddress]): Managed[IOException, DatagramChannel] = open.flatMap(_.bind(local).toManaged_)
 
   /**
+   * Opens a datagram channel bound to the given local address as a managed resource.
+   *
+   * @param local the local address
+   * @return a datagram channel bound to the local address
+   */
+  def bindTo(local: SocketAddress): Managed[IOException, DatagramChannel] = open.flatMap(_.bind(Some(local)).toManaged_)
+
+  /**
+   * Opens a datagram channel bound to an automatically assigned local address as a managed resource.
+   *
+   * @return a datagram channel bound to the local address
+   */
+  def bindAuto: Managed[IOException, DatagramChannel] = open.flatMap(_.bind(None).toManaged_)
+
+  /**
    * Opens a datagram channel connected to the given remote address as a managed resource.
    *
    * @param remote the remote address

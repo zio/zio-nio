@@ -1,11 +1,10 @@
 package zio.nio.channels
 
 import java.nio.channels.CancelledKeyException
-
 import zio._
 import zio.blocking.Blocking
 import zio.clock.Clock
-import zio.nio.core.{ Buffer, ByteBuffer, SocketAddress }
+import zio.nio.core.{ Buffer, ByteBuffer, InetSocketAddress, SocketAddress }
 import zio.nio.core.channels.SelectionKey.Operation
 import zio.nio.BaseSpec
 import zio.test._
@@ -68,11 +67,11 @@ object SelectorSpec extends BaseSpec {
       } yield ()
 
     for {
-      address <- SocketAddress.inetSocketAddress(0)
+      address <- InetSocketAddress.wildCard(0)
       _       <- Selector.make.use { selector =>
                    ServerSocketChannel.open.use { channel =>
                      for {
-                       _      <- channel.bind(address)
+                       _      <- channel.bindTo(address)
                        _      <- channel.configureBlocking(false)
                        _      <- channel.register(selector, Operation.Accept)
                        buffer <- Buffer.byte(256)

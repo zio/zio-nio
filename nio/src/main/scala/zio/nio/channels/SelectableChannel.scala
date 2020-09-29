@@ -1,5 +1,11 @@
 package zio.nio.channels
 
+import zio.nio.channels.spi.SelectorProvider
+import zio.nio.core.SocketAddress
+import zio.nio.core.channels.SelectionKey
+import zio.nio.core.channels.SelectionKey.Operation
+import zio.{ IO, Managed, UIO }
+
 import java.io.IOException
 import java.net.{ SocketOption, ServerSocket => JServerSocket, Socket => JSocket }
 import java.nio.channels.{
@@ -7,12 +13,6 @@ import java.nio.channels.{
   ServerSocketChannel => JServerSocketChannel,
   SocketChannel => JSocketChannel
 }
-
-import zio.{ IO, Managed, UIO }
-import zio.nio.channels.spi.SelectorProvider
-import zio.nio.core.{ SocketAddress }
-import zio.nio.core.channels.SelectionKey
-import zio.nio.core.channels.SelectionKey.Operation
 
 trait SelectableChannel extends Channel {
   protected val channel: JSelectableChannel
@@ -61,8 +61,12 @@ final class SocketChannel private[channels] (override protected[channels] val ch
     with GatheringByteChannel
     with ScatteringByteChannel {
 
-  final def bind(local: SocketAddress): IO[IOException, Unit] =
-    IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
+  final def bindTo(address: SocketAddress): IO[IOException, Unit] = bind(Some(address))
+
+  final def bindAuto: IO[IOException, Unit] = bind(None)
+
+  final def bind(local: Option[SocketAddress]): IO[IOException, Unit] =
+    IO.effect(channel.bind(local.map(_.jSocketAddress).orNull)).refineToOrDie[IOException].unit
 
   final def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
     IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
@@ -122,14 +126,12 @@ object SocketChannel {
 final class ServerSocketChannel private (override protected val channel: JServerSocketChannel)
     extends SelectableChannel {
 
-  final def bind(local: SocketAddress): IO[IOException, Unit] =
-    IO.effect(channel.bind(local.jSocketAddress)).refineToOrDie[IOException].unit
+  final def bindTo(local: SocketAddress, backlog: Int = 0): IO[IOException, Unit] = bind(Some(local), backlog)
 
-  final def bind(local: SocketAddress, backlog: Int): IO[IOException, Unit] =
-    IO.effect(channel.bind(local.jSocketAddress, backlog)).refineToOrDie[IOException].unit
+  final def bindAuto(backlog: Int = 0): IO[IOException, Unit] = bind(None, backlog)
 
-  final def setOption[T](name: SocketOption[T], value: T): IO[Exception, Unit] =
-    IO.effect(channel.setOption(name, value)).refineToOrDie[Exception].unit
+  final def bind(local: Option[SocketAddress], backlog: Int = 0): IO[IOException, Unit] =
+    IO.effect(channel.bind(local.map(_.jSocketAddress).orNull, backlog)).refineToOrDie[IOException].unit
 
   final val socket: UIO[JServerSocket] =
     IO.effectTotal(channel.socket())

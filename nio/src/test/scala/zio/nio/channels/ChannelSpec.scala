@@ -1,7 +1,7 @@
 package zio.nio.channels
 
 import zio.nio.BaseSpec
-import zio.nio.core.{ Buffer, SocketAddress }
+import zio.nio.core.{ Buffer, InetSocketAddress, SocketAddress }
 import zio.{ IO, _ }
 import zio.test._
 import zio.test.Assertion._
@@ -14,11 +14,11 @@ object ChannelSpec extends BaseSpec {
       testM("read/write") {
         def echoServer(started: Promise[Nothing, SocketAddress]): IO[Exception, Unit] =
           for {
-            address <- SocketAddress.inetSocketAddress(0)
+            address <- InetSocketAddress.wildCard(0)
             sink    <- Buffer.byte(3)
             _       <- AsynchronousServerSocketChannel().use { server =>
                          for {
-                           _    <- server.bind(address)
+                           _    <- server.bindTo(address)
                            addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
                            _    <- started.succeed(addr)
                            _    <- server.accept.use { worker =>
@@ -56,10 +56,10 @@ object ChannelSpec extends BaseSpec {
       testM("read should fail when connection close") {
         def server(started: Promise[Nothing, SocketAddress]): IO[Exception, Fiber[Exception, Boolean]] =
           for {
-            address <- SocketAddress.inetSocketAddress(0)
+            address <- InetSocketAddress.wildCard(0)
             result  <- AsynchronousServerSocketChannel().use { server =>
                          for {
-                           _      <- server.bind(address)
+                           _      <- server.bindTo(address)
                            addr   <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
                            _      <- started.succeed(addr)
                            result <- server.accept
@@ -100,7 +100,7 @@ object ChannelSpec extends BaseSpec {
           for {
             worker <- AsynchronousServerSocketChannel().use { server =>
                         for {
-                          _      <- server.bind(address)
+                          _      <- server.bindTo(address)
                           addr   <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
                           _      <- started.succeed(addr)
                           worker <- server.accept.use(_ => ZIO.unit)
@@ -109,7 +109,7 @@ object ChannelSpec extends BaseSpec {
           } yield worker
 
         for {
-          address       <- SocketAddress.inetSocketAddress(0)
+          address       <- InetSocketAddress.wildCard(0)
           serverStarted <- Promise.make[Nothing, SocketAddress]
           s1            <- server(address, serverStarted)
           addr          <- serverStarted.await
@@ -125,8 +125,8 @@ object ChannelSpec extends BaseSpec {
       testM("accept should be interruptible") {
         AsynchronousServerSocketChannel().use { server =>
           for {
-            addr   <- SocketAddress.inetSocketAddress(0)
-            _      <- server.bind(addr)
+            addr   <- InetSocketAddress.wildCard(0)
+            _      <- server.bindTo(addr)
             fiber  <- server.accept.useNow.fork
             _      <- fiber.interrupt
             result <- fiber.await
@@ -136,9 +136,9 @@ object ChannelSpec extends BaseSpec {
       // this would best be tagged as an regression test. for now just run manually when suspicious.
       testM("accept should not leak resources") {
         val server          = for {
-          addr    <- SocketAddress.inetSocketAddress(8081).toManaged_
+          addr    <- InetSocketAddress.wildCard(8081).toManaged_
           channel <- AsynchronousServerSocketChannel()
-          _       <- channel.bind(addr).toManaged_
+          _       <- channel.bindTo(addr).toManaged_
           _       <- AsynchronousSocketChannel().use(channel => channel.connect(addr)).forever.toManaged_.fork
         } yield channel
         val interruptAccept = server.use(
