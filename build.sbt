@@ -40,21 +40,6 @@ lazy val zioNioCore = project
   )
   .settings(dottySettings)
 
-lazy val zioNio = project
-  .in(file("nio"))
-  .dependsOn(zioNioCore)
-  .settings(stdSettings("zio-nio"))
-  .settings(
-    libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"          % ZioCoreVersion,
-      "dev.zio" %% "zio-streams"  % ZioCoreVersion,
-      "dev.zio" %% "zio-test"     % ZioCoreVersion % Test,
-      "dev.zio" %% "zio-test-sbt" % ZioCoreVersion % Test
-    ),
-    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
-  )
-  .settings(dottySettings)
-
 lazy val docs = project
   .in(file("zio-nio-docs"))
   .settings(
