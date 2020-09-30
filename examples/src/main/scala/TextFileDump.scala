@@ -4,9 +4,9 @@ package examples
 
 import zio.blocking.Blocking
 import zio.console.Console
-import zio.nio.core.channels.FileChannel
-import zio.nio.core.charset.Charset
-import zio.nio.core.file.Path
+import zio.nio.channels.FileChannel
+import zio.nio.charset.Charset
+import zio.nio.file.Path
 import zio.stream.ZStream
 
 /**

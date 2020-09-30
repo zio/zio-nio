@@ -23,8 +23,8 @@ Non-blocking usage does not require this special handling, but for consistency t
  
  ```scala mdoc:silent
 import zio.ZIO
-import zio.nio.core._
-import zio.nio.core.channels._
+import zio.nio._
+import zio.nio.channels._
  
 def readHeader(c: SocketChannel): ZIO[Blocking, IOException, (Chunk[Byte], Chunk[Byte])] =
   c.useBlocking { ops =>
@@ -39,8 +39,8 @@ To help with the common use-case where you want to create a channel, there is ve
 `useNioBlocking` provides both the channel and the requested type of operations:
 
 ```scala mdoc:silent
-import zio.nio.core._
-import zio.nio.core.channels._
+import zio.nio._
+import zio.nio.channels._
 
 SocketChannel.open.useNioBlocking { (channel, blockingOps) => 
   blockingOps.readChunk(100) <*> channel.remoteAddress
@@ -50,7 +50,7 @@ SocketChannel.open.useNioBlocking { (channel, blockingOps) =>
 If you don't need the channel, there's `useNioBlockingOps`:
 
 ```scala mdoc:silent
-import zio.nio.core.channels._
+import zio.nio.channels._
 
 SocketChannel.open.useNioBlockingOps { blockingOps => 
   blockingOps.readChunk(100)

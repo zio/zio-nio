@@ -4,7 +4,7 @@ package examples
 
 import java.nio.file.{ StandardWatchEventKinds, WatchEvent }
 
-import zio.nio.core.file.{ Path, WatchService }
+import zio.nio.file.{ Path, WatchService }
 
 /**
  * Example of using the `ZStream` API for watching a file system directory for events.

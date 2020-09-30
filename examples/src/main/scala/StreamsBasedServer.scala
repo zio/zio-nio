@@ -2,8 +2,8 @@ package zio.nio.examples
 
 import zio._
 import zio.duration._
-import zio.nio.core.InetSocketAddress
-import zio.nio.core.channels.AsynchronousServerSocketChannel
+import zio.nio.InetSocketAddress
+import zio.nio.channels.AsynchronousServerSocketChannel
 import zio.stream._
 
 object StreamsBasedServer extends App {

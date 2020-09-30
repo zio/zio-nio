@@ -12,7 +12,7 @@ import zio._
 import zio.clock._
 import zio.console._
 import zio.nio.channels._
-import zio.nio.core._
+import zio.nio._
 ```
 
 ## Creating sockets
@@ -20,10 +20,11 @@ import zio.nio.core._
 Creating server socket:
 
 ```scala mdoc:silent
-val server = AsynchronousServerSocketChannel()
+val server = AsynchronousServerSocketChannel.open
   .mapM { socket =>
     for {
-      _ <- SocketAddress.inetSocketAddress("127.0.0.1", 1337) >>= socket.bind
+      address <- InetSocketAddress.hostname("127.0.0.1", 1337)
+      _ <- socket.bindTo(address)
       _ <- socket.accept.preallocate.flatMap(_.use(channel => doWork(channel).catchAll(ex => putStrLn(ex.getMessage))).fork).forever.fork
     } yield ()
   }.useForever
@@ -43,11 +44,11 @@ def doWork(channel: AsynchronousSocketChannel): ZIO[Console with Clock, Throwabl
 Creating client socket:
 
 ```scala mdoc:silent
-val clientM: Managed[Exception, AsynchronousSocketChannel] = AsynchronousSocketChannel()
+val clientM: Managed[Exception, AsynchronousSocketChannel] = AsynchronousSocketChannel.open
   .mapM { client =>
     for {
       host    <- InetAddress.localHost
-      address <- SocketAddress.inetSocketAddress(host, 2552)
+      address <- InetSocketAddress.inetAddress(host, 2552)
       _       <- client.connect(address)
     } yield client
   }
@@ -58,8 +59,7 @@ Reading and writing to socket:
 ```scala mdoc:silent
 for {
   serverFiber <- server.fork
-  clientFiber <- clientM.use(_.writeChunk(Chunk.fromArray(Array(1, 2, 3).map(_.toByte)))).fork
-  _           <- clientFiber.join
+  _ <- clientM.use(_.writeChunk(Chunk.fromArray(Array(1, 2, 3).map(_.toByte))))
   _           <- serverFiber.join
 } yield ()
 ```

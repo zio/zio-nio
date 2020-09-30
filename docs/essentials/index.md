@@ -46,9 +46,9 @@ When reading from channels, the end of the stream may be reached at any time. Th
 ```scala mdoc:silent
 import zio._
 import zio.blocking.Blocking
-import zio.nio.core._
-import zio.nio.core.channels._
-import zio.nio.core.file.Path
+import zio.nio._
+import zio.nio.channels._
+import zio.nio.file.Path
 import java.io.IOException
 
 val read100: ZIO[Blocking, Option[IOException], Chunk[Byte]] =

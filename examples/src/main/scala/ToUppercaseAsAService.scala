@@ -7,9 +7,9 @@ import java.io.IOException
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.console.Console
-import zio.nio.core._
-import zio.nio.core.channels.{ ServerSocketChannel, SocketChannel }
-import zio.nio.core.charset.Charset
+import zio.nio._
+import zio.nio.channels.{ ServerSocketChannel, SocketChannel }
+import zio.nio.charset.Charset
 import zio.stream.ZTransducer
 
 import scala.util.control.Exception._

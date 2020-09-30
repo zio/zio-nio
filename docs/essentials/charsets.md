@@ -31,9 +31,9 @@ JVMs typically support many more charsets than these, use `Charset.availableChar
 ### Example
 
 ```scala mdoc:silent
-import zio.nio.core.charset._
+import zio.nio.charset._
 import zio.nio.file.Files
-import zio.nio.core.file.Path
+import zio.nio.file.Path
 
 val s = "Hello, world!"
 for {
@@ -49,9 +49,9 @@ Using streams instead of buffers or chunks is great for bigger jobs. ZIO Streams
 Stream-based encoding and decoding are provided by the `transducer` method of the `CharsetEncoder` and `CharsetDecoder` classes respectively.
 
 ```scala mdoc:silent
-import zio.nio.core.charset._
-import zio.nio.core.channels.FileChannel
-import zio.nio.core.file.Path
+import zio.nio.charset._
+import zio.nio.channels.FileChannel
+import zio.nio.file.Path
 import zio.stream.ZStream
 import zio.blocking.Blocking
 import zio.console

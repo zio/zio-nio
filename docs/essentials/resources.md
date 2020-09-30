@@ -14,8 +14,8 @@ The most straight-forward way to use a managed resource is with the `use` method
 ```scala mdoc:silent
 import zio._
 import zio.blocking.Blocking
-import zio.nio.core.channels._
-import zio.nio.core.file.Path
+import zio.nio.channels._
+import zio.nio.file.Path
 import java.io.IOException
 
 def useChannel(f: FileChannel): ZIO[Blocking, IOException, Unit] = ???
