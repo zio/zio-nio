@@ -26,9 +26,9 @@ ThisBuild / publishTo := sonatypePublishToBundle.value
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
 
-lazy val zioNioCore = project
-  .in(file("nio-core"))
-  .settings(stdSettings("zio-nio-core"))
+lazy val zioNio = project
+  .in(file("nio"))
+  .settings(stdSettings("zio-nio"))
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio" %% "zio"          % ZioCoreVersion,

@@ -16,7 +16,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
     suite("ScatterGatherChannelSpec")(
       testM("scattering read") {
         FileChannel
-          .open(Path("nio-core/src/test/resources/scattering_read_test.txt"), StandardOpenOption.READ)
+          .open(Path("nio/src/test/resources/scattering_read_test.txt"), StandardOpenOption.READ)
           .useNioBlockingOps { ops =>
             for {
               buffs <- IO.collectAll(List(Buffer.byte(5), Buffer.byte(5)))
@@ -33,7 +33,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
           }
       },
       testM("gathering write") {
-        val file = Path("nio-core/src/test/resources/gathering_write_test.txt")
+        val file = Path("nio/src/test/resources/gathering_write_test.txt")
         FileChannel
           .open(file, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
           .useNioBlockingOps { ops =>
