@@ -6,10 +6,12 @@ import java.nio.channels.CancelledKeyException
 import zio._
 import zio.blocking.Blocking
 import zio.clock.Clock
+import zio.duration.durationInt
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.{ BaseSpec, Buffer, ByteBuffer, SocketAddress }
 import zio.test.Assertion._
 import zio.test._
+import zio.test.environment.live
 
 object SelectorSpec extends BaseSpec {
 
@@ -24,6 +26,17 @@ object SelectorSpec extends BaseSpec {
           _           <- serverFiber.join
           message     <- clientFiber.join
         } yield assert(message)(equalTo("Hello world"))
+      },
+      testM("select is interruptible") {
+        live {
+          Selector.open.use { selector =>
+            for {
+              fiber <- selector.select.fork
+              _     <- ZIO.sleep(500.milliseconds)
+              exit  <- fiber.interrupt
+            } yield assert(exit)(isInterrupted)
+          }
+        }
       }
     )
 

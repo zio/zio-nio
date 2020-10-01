@@ -58,13 +58,14 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * **Note this will very often block**.
    * This is intended to be used when the effect is locked to an Executor
    * that is appropriate for this.
+   * If the fiber is interrupted while blocked in `select`, then `wakeup` is used to unblock it.
    *
    * Dies with `ClosedSelectorException` if this selector is closed.
    *
    * @return The number of keys, possibly zero, whose ready-operation sets were updated
    */
   def select(timeout: Duration): IO[IOException, Int] =
-    IO.effect(selector.select(timeout.toMillis)).refineToOrDie[IOException]
+    IO.effect(selector.select(timeout.toMillis)).refineToOrDie[IOException].fork.flatMap(_.join).onInterrupt(wakeup)
 
   /**
    * Performs a blocking select operation.
@@ -72,13 +73,14 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * **Note this will very often block**.
    * This is intended to be used when the effect is locked to an Executor
    * that is appropriate for this.
+   * If the fiber is interrupted while blocked in `select`, then `wakeup` is used to unblock it.
    *
    * Dies with `ClosedSelectorException` if this selector is closed.
    *
    * @return The number of keys, possibly zero, whose ready-operation sets were updated
    */
   def select: IO[IOException, Int] =
-    IO.effect(selector.select()).refineToOrDie[IOException]
+    IO.effect(selector.select()).refineToOrDie[IOException].fork.flatMap(_.join).onInterrupt(wakeup)
 
   /**
    * Causes the first selection operation that has not yet returned to return immediately.
@@ -94,7 +96,7 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * Invoking this method more than once between two successive selection
    * operations has the same effect as invoking it just once.
    */
-  val wakeup: IO[Nothing, Unit] =
+  def wakeup: IO[Nothing, Unit] =
     IO.effectTotal(selector.wakeup()).unit
 
   /**
@@ -110,7 +112,7 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * invoking this method or the wakeup method, will cause a
    * `ClosedSelectorException` to be raised as a defect.
    */
-  val close: IO[IOException, Unit] =
+  def close: IO[IOException, Unit] =
     IO.effect(selector.close()).refineToOrDie[IOException]
 
 }
