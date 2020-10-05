@@ -18,7 +18,7 @@ import zio.nio.core._
 
 ## Creating sockets
 
-Creating server socket:
+Creating a server socket:
 
 ```scala mdoc:silent
 val server = AsynchronousServerSocketChannel()
@@ -41,7 +41,7 @@ def doWork(channel: AsynchronousSocketChannel): ZIO[Console with Clock, Throwabl
 }
 ```
 
-Creating client socket:
+Creating a client socket:
 
 ```scala mdoc:silent
 val clientM: Managed[Exception, AsynchronousSocketChannel] = AsynchronousSocketChannel()
@@ -54,7 +54,7 @@ val clientM: Managed[Exception, AsynchronousSocketChannel] = AsynchronousSocketC
   }
 ```
 
-Reading and writing to socket:
+Reading and writing to a socket:
 
 ```scala mdoc:silent
 for {
