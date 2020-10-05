@@ -4,6 +4,7 @@ package channels
 import java.io.IOException
 import java.net.{ SocketOption, ServerSocket => JServerSocket, Socket => JSocket }
 import java.nio.channels.{
+  ClosedChannelException,
   SelectableChannel => JSelectableChannel,
   ServerSocketChannel => JServerSocketChannel,
   SocketChannel => JSocketChannel
@@ -39,21 +40,25 @@ trait SelectableChannel extends BlockingChannel {
   final def keyFor(sel: Selector): UIO[Option[SelectionKey]] =
     IO.effectTotal(Option(channel.keyFor(sel.selector)).map(new SelectionKey(_)))
 
-  final def register(sel: Selector, ops: Set[Operation], att: Option[AnyRef]): IO[IOException, SelectionKey] =
+  final def register(
+    sel: Selector,
+    ops: Set[Operation],
+    att: Option[AnyRef]
+  ): IO[ClosedChannelException, SelectionKey] =
     IO.effect(new SelectionKey(channel.register(sel.selector, Operation.toInt(ops), att.orNull)))
-      .refineToOrDie[IOException]
+      .refineToOrDie[ClosedChannelException]
 
-  final def register(sel: Selector, ops: Set[Operation]): IO[IOException, SelectionKey] =
+  final def register(sel: Selector, ops: Set[Operation]): IO[ClosedChannelException, SelectionKey] =
     IO.effect(new SelectionKey(channel.register(sel.selector, Operation.toInt(ops))))
-      .refineToOrDie[IOException]
+      .refineToOrDie[ClosedChannelException]
 
-  final def register(sel: Selector, op: Operation, att: Option[AnyRef]): IO[IOException, SelectionKey] =
+  final def register(sel: Selector, op: Operation, att: Option[AnyRef]): IO[ClosedChannelException, SelectionKey] =
     IO.effect(new SelectionKey(channel.register(sel.selector, op.intVal, att.orNull)))
-      .refineToOrDie[IOException]
+      .refineToOrDie[ClosedChannelException]
 
-  final def register(sel: Selector, op: Operation): IO[IOException, SelectionKey] =
+  final def register(sel: Selector, op: Operation): IO[ClosedChannelException, SelectionKey] =
     IO.effect(new SelectionKey(channel.register(sel.selector, op.intVal)))
-      .refineToOrDie[IOException]
+      .refineToOrDie[ClosedChannelException]
 
   final def configureBlocking(block: Boolean): IO[IOException, Unit] =
     IO.effect(channel.configureBlocking(block)).unit.refineToOrDie[IOException]
