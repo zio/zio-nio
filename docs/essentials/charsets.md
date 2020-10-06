@@ -26,7 +26,7 @@ The standard set of charsets provided by Java are available in `Charset.Standard
 * usAscii
 * iso8859_1
 
-JVMs typically support many more charsets than these, use `Charset.availableCharsets` to retrieve the complete list.
+JVMs typically support many more charsets than these; use `Charset.availableCharsets` to retrieve the complete list.
 
 ### Example
 

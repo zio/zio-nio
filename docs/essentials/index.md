@@ -34,8 +34,8 @@ libraryDependencies += "dev.zio" %% "zio-nio" % "1.0.0-RC9"
 ## Main Abstractions
 
  - **[Using Blocking APIs](blocking.md)** — How to deal with NIO APIs that block the calling thread
- - **[File Channel](files.md)** — For processing files that are available locally. For every operation a new fiber is started to perform operation
- - **[Socket Channel](sockets.md)** — Provides API for remote communication with `InetSocket`s
+ - **[File Channel](files.md)** — For processing files that are available locally. For every operation a new fiber is started to perform the operation.
+ - **[Socket Channel](sockets.md)** — Provides an API for remote communication with `InetSocket`s.
  - **[Resource Management](resources.md)** — Avoiding resource leaks
  - **[Character Sets](charsets.md)** — For encoding or decoding character data
 
