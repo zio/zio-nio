@@ -8,7 +8,9 @@ import java.nio.{
   FloatBuffer => JFloatBuffer,
   IntBuffer => JIntBuffer,
   LongBuffer => JLongBuffer,
-  ShortBuffer => JShortBuffer
+  ShortBuffer => JShortBuffer,
+  BufferOverflowException,
+  ReadOnlyBufferException
 }
 
 import scala.reflect.ClassTag
@@ -81,6 +83,7 @@ object BufferSpec extends BaseSpec {
     f: Int => A
   ): ZSpec[TestEnvironment, Exception] = {
     val initialCapacity = 10
+    def initialValue    = f(1)
     def initialValues   = Array(1, 2, 3).map(f)
     def zeroValues      = Array(0, 0, 0).map(f)
 
@@ -186,6 +189,47 @@ object BufferSpec extends BaseSpec {
         for {
           b <- allocate(initialCapacity)
         } yield assert(b.hasArray)(isTrue)
+      },
+      testM("put writes an element and increments the position") {
+        for {
+          b        <- allocate(initialCapacity)
+          _        <- b.put(initialValue)
+          newValue <- b.get(0)
+          position <- b.position
+        } yield assert(newValue)(equalTo(initialValue)) && assert(position)(equalTo(1))
+      },
+      testM("failing put if there are no elements remaining") {
+        for {
+          b      <- allocate(0)
+          result <- b.put(initialValue).run
+        } yield assert(result)(dies(isSubtype[BufferOverflowException](anything)))
+      },
+      testM("failing put if this is a read-only buffer") {
+        for {
+          b         <- allocate(initialCapacity)
+          bReadOnly <- b.asReadOnlyBuffer
+          result    <- bReadOnly.put(initialValue).run
+        } yield assert(result)(dies(isSubtype[ReadOnlyBufferException](anything)))
+      },
+      testM("put writes an element at a specified index") {
+        for {
+          b        <- allocate(initialCapacity)
+          _        <- b.put(1, initialValue)
+          newValue <- b.get(1)
+          position <- b.position
+        } yield assert(newValue)(equalTo(initialValue)) && assert(position)(equalTo(0))
+      },
+      testM("failing put if the index is negative") {
+        for {
+          b      <- allocate(initialCapacity)
+          result <- b.put(-1, initialValue).run
+        } yield assert(result)(dies(isSubtype[IndexOutOfBoundsException](anything)))
+      },
+      testM("failing put if the index is not smaller than the limit") {
+        for {
+          b      <- allocate(initialCapacity)
+          result <- b.put(initialCapacity, initialValue).run
+        } yield assert(result)(dies(isSubtype[IndexOutOfBoundsException](anything)))
       },
       testM[TestEnvironment, Exception]("0 <= mark <= position <= limit <= capacity") {
         checkM(Gen.int(-1, 10), Gen.int(-1, 10), Gen.int(-1, 10), Gen.int(-1, 10)) {
