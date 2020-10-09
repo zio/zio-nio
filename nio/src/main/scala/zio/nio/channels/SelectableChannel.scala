@@ -40,24 +40,20 @@ trait SelectableChannel extends BlockingChannel {
   final def keyFor(sel: Selector): UIO[Option[SelectionKey]] =
     IO.effectTotal(Option(channel.keyFor(sel.selector)).map(new SelectionKey(_)))
 
+  /**
+   * Registers this channel with the given selector, returning a selection key.
+   *
+   * @param selector The selector to register with.
+   * @param ops The key's interest set will be created with these operations.
+   * @param attachment The object to attach to the key, if any.
+   * @return The new `SelectionKey`.
+   */
   final def register(
-    sel: Selector,
-    ops: Set[Operation],
-    att: Option[AnyRef]
+    selector: Selector,
+    ops: Set[Operation] = Set.empty,
+    attachment: Option[AnyRef] = None
   ): IO[ClosedChannelException, SelectionKey] =
-    IO.effect(new SelectionKey(channel.register(sel.selector, Operation.toInt(ops), att.orNull)))
-      .refineToOrDie[ClosedChannelException]
-
-  final def register(sel: Selector, ops: Set[Operation]): IO[ClosedChannelException, SelectionKey] =
-    IO.effect(new SelectionKey(channel.register(sel.selector, Operation.toInt(ops))))
-      .refineToOrDie[ClosedChannelException]
-
-  final def register(sel: Selector, op: Operation, att: Option[AnyRef]): IO[ClosedChannelException, SelectionKey] =
-    IO.effect(new SelectionKey(channel.register(sel.selector, op.intVal, att.orNull)))
-      .refineToOrDie[ClosedChannelException]
-
-  final def register(sel: Selector, op: Operation): IO[ClosedChannelException, SelectionKey] =
-    IO.effect(new SelectionKey(channel.register(sel.selector, op.intVal)))
+    IO.effect(new SelectionKey(channel.register(selector.selector, Operation.toInt(ops), attachment.orNull)))
       .refineToOrDie[ClosedChannelException]
 
   final def configureBlocking(block: Boolean): IO[IOException, Unit] =

@@ -64,7 +64,7 @@ object SelectorSpec extends BaseSpec {
                                   (_, maybeClient) = scopeResult
                                   _               <- IO.whenCase(maybeClient) {
                                                        case Some(client) =>
-                                                         client.configureBlocking(false) *> client.register(selector, Operation.Read)
+                                                         client.configureBlocking(false) *> client.register(selector, Set(Operation.Read))
                                                      }
                                 } yield ()
                               case channel: SocketChannel if readyOps(Operation.Read)         =>
@@ -90,7 +90,7 @@ object SelectorSpec extends BaseSpec {
                     for {
                       _      <- channel.bindAuto()
                       _      <- channel.configureBlocking(false)
-                      _      <- channel.register(selector, Operation.Accept)
+                      _      <- channel.register(selector, Set(Operation.Accept))
                       buffer <- Buffer.byte(256)
                       addr   <- channel.localAddress
                       _      <- started.succeed(addr)
