@@ -22,7 +22,7 @@ trait GatheringByteOps {
     IO.effect(channel.write(unwrap(srcs))).refineToOrDie[IOException]
 
   final def write(src: ByteBuffer): IO[IOException, Int] =
-    IO.effect(channel.write(src.byteBuffer)).refineToOrDie[IOException]
+    IO.effect(channel.write(src.buffer)).refineToOrDie[IOException]
 
   /**
    * Writes a list of chunks, in order.
@@ -104,6 +104,6 @@ trait GatheringByteOps {
 object GatheringByteOps {
 
   private def unwrap(srcs: List[ByteBuffer]): Array[JByteBuffer] =
-    srcs.map(d => d.byteBuffer).toArray
+    srcs.map(d => d.buffer).toArray
 
 }

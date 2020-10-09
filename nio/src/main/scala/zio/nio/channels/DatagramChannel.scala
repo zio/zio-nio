@@ -39,7 +39,7 @@ final class DatagramChannel private[channels] (override protected val channel: J
      * @return the number of bytes that were sent over this channel
      */
     def send(src: ByteBuffer, target: SocketAddress): IO[IOException, Int] =
-      IO.effect(channel.send(src.byteBuffer, target.jSocketAddress)).refineToOrDie[IOException]
+      IO.effect(channel.send(src.buffer, target.jSocketAddress)).refineToOrDie[IOException]
 
   }
 
@@ -52,7 +52,7 @@ final class DatagramChannel private[channels] (override protected val channel: J
      * @return the socket address of the datagram's source, if available.
      */
     def receive(dst: ByteBuffer): IO[IOException, SocketAddress] =
-      IO.effect(new SocketAddress(channel.receive(dst.byteBuffer)))
+      IO.effect(new SocketAddress(channel.receive(dst.buffer)))
         .refineToOrDie[IOException]
 
   }
@@ -68,7 +68,7 @@ final class DatagramChannel private[channels] (override protected val channel: J
      * @return the socket address of the datagram's source, if available.
      */
     def receive(dst: ByteBuffer): IO[IOException, Option[SocketAddress]] =
-      IO.effect(Option(channel.receive(dst.byteBuffer)).map(new SocketAddress(_))).refineToOrDie[IOException]
+      IO.effect(Option(channel.receive(dst.buffer)).map(new SocketAddress(_))).refineToOrDie[IOException]
 
   }
 

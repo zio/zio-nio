@@ -94,7 +94,9 @@ import scala.reflect.ClassTag
  * }}}
  */
 @specialized // See if Specialized will work on return values, e.g. `get`
-abstract class Buffer[A: ClassTag] private[nio] (buffer: JBuffer) {
+abstract class Buffer[A: ClassTag] private[nio] () {
+
+  protected[nio] val buffer: JBuffer
 
   /**
    * Returns this buffer's capacity.

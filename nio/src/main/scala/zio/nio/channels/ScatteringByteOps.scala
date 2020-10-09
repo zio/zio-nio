@@ -36,7 +36,7 @@ trait ScatteringByteOps {
    * @return The number of bytes read, possibly 0
    */
   final def read(dst: ByteBuffer): IO[IOException, Int] =
-    IO.effect(channel.read(dst.byteBuffer)).refineToOrDie[IOException].flatMap(eofCheck)
+    IO.effect(channel.read(dst.buffer)).refineToOrDie[IOException].flatMap(eofCheck)
 
   /**
    * Reads a chunk of bytes.
@@ -104,6 +104,6 @@ trait ScatteringByteOps {
 object ScatteringByteOps {
 
   private def unwrap(dsts: Seq[ByteBuffer]): Array[JByteBuffer] =
-    dsts.map(d => d.byteBuffer).toArray
+    dsts.map(d => d.buffer).toArray
 
 }

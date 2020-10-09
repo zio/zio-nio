@@ -31,7 +31,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
    *  Fails with `java.io.EOFException` if end-of-stream is reached.
    */
   final def read(b: ByteBuffer): IO[Exception, Int] =
-    effectAsyncWithCompletionHandler[JInteger](h => channel.read(b.byteBuffer, (), h))
+    effectAsyncWithCompletionHandler[JInteger](h => channel.read(b.buffer, (), h))
       .refineToOrDie[Exception]
       .flatMap(eofCheck(_))
 
@@ -47,7 +47,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
    *  Writes data into this channel from buffer, returning the number of bytes written.
    */
   final def write(b: ByteBuffer): IO[Exception, Int] =
-    effectAsyncWithCompletionHandler[JInteger](h => channel.write(b.byteBuffer, (), h))
+    effectAsyncWithCompletionHandler[JInteger](h => channel.write(b.buffer, (), h))
       .map(_.toInt)
       .refineToOrDie[Exception]
 
@@ -230,7 +230,7 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
   final def read[A](dst: ByteBuffer, timeout: Duration): IO[Exception, Int] =
     effectAsyncWithCompletionHandler[JInteger] { h =>
       channel.read(
-        dst.byteBuffer,
+        dst.buffer,
         timeout.fold(Long.MaxValue, _.toNanos),
         TimeUnit.NANOSECONDS,
         (),
@@ -258,7 +258,7 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
     timeout: Duration
   ): IO[Exception, Long] =
     effectAsyncWithCompletionHandler[JLong] { h =>
-      val a = dsts.map(_.byteBuffer).toArray
+      val a = dsts.map(_.buffer).toArray
       channel.read(
         a,
         0,
