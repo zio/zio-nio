@@ -34,8 +34,7 @@ final class Selector(private[nio] val selector: JSelector) {
     IO.effectTotal(selector.selectedKeys())
       .map(_.asScala.toSet[JSelectionKey].map(new SelectionKey(_)))
 
-  def removeKey(key: SelectionKey): UIO[Unit] =
-    IO.effectTotal(selector.selectedKeys().remove(key.selectionKey)).unit
+  def removeKey(key: SelectionKey): UIO[Unit] = IO.effectTotal(selector.selectedKeys().remove(key.selectionKey)).unit
 
   /**
    * Selects a set of keys whose corresponding channels are ready for I/O operations.
@@ -74,8 +73,7 @@ final class Selector(private[nio] val selector: JSelector) {
    *
    * @return The number of keys, possibly zero, whose ready-operation sets were updated
    */
-  def select: IO[IOException, Int] =
-    IO.effect(selector.select()).refineToOrDie[IOException]
+  def select: IO[IOException, Int] = IO.effect(selector.select()).refineToOrDie[IOException]
 
   /**
    * Causes the first selection operation that has not yet returned to return immediately.

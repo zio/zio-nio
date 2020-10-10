@@ -58,8 +58,7 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
 final class WatchService private (private[file] val javaWatchService: JWatchService) {
   def close: IO[IOException, Unit] = IO.effect(javaWatchService.close()).refineToOrDie[IOException]
 
-  def poll: UIO[Option[WatchKey]] =
-    IO.effectTotal(Option(javaWatchService.poll()).map(new WatchKey(_)))
+  def poll: UIO[Option[WatchKey]] = IO.effectTotal(Option(javaWatchService.poll()).map(new WatchKey(_)))
 
   def poll(timeout: Duration): IO[InterruptedException, Option[WatchKey]] =
     IO.effect(Option(javaWatchService.poll(timeout.toNanos, TimeUnit.NANOSECONDS)).map(new WatchKey(_)))

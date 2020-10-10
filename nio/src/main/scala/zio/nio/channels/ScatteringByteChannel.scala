@@ -25,6 +25,5 @@ trait ScatteringByteChannel extends Channel {
       chunk  <- buffer.getChunk()
     } yield chunk
 
-  private def unwrap(dsts: List[ByteBuffer]): Array[JByteBuffer] =
-    dsts.map(d => d.byteBuffer).toArray
+  private def unwrap(dsts: List[ByteBuffer]): Array[JByteBuffer] = dsts.map(d => d.byteBuffer).toArray
 }

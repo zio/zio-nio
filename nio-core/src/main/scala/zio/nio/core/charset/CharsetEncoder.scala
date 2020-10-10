@@ -26,14 +26,12 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
   def flush(out: ByteBuffer): UIO[CoderResult] =
     out.withJavaBuffer(jOut => UIO.effectTotal(CoderResult.fromJava(javaEncoder.flush(jOut))))
 
-  def malformedInputAction: UIO[j.CodingErrorAction] =
-    UIO.effectTotal(javaEncoder.malformedInputAction())
+  def malformedInputAction: UIO[j.CodingErrorAction] = UIO.effectTotal(javaEncoder.malformedInputAction())
 
   def onMalformedInput(errorAction: j.CodingErrorAction): UIO[Unit] =
     UIO.effectTotal(javaEncoder.onMalformedInput(errorAction)).unit
 
-  def unmappableCharacterAction: UIO[j.CodingErrorAction] =
-    UIO.effectTotal(javaEncoder.unmappableCharacterAction())
+  def unmappableCharacterAction: UIO[j.CodingErrorAction] = UIO.effectTotal(javaEncoder.unmappableCharacterAction())
 
   def onUnmappableCharacter(errorAction: j.CodingErrorAction): UIO[Unit] =
     UIO.effectTotal(javaEncoder.onUnmappableCharacter(errorAction)).unit
@@ -123,7 +121,6 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
 
 object CharsetEncoder {
 
-  def fromJava(javaEncoder: j.CharsetEncoder): CharsetEncoder =
-    new CharsetEncoder(javaEncoder)
+  def fromJava(javaEncoder: j.CharsetEncoder): CharsetEncoder = new CharsetEncoder(javaEncoder)
 
 }

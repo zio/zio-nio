@@ -19,11 +19,9 @@ object SelectionKey {
 
     final val fullSet: Set[Operation] = Set(Read, Write, Connect, Accept)
 
-    final def fromInt(ops: Int): Set[Operation] =
-      fullSet.filter(op => (ops & op.intVal) != 0)
+    final def fromInt(ops: Int): Set[Operation] = fullSet.filter(op => (ops & op.intVal) != 0)
 
-    final def toInt(set: Set[Operation]): Int =
-      set.foldLeft(0)((ops, op) => ops | op.intVal)
+    final def toInt(set: Set[Operation]): Int = set.foldLeft(0)((ops, op) => ops | op.intVal)
   }
 
 }
@@ -89,17 +87,13 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
         .applyOrElse(channel, (channel: SelectableChannel) => ZIO.dieMessage(s"Unexpected channel type: $channel"))
     )
 
-  final def selector: Selector =
-    new Selector(selectionKey.selector())
+  final def selector: Selector = new Selector(selectionKey.selector())
 
-  final def isValid: UIO[Boolean] =
-    IO.effectTotal(selectionKey.isValid)
+  final def isValid: UIO[Boolean] = IO.effectTotal(selectionKey.isValid)
 
-  final def cancel: UIO[Unit] =
-    IO.effectTotal(selectionKey.cancel())
+  final def cancel: UIO[Unit] = IO.effectTotal(selectionKey.cancel())
 
-  final def interestOps: UIO[Set[Operation]] =
-    IO.effectTotal(Operation.fromInt(selectionKey.interestOps()))
+  final def interestOps: UIO[Set[Operation]] = IO.effectTotal(Operation.fromInt(selectionKey.interestOps()))
 
   final def interestOps(ops: Set[Operation]): UIO[Unit] =
     IO.effectTotal(selectionKey.interestOps(Operation.toInt(ops))).unit
@@ -118,26 +112,19 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
       _          <- interestOps(newInterest)
     } yield newInterest
 
-  final def readyOps: UIO[Set[Operation]] =
-    IO.effectTotal(Operation.fromInt(selectionKey.readyOps()))
+  final def readyOps: UIO[Set[Operation]] = IO.effectTotal(Operation.fromInt(selectionKey.readyOps()))
 
-  final def isReadable: UIO[Boolean] =
-    IO.effectTotal(selectionKey.isReadable())
+  final def isReadable: UIO[Boolean] = IO.effectTotal(selectionKey.isReadable())
 
-  final def isWritable: UIO[Boolean] =
-    IO.effectTotal(selectionKey.isWritable())
+  final def isWritable: UIO[Boolean] = IO.effectTotal(selectionKey.isWritable())
 
-  final def isConnectable: UIO[Boolean] =
-    IO.effectTotal(selectionKey.isConnectable())
+  final def isConnectable: UIO[Boolean] = IO.effectTotal(selectionKey.isConnectable())
 
-  final def isAcceptable: UIO[Boolean] =
-    IO.effectTotal(selectionKey.isAcceptable())
+  final def isAcceptable: UIO[Boolean] = IO.effectTotal(selectionKey.isAcceptable())
 
-  final def attach(ob: Option[AnyRef]): UIO[Option[AnyRef]] =
-    IO.effectTotal(Option(selectionKey.attach(ob.orNull)))
+  final def attach(ob: Option[AnyRef]): UIO[Option[AnyRef]] = IO.effectTotal(Option(selectionKey.attach(ob.orNull)))
 
-  final def attachment: UIO[Option[AnyRef]] =
-    IO.effectTotal(selectionKey.attachment()).map(Option(_))
+  final def attachment: UIO[Option[AnyRef]] = IO.effectTotal(selectionKey.attachment()).map(Option(_))
 
   override def toString: String = selectionKey.toString()
 

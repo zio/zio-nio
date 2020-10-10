@@ -69,9 +69,8 @@ object ChannelSpec extends BaseSpec {
                              result <- Managed
                                          .make(server.accept)(_.close.orDie)
                                          .use(worker => worker.readChunk(3) *> worker.readChunk(3) *> ZIO.succeed(false))
-                                         .catchSome {
-                                           case _: java.io.EOFException =>
-                                             ZIO.succeed(true)
+                                         .catchSome { case _: java.io.EOFException =>
+                                           ZIO.succeed(true)
                                          }
                            } yield result
                          }

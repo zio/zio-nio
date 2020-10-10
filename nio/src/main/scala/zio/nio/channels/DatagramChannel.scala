@@ -35,8 +35,7 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    *
    * @return `true` when the socket is both open and connected, otherwise `false`
    */
-  def isConnected: UIO[Boolean] =
-    UIO.effectTotal(channel.isConnected())
+  def isConnected: UIO[Boolean] = UIO.effectTotal(channel.isConnected())
 
   /**
    * Optionally returns the socket address that this channel's underlying socket is bound to.
@@ -88,16 +87,14 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    *
    * @return the underlying datagram socket
    */
-  def socket: UIO[JDatagramSocket] =
-    IO.effectTotal(channel.socket())
+  def socket: UIO[JDatagramSocket] = IO.effectTotal(channel.socket())
 
   /**
    * Returns the set of operations supported by this channel.
    *
    * @return the set of valid operations
    */
-  def validOps: UIO[Int] =
-    UIO.effectTotal(channel.validOps())
+  def validOps: UIO[Int] = UIO.effectTotal(channel.validOps())
 
 }
 
@@ -110,8 +107,7 @@ object DatagramChannel {
    * @param local the local address
    * @return a datagram channel bound to the local address
    */
-  def bind(local: Option[SocketAddress]): Managed[IOException, DatagramChannel] =
-    open.flatMap(_.bind(local).toManaged_)
+  def bind(local: Option[SocketAddress]): Managed[IOException, DatagramChannel] = open.flatMap(_.bind(local).toManaged_)
 
   /**
    * Opens a datagram channel connected to the given remote address as a managed resource.
@@ -119,8 +115,7 @@ object DatagramChannel {
    * @param remote the remote address
    * @return a datagram channel connected to the remote address
    */
-  def connect(remote: SocketAddress): Managed[IOException, DatagramChannel] =
-    open.flatMap(_.connect(remote).toManaged_)
+  def connect(remote: SocketAddress): Managed[IOException, DatagramChannel] = open.flatMap(_.connect(remote).toManaged_)
 
   /**
    * Opens a new datagram channel as a managed resource. The channel will be
