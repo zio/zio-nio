@@ -1,0 +1,128 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Character Sets · ZIO NIO</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="The `zio.nio.core.charset` package offers an API for ZIO programs to work with character sets, using the Java NIO support for character sets. Any character set supported by your JVM can be used."/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Character Sets · ZIO NIO"/><meta property="og:type" content="website"/><meta property="og:url" content="https://zio.github.io/zio-nio/"/><meta property="og:description" content="The `zio.nio.core.charset` package offers an API for ZIO programs to work with character sets, using the Java NIO support for character sets. Any character set supported by your JVM can be used."/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/zio-nio/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="https://unpkg.com/vanilla-back-to-top@7.1.14/dist/vanilla-back-to-top.min.js"></script><script>
+        document.addEventListener('DOMContentLoaded', function() {
+          addBackToTop(
+            {"zIndex":100,"cornerOffset":100}
+          )
+        });
+        </script><script src="/zio-nio/js/scrollSpy.js"></script><link rel="stylesheet" href="/zio-nio/css/main.css"/><script src="/zio-nio/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/zio-nio/"><img class="logo" src="/zio-nio/img/navbar_brand2x.png" alt="ZIO NIO"/><h2 class="headerTitleWithLogo">ZIO NIO</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/zio-nio/docs/essentials/essentials_index" target="_self">Essentials</a></li><li class=""><a href="/zio-nio/docs/usecases/usecases_index" target="_self">Use Cases</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Essentials</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Essentials</h3><ul class=""><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_index">Overview</a></li><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_files">File Channel</a></li><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_sockets">Socket Channel</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/zio-nio/docs/essentials/essentials_charsets">Character Sets</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Character Sets</h1></header><article><div><span><p>The <code>zio.nio.core.charset</code> package offers an API for ZIO programs to work with character sets, using the Java NIO support for character sets. Any character set supported by your JVM can be used.</p>
+<h2><a class="anchor" aria-hidden="true" id="charset"></a><a href="#charset" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a><code>Charset</code></h2>
+<p>This class wraps the <code>java.nio.charset.Charset</code> class with a ZIO-friendly API. There are convenience methods for:</p>
+<ul>
+<li>encoding/decoding buffers</li>
+<li>encoding/decoding single chunks</li>
+<li>encoding/decoding strings</li>
+</ul>
+<p>For more sophisticated encoding/decoding needs, a <code>CharsetEncoder</code> or <code>CharsetDecoder</code> can be obtained from a <code>Charset</code>.</p>
+<h3><a class="anchor" aria-hidden="true" id="standard-charsets"></a><a href="#standard-charsets" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Standard Charsets</h3>
+<p>The standard set of charsets provided by Java are available in <code>Charset.Standard</code>.</p>
+<ul>
+<li>utf8</li>
+<li>utf16</li>
+<li>utf16Be</li>
+<li>utf16Le</li>
+<li>usAscii</li>
+<li>iso8859_1</li>
+</ul>
+<p>JVMs typically support many more charsets than these; use <code>Charset.availableCharsets</code> to retrieve the complete list.</p>
+<h3><a class="anchor" aria-hidden="true" id="example"></a><a href="#example" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Example</h3>
+<pre><code class="hljs css language-scala mdoc:silent"><span class="hljs-keyword">import</span> zio.nio.core.charset._
+<span class="hljs-keyword">import</span> zio.nio.file.<span class="hljs-type">Files</span>
+<span class="hljs-keyword">import</span> zio.nio.core.file.<span class="hljs-type">Path</span>
+
+<span class="hljs-keyword">val</span> s = <span class="hljs-string">"Hello, world!"</span>
+<span class="hljs-keyword">for</span> {
+  utf16Bytes &lt;- <span class="hljs-type">Charset</span>.<span class="hljs-type">Standard</span>.utf16.encodeString(s)
+  _          &lt;- <span class="hljs-type">Files</span>.writeBytes(<span class="hljs-type">Path</span>(<span class="hljs-string">"utf16.txt"</span>), utf16Bytes)
+} <span class="hljs-keyword">yield</span> ()
+</code></pre>
+<h2><a class="anchor" aria-hidden="true" id="stream-encoding-and-decoding"></a><a href="#stream-encoding-and-decoding" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Stream Encoding and Decoding</h2>
+<p>Using streams instead of buffers or chunks is great for bigger jobs. ZIO Streams comes with a UTF-8 decoder built in, but if you need other character sets, or you need encoding, then ZIO-NIO can help—as long as you're running on the JVM.</p>
+<p>Stream-based encoding and decoding are provided by the <code>transducer</code> method of the <code>CharsetEncoder</code> and <code>CharsetDecoder</code> classes respectively.</p>
+<pre><code class="hljs css language-scala mdoc:silent"><span class="hljs-keyword">import</span> zio.nio.core.charset._
+<span class="hljs-keyword">import</span> zio.nio.core.channels.<span class="hljs-type">FileChannel</span>
+<span class="hljs-keyword">import</span> zio.nio.core.file.<span class="hljs-type">Path</span>
+<span class="hljs-keyword">import</span> zio.stream.<span class="hljs-type">ZStream</span>
+<span class="hljs-keyword">import</span> zio.blocking.<span class="hljs-type">Blocking</span>
+<span class="hljs-keyword">import</span> zio.console
+<span class="hljs-keyword">import</span> zio.<span class="hljs-type">ZIO</span>
+
+<span class="hljs-comment">// dump a file encoded in ISO8859 to the console</span>
+
+<span class="hljs-type">FileChannel</span>.open(<span class="hljs-type">Path</span>(<span class="hljs-string">"iso8859.txt"</span>)).bracket(_.close.ignore) { fileChan =&gt;
+  <span class="hljs-keyword">val</span> inStream: <span class="hljs-type">ZStream</span>[<span class="hljs-type">Blocking</span>, <span class="hljs-type">Exception</span>, <span class="hljs-type">Byte</span>] = <span class="hljs-type">ZStream</span>.repeatEffectChunkOption {
+    fileChan.readChunk(<span class="hljs-number">1000</span>).asSomeError.flatMap { chunk =&gt;
+      <span class="hljs-keyword">if</span> (chunk.isEmpty) <span class="hljs-type">ZIO</span>.fail(<span class="hljs-type">None</span>) <span class="hljs-keyword">else</span> <span class="hljs-type">ZIO</span>.succeed(chunk)
+    }
+  }
+
+  <span class="hljs-comment">// apply decoding transducer</span>
+  <span class="hljs-keyword">val</span> charStream: <span class="hljs-type">ZStream</span>[<span class="hljs-type">Blocking</span>, <span class="hljs-type">Exception</span>, <span class="hljs-type">Char</span>] =
+    inStream.transduce(<span class="hljs-type">Charset</span>.<span class="hljs-type">Standard</span>.iso8859_1.newDecoder.transducer())
+
+  console.putStrLn(<span class="hljs-string">"ISO8859 file contents:"</span>) *&gt;
+    charStream.foreachChunk(chars =&gt; console.putStr(chars.mkString))
+}
+</code></pre>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 10/6/2020 by James McCabe</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/zio-nio/docs/essentials/essentials_sockets"><span class="arrow-prev">← </span><span>Socket Channel</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#charset"><code>Charset</code></a><ul class="toc-headings"><li><a href="#standard-charsets">Standard Charsets</a></li><li><a href="#example">Example</a></li></ul></li><li><a href="#stream-encoding-and-decoding">Stream Encoding and Decoding</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section><div><div class="gitter-open-chat-button">Open Chat</div><script type="text/javascript">
+        ((window.gitter = {}).chat = {}).options = {
+          showChatByDefault: false,
+          activationElement: '.gitter-open-chat-button',
+          room: 'zio/zio-nio'
+        };
+      </script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async="" defer=""></script></div></section><section class="sitemap"><a href="/zio-nio/" class="nav-home"><img src="/zio-nio/img/sidebar_brand2x.png" alt="ZIO NIO"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-nio" data-icon="octicon-star" data-count-href="/zio/zio-nio/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Additional resources</h5><a href="https://javadoc.io/doc/dev.zio/zio_2.12/">Scaladoc of ZIO</a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>
