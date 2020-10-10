@@ -51,7 +51,7 @@ object BuildHelper {
     }
   )
 
-  val ZioCoreVersion = "1.0.2"
+  val ZioCoreVersion = "1.0.3"
 
   private val Scala211     = "2.11.12"
   private val Scala212     = "2.12.11"
