@@ -73,7 +73,6 @@ trait ScatteringByteChannel extends Channel {
 
 object ScatteringByteChannel {
 
-  private def unwrap(dsts: Seq[ByteBuffer]): Array[JByteBuffer] =
-    dsts.map(d => d.byteBuffer).toArray
+  private def unwrap(dsts: Seq[ByteBuffer]): Array[JByteBuffer] = dsts.map(d => d.byteBuffer).toArray
 
 }

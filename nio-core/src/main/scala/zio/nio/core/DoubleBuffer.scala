@@ -9,19 +9,15 @@ import zio.{ Chunk, UIO, ZIO }
  */
 final class DoubleBuffer(doubleBuffer: JDoubleBuffer) extends Buffer[Double](doubleBuffer) {
 
-  override protected[nio] def array: UIO[Array[Double]] =
-    UIO.effectTotal(doubleBuffer.array())
+  override protected[nio] def array: UIO[Array[Double]] = UIO.effectTotal(doubleBuffer.array())
 
   override def order: UIO[ByteOrder] = UIO.effectTotal(doubleBuffer.order)
 
-  override def slice: UIO[DoubleBuffer] =
-    UIO.effectTotal(new DoubleBuffer(doubleBuffer.slice()))
+  override def slice: UIO[DoubleBuffer] = UIO.effectTotal(new DoubleBuffer(doubleBuffer.slice()))
 
-  override def compact: UIO[Unit] =
-    UIO.effectTotal(doubleBuffer.compact()).unit
+  override def compact: UIO[Unit] = UIO.effectTotal(doubleBuffer.compact()).unit
 
-  override def duplicate: UIO[DoubleBuffer] =
-    UIO.effectTotal(new DoubleBuffer(doubleBuffer.duplicate()))
+  override def duplicate: UIO[DoubleBuffer] = UIO.effectTotal(new DoubleBuffer(doubleBuffer.duplicate()))
 
   /**
    * Provides the underlying Java double buffer for use in an effect.
@@ -32,11 +28,9 @@ final class DoubleBuffer(doubleBuffer: JDoubleBuffer) extends Buffer[Double](dou
    */
   def withJavaBuffer[R, E, A](f: JDoubleBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(doubleBuffer)
 
-  override def get: UIO[Double] =
-    UIO.effectTotal(doubleBuffer.get())
+  override def get: UIO[Double] = UIO.effectTotal(doubleBuffer.get())
 
-  override def get(i: Int): UIO[Double] =
-    UIO.effectTotal(doubleBuffer.get(i))
+  override def get(i: Int): UIO[Double] = UIO.effectTotal(doubleBuffer.get(i))
 
   override def getChunk(
     maxLength: Int = Int.MaxValue
@@ -47,11 +41,9 @@ final class DoubleBuffer(doubleBuffer: JDoubleBuffer) extends Buffer[Double](dou
       Chunk.fromArray(array)
     }
 
-  override def put(element: Double): UIO[Unit] =
-    UIO.effectTotal(doubleBuffer.put(element)).unit
+  override def put(element: Double): UIO[Unit] = UIO.effectTotal(doubleBuffer.put(element)).unit
 
-  override def put(index: Int, element: Double): UIO[Unit] =
-    UIO.effectTotal(doubleBuffer.put(index, element)).unit
+  override def put(index: Int, element: Double): UIO[Unit] = UIO.effectTotal(doubleBuffer.put(index, element)).unit
 
   override protected def putChunkAll(chunk: Chunk[Double]): UIO[Unit] =
     UIO.effectTotal {
@@ -59,7 +51,6 @@ final class DoubleBuffer(doubleBuffer: JDoubleBuffer) extends Buffer[Double](dou
       doubleBuffer.put(array)
     }.unit
 
-  override def asReadOnlyBuffer: UIO[DoubleBuffer] =
-    UIO.effectTotal(new DoubleBuffer(doubleBuffer.asReadOnlyBuffer()))
+  override def asReadOnlyBuffer: UIO[DoubleBuffer] = UIO.effectTotal(new DoubleBuffer(doubleBuffer.asReadOnlyBuffer()))
 
 }

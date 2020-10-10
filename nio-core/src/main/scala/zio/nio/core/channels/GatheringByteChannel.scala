@@ -55,7 +55,6 @@ trait GatheringByteChannel extends Channel {
 
 object GatheringByteChannel {
 
-  private def unwrap(srcs: List[ByteBuffer]): Array[JByteBuffer] =
-    srcs.map(d => d.byteBuffer).toArray
+  private def unwrap(srcs: List[ByteBuffer]): Array[JByteBuffer] = srcs.map(d => d.byteBuffer).toArray
 
 }

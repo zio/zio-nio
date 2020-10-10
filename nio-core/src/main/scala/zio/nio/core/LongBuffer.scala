@@ -9,19 +9,15 @@ import zio.{ Chunk, UIO, ZIO }
  */
 final class LongBuffer(longBuffer: JLongBuffer) extends Buffer[Long](longBuffer) {
 
-  override protected[nio] def array: UIO[Array[Long]] =
-    UIO.effectTotal(longBuffer.array())
+  override protected[nio] def array: UIO[Array[Long]] = UIO.effectTotal(longBuffer.array())
 
   override def order: UIO[ByteOrder] = UIO.effectTotal(longBuffer.order)
 
-  override def slice: UIO[LongBuffer] =
-    UIO.effectTotal(new LongBuffer(longBuffer.slice()))
+  override def slice: UIO[LongBuffer] = UIO.effectTotal(new LongBuffer(longBuffer.slice()))
 
-  override def compact: UIO[Unit] =
-    UIO.effectTotal(longBuffer.compact()).unit
+  override def compact: UIO[Unit] = UIO.effectTotal(longBuffer.compact()).unit
 
-  override def duplicate: UIO[LongBuffer] =
-    UIO.effectTotal(new LongBuffer(longBuffer.duplicate()))
+  override def duplicate: UIO[LongBuffer] = UIO.effectTotal(new LongBuffer(longBuffer.duplicate()))
 
   /**
    * Provides the underlying Java long buffer for use in an effect.
@@ -32,11 +28,9 @@ final class LongBuffer(longBuffer: JLongBuffer) extends Buffer[Long](longBuffer)
    */
   def withJavaBuffer[R, E, A](f: JLongBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(longBuffer)
 
-  override def get: UIO[Long] =
-    UIO.effectTotal(longBuffer.get())
+  override def get: UIO[Long] = UIO.effectTotal(longBuffer.get())
 
-  override def get(i: Int): UIO[Long] =
-    UIO.effectTotal(longBuffer.get(i))
+  override def get(i: Int): UIO[Long] = UIO.effectTotal(longBuffer.get(i))
 
   override def getChunk(maxLength: Int = Int.MaxValue): UIO[Chunk[Long]] =
     UIO.effectTotal {
@@ -45,11 +39,9 @@ final class LongBuffer(longBuffer: JLongBuffer) extends Buffer[Long](longBuffer)
       Chunk.fromArray(array)
     }
 
-  override def put(element: Long): UIO[Unit] =
-    UIO.effectTotal(longBuffer.put(element)).unit
+  override def put(element: Long): UIO[Unit] = UIO.effectTotal(longBuffer.put(element)).unit
 
-  override def put(index: Int, element: Long): UIO[Unit] =
-    UIO.effectTotal(longBuffer.put(index, element)).unit
+  override def put(index: Int, element: Long): UIO[Unit] = UIO.effectTotal(longBuffer.put(index, element)).unit
 
   override protected def putChunkAll(chunk: Chunk[Long]): UIO[Unit] =
     UIO.effectTotal {
@@ -57,7 +49,6 @@ final class LongBuffer(longBuffer: JLongBuffer) extends Buffer[Long](longBuffer)
       longBuffer.put(array)
     }.unit
 
-  override def asReadOnlyBuffer: UIO[LongBuffer] =
-    UIO.effectTotal(new LongBuffer(longBuffer.asReadOnlyBuffer()))
+  override def asReadOnlyBuffer: UIO[LongBuffer] = UIO.effectTotal(new LongBuffer(longBuffer.asReadOnlyBuffer()))
 
 }

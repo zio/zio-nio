@@ -259,11 +259,9 @@ object Files {
   def notExists(path: Path, linkOptions: LinkOption*): ZIO[Blocking, Nothing, Boolean] =
     effectBlocking(JFiles.notExists(path.javaPath, linkOptions: _*)).orDie
 
-  def isReadable(path: Path): ZIO[Blocking, Nothing, Boolean] =
-    effectBlocking(JFiles.isReadable(path.javaPath)).orDie
+  def isReadable(path: Path): ZIO[Blocking, Nothing, Boolean] = effectBlocking(JFiles.isReadable(path.javaPath)).orDie
 
-  def isWritable(path: Path): ZIO[Blocking, Nothing, Boolean] =
-    effectBlocking(JFiles.isWritable(path.javaPath)).orDie
+  def isWritable(path: Path): ZIO[Blocking, Nothing, Boolean] = effectBlocking(JFiles.isWritable(path.javaPath)).orDie
 
   def isExecutable(path: Path): ZIO[Blocking, Nothing, Boolean] =
     effectBlocking(JFiles.isExecutable(path.javaPath)).orDie
@@ -294,8 +292,8 @@ object Files {
           .map(_.iterator())
       )
       .map(Path.fromJava)
-      .refineOrDie {
-        case io: IOException => io
+      .refineOrDie { case io: IOException =>
+        io
       }
 
   def walk(

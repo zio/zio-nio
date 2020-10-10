@@ -13,8 +13,7 @@ import scala.jdk.CollectionConverters._
 final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
   def provider: jf.spi.FileSystemProvider = javaFileSystem.provider()
 
-  def close: ZIO[Blocking, Exception, Unit] =
-    effectBlocking(javaFileSystem.close()).refineToOrDie[Exception]
+  def close: ZIO[Blocking, Exception, Unit] = effectBlocking(javaFileSystem.close()).refineToOrDie[Exception]
 
   def isOpen: UIO[Boolean] = UIO.effectTotal(javaFileSystem.isOpen())
 

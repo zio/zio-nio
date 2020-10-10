@@ -26,8 +26,8 @@ package object core {
    * Turns `EOFException` failures into a success with no result.
    */
   def eofOption[R, A, E <: Throwable](effect: ZIO[R, E, A]): ZIO[R, E, Option[A]] =
-    effect.asSome.catchSome {
-      case _: EOFException => ZIO.none
+    effect.asSome.catchSome { case _: EOFException =>
+      ZIO.none
     }
 
 }
