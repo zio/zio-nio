@@ -24,11 +24,11 @@ def apply(): Managed[Exception, AsynchronousSocketChannel]
 `ZIO-NIO` is available via maven repo. Add this to your dependencies in `sbt`:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-nio-core" % "1.0.0-RC9"
+libraryDependencies += "dev.zio" %% "zio-nio-core" % "1.0.0-RC10"
 ```
 or
 ```scala
-libraryDependencies += "dev.zio" %% "zio-nio" % "1.0.0-RC9"
+libraryDependencies += "dev.zio" %% "zio-nio" % "1.0.0-RC10"
 ```
 
 ## Main abstractions
