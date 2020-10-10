@@ -52,7 +52,7 @@ final class DatagramChannel private[channels] (override protected val channel: J
      * @return the socket address of the datagram's source, if available.
      */
     def receive(dst: ByteBuffer): IO[IOException, SocketAddress] =
-      IO.effect(new SocketAddress(channel.receive(dst.buffer)))
+      IO.effect(SocketAddress.fromJava(channel.receive(dst.buffer)))
         .refineToOrDie[IOException]
 
   }
@@ -68,7 +68,7 @@ final class DatagramChannel private[channels] (override protected val channel: J
      * @return the socket address of the datagram's source, if available.
      */
     def receive(dst: ByteBuffer): IO[IOException, Option[SocketAddress]] =
-      IO.effect(Option(channel.receive(dst.buffer)).map(new SocketAddress(_))).refineToOrDie[IOException]
+      IO.effect(Option(channel.receive(dst.buffer)).map(SocketAddress.fromJava)).refineToOrDie[IOException]
 
   }
 
@@ -110,7 +110,7 @@ final class DatagramChannel private[channels] (override protected val channel: J
    * @return the local address if the socket is bound, otherwise `None`
    */
   def localAddress: IO[IOException, Option[SocketAddress]] =
-    IO.effect(channel.getLocalAddress()).refineToOrDie[IOException].map(a => Option(a).map(new SocketAddress(_)))
+    IO.effect(Option(channel.getLocalAddress()).map(SocketAddress.fromJava)).refineToOrDie[IOException]
 
   /**
    * Optionally returns the remote socket address that this channel's underlying socket is connected to.
@@ -118,7 +118,7 @@ final class DatagramChannel private[channels] (override protected val channel: J
    * @return the remote address if the socket is connected, otherwise `None`
    */
   def remoteAddress: IO[IOException, Option[SocketAddress]] =
-    IO.effect(channel.getRemoteAddress()).refineToOrDie[IOException].map(a => Option(a).map(new SocketAddress(_)))
+    IO.effect(Option(channel.getRemoteAddress()).map(SocketAddress.fromJava)).refineToOrDie[IOException]
 
   /**
    * Sets the value of the given socket option.

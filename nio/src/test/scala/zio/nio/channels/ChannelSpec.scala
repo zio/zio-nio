@@ -6,7 +6,7 @@ import java.{ nio => jnio }
 
 import zio.blocking.Blocking
 import zio.duration._
-import zio.nio.{ BaseSpec, Buffer, EffectOps, SocketAddress }
+import zio.nio.{ BaseSpec, Buffer, EffectOps, InetSocketAddress, SocketAddress }
 import zio.test.{ suite, testM }
 import zio.{ IO, _ }
 import zio.test._
@@ -17,6 +17,14 @@ object ChannelSpec extends BaseSpec {
 
   override def spec =
     suite("Channel")(
+      testM("localAddress") {
+        SocketChannel.open.use { con =>
+          for {
+            _            <- con.bindAuto
+            localAddress <- con.localAddress
+          } yield assert(localAddress)(isSome(isSubtype[InetSocketAddress](anything)))
+        }
+      },
       suite("AsynchronousSocketChannel")(
         testM("read/write") {
           def echoServer(started: Promise[Nothing, SocketAddress]): IO[Exception, Unit] =

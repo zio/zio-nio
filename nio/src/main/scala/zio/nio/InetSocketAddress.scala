@@ -9,7 +9,7 @@ import zio.{ IO, UIO }
  *
  * The concrete subclass [[InetSocketAddress]] is used in practice.
  */
-sealed class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocketAddress) {
+sealed class SocketAddress protected (private[nio] val jSocketAddress: JSocketAddress) {
 
   final override def equals(obj: Any): Boolean =
     obj match {

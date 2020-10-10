@@ -53,33 +53,35 @@ object SelectorSpec extends BaseSpec {
       buffer: ByteBuffer
     ): ZIO[Blocking, Exception, Unit] =
       for {
-        _            <- selector.select
-        selectedKeys <- selector.selectedKeys
-        _            <- IO.foreach_(selectedKeys) { key =>
-                          key.matchChannel { readyOps =>
-                            {
-                              case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
-                                for {
-                                  scopeResult     <- scope(channel.useNonBlockingManaged(_.accept))
-                                  (_, maybeClient) = scopeResult
-                                  _               <- IO.whenCase(maybeClient) {
-                                                       case Some(client) =>
-                                                         client.configureBlocking(false) *> client.register(selector, Set(Operation.Read))
-                                                     }
-                                } yield ()
-                              case channel: SocketChannel if readyOps(Operation.Read)         =>
-                                channel.useNonBlocking { client =>
-                                  for {
-                                    _ <- client.read(buffer)
-                                    _ <- buffer.flip
-                                    _ <- client.write(buffer)
-                                    _ <- buffer.clear
-                                    _ <- channel.close
-                                  } yield ()
-                                }
-                            }
-                          } *> selector.removeKey(key)
-                        }
+        _ <- selector.select
+        _ <- selector.foreachSelectedKey { key =>
+               key
+                 .matchChannel { readyOps =>
+                   {
+                     case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
+                       for {
+                         scopeResult     <- scope(channel.useNonBlockingManaged(_.accept))
+                         (_, maybeClient) = scopeResult
+                         _               <- IO.whenCase(maybeClient) {
+                                              case Some(client) =>
+                                                client.configureBlocking(false) *> client.register(selector, Set(Operation.Read))
+                                            }
+                       } yield ()
+                     case channel: SocketChannel if readyOps(Operation.Read)         =>
+                       channel.useNonBlocking { client =>
+                         for {
+                           _ <- client.read(buffer)
+                           _ <- buffer.flip
+                           _ <- client.write(buffer)
+                           _ <- buffer.clear
+                           _ <- channel.close
+                         } yield ()
+                       }
+                   }
+                 }
+                 .as(true)
+             }
+        _ <- selector.selectedKeys.filterOrDieMessage(_.isEmpty)("Selected key set should be empty")
       } yield ()
 
     for {

@@ -7,8 +7,9 @@ import java.nio.channels.{ SelectionKey => JSelectionKey, Selector => JSelector 
 import com.github.ghik.silencer.silent
 import zio.duration.Duration
 import zio.nio.channels.spi.SelectorProvider
-import zio.{ IO, Managed, UIO }
+import zio.{ IO, Managed, UIO, ZIO }
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 /**
@@ -32,10 +33,38 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
     IO.effectTotal(selector.keys())
       .map(_.asScala.toSet[JSelectionKey].map(new SelectionKey(_)))
 
+  /**
+   * Returns this selector's selected-key set.
+   *
+   * Note that the returned set it mutable - keys may be removed from, but not directly added to it.
+   * Any attempt to add an object to the key set will cause an `UnsupportedOperationException` to be thrown.
+   * The selected-key set is not thread-safe.
+   */
   @silent
-  val selectedKeys: UIO[Set[SelectionKey]] =
+  val selectedKeys: UIO[mutable.Set[SelectionKey]] =
     IO.effectTotal(selector.selectedKeys())
-      .map(_.asScala.toSet[JSelectionKey].map(new SelectionKey(_)))
+      .map(_.asScala.map(new SelectionKey(_)))
+
+  /**
+   * Performs an effect with each selected key.
+   *
+   * If the result of effect is true, the key will be removed from the selected-key set, which is
+   * usually what you want after successfully handling a selected key.
+   */
+  def foreachSelectedKey[R, E](f: SelectionKey => ZIO[R, E, Boolean]): ZIO[R, E, Unit] =
+    ZIO.effectTotal(selector.selectedKeys().iterator()).flatMap { iter =>
+      def loop: ZIO[R, E, Unit] =
+        ZIO.effectSuspendTotal {
+          if (iter.hasNext) {
+            val key = iter.next()
+            f(new SelectionKey(key)).flatMap(ZIO.when(_)(ZIO.effectTotal(iter.remove()))) *>
+              loop
+          } else
+            ZIO.unit
+        }
+
+      loop
+    }
 
   def removeKey(key: SelectionKey): UIO[Unit] =
     IO.effectTotal(selector.selectedKeys().remove(key.selectionKey)).unit
