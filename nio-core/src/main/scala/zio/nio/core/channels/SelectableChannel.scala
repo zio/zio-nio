@@ -143,7 +143,7 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
       })
 
   val localAddress: IO[IOException, SocketAddress] =
-    IO.effect(new SocketAddress(channel.getLocalAddress())).refineToOrDie[IOException]
+    IO.effect(SocketAddress.fromJava(channel.getLocalAddress())).refineToOrDie[IOException]
 }
 
 object ServerSocketChannel {

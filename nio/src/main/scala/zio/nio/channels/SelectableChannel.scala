@@ -147,7 +147,7 @@ final class ServerSocketChannel private (override protected val channel: JServer
     IO.effect(Option(channel.accept()).map(new SocketChannel(_))).refineToOrDie[IOException]
 
   final val localAddress: IO[IOException, SocketAddress] =
-    IO.effect(new SocketAddress(channel.getLocalAddress())).refineToOrDie[IOException]
+    IO.effect(SocketAddress.fromJava(channel.getLocalAddress())).refineToOrDie[IOException]
 }
 
 object ServerSocketChannel {

@@ -106,7 +106,7 @@ class AsynchronousServerSocketChannel(private val channel: JAsynchronousServerSo
    */
   final def localAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(
-      Option(channel.getLocalAddress).map(new SocketAddress(_))
+      Option(channel.getLocalAddress).map(SocketAddress.fromJava)
     ).refineToOrDie[IOException]
 
   /**

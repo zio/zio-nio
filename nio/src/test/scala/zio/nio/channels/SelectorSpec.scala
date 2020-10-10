@@ -38,32 +38,31 @@ object SelectorSpec extends BaseSpec {
       buffer: ByteBuffer
     ): ZIO[Blocking, Exception, Unit] =
       for {
-        _            <- selector.select
-        selectedKeys <- selector.selectedKeys
-        _            <- IO.foreach(selectedKeys) { key =>
-                          IO.whenM(safeStatusCheck(key.isAcceptable)) {
-                            for {
-                              clientOpt <- channel.accept
-                              client     = clientOpt.get
-                              _         <- client.configureBlocking(false)
-                              _         <- client.register(selector, Operation.Read)
-                            } yield ()
-                          } *>
-                            IO.whenM(safeStatusCheck(key.isReadable)) {
-                              IO.effectSuspendTotal {
-                                val sClient = key.channel
-                                val client  = sClient.asInstanceOf[zio.nio.core.channels.SocketChannel]
-                                for {
-                                  _ <- client.read(buffer)
-                                  _ <- buffer.flip
-                                  _ <- client.write(buffer)
-                                  _ <- buffer.clear
-                                  _ <- client.close
-                                } yield ()
-                              }
-                            } *>
-                            selector.removeKey(key)
-                        }
+        _ <- selector.select
+        _ <- selector.foreachSelectedKey { key =>
+               IO.whenM(safeStatusCheck(key.isAcceptable)) {
+                 for {
+                   clientOpt <- channel.accept
+                   client     = clientOpt.get
+                   _         <- client.configureBlocking(false)
+                   _         <- client.register(selector, Operation.Read)
+                 } yield ()
+               } *>
+                 IO.whenM(safeStatusCheck(key.isReadable)) {
+                   IO.effectSuspendTotal {
+                     val sClient = key.channel
+                     val client  = sClient.asInstanceOf[zio.nio.core.channels.SocketChannel]
+                     for {
+                       _ <- client.read(buffer)
+                       _ <- buffer.flip
+                       _ <- client.write(buffer)
+                       _ <- buffer.clear
+                       _ <- client.close
+                     } yield ()
+                   }
+                 }.as(true)
+             }
+        _ <- selector.selectedKeys.filterOrDieMessage(_.isEmpty)("Selected key set should be empty")
       } yield ()
 
     for {
