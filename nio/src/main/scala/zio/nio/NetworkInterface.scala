@@ -12,8 +12,7 @@ class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetwor
   def name: String = jNetworkInterface.getName
 
   @silent
-  def inetAddresses: List[InetAddress] =
-    jNetworkInterface.getInetAddresses.asScala.map(new InetAddress(_)).toList
+  def inetAddresses: List[InetAddress] = jNetworkInterface.getInetAddresses.asScala.map(new InetAddress(_)).toList
 
   @silent
   def interfaceAddresses: List[InterfaceAddress] =

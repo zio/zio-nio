@@ -77,9 +77,8 @@ object ChannelSpec extends BaseSpec {
                             _      <- started.succeed(addr)
                             result <- server.accept
                                         .use(worker => worker.readChunk(3) *> worker.readChunk(3) *> ZIO.succeed(false))
-                                        .catchSome {
-                                          case _: java.io.EOFException =>
-                                            ZIO.succeed(true)
+                                        .catchSome { case _: java.io.EOFException =>
+                                          ZIO.succeed(true)
                                         }
                           } yield result
                         }.fork
@@ -218,8 +217,7 @@ object ChannelSpec extends BaseSpec {
 
             override def useBlocking[R, E >: IOException, A](
               f: GatheringByteOps => ZIO[R, E, A]
-            ): ZIO[R with Blocking, E, A] =
-              nioBlocking(f(hangingOps))
+            ): ZIO[R with Blocking, E, A] = nioBlocking(f(hangingOps))
 
             override protected val channel: channels.Channel = hangingOps.channel
           }

@@ -9,19 +9,15 @@ import zio.{ Chunk, UIO, ZIO }
  */
 final class IntBuffer(protected[nio] val buffer: JIntBuffer) extends Buffer[Int] {
 
-  override protected[nio] def array: UIO[Array[Int]] =
-    UIO.effectTotal(buffer.array())
+  override protected[nio] def array: UIO[Array[Int]] = UIO.effectTotal(buffer.array())
 
   override def order: UIO[ByteOrder] = UIO.effectTotal(buffer.order)
 
-  override def slice: UIO[IntBuffer] =
-    UIO.effectTotal(new IntBuffer(buffer.slice()))
+  override def slice: UIO[IntBuffer] = UIO.effectTotal(new IntBuffer(buffer.slice()))
 
-  override def compact: UIO[Unit] =
-    UIO.effectTotal(buffer.compact()).unit
+  override def compact: UIO[Unit] = UIO.effectTotal(buffer.compact()).unit
 
-  override def duplicate: UIO[IntBuffer] =
-    UIO.effectTotal(new IntBuffer(buffer.duplicate()))
+  override def duplicate: UIO[IntBuffer] = UIO.effectTotal(new IntBuffer(buffer.duplicate()))
 
   /**
    * Provides the underlying Java int buffer for use in an effect.
@@ -32,11 +28,9 @@ final class IntBuffer(protected[nio] val buffer: JIntBuffer) extends Buffer[Int]
    */
   def withJavaBuffer[R, E, A](f: JIntBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(buffer)
 
-  override def get: UIO[Int] =
-    UIO.effectTotal(buffer.get())
+  override def get: UIO[Int] = UIO.effectTotal(buffer.get())
 
-  override def get(i: Int): UIO[Int] =
-    UIO.effectTotal(buffer.get(i))
+  override def get(i: Int): UIO[Int] = UIO.effectTotal(buffer.get(i))
 
   override def getChunk(maxLength: Int = Int.MaxValue): UIO[Chunk[Int]] =
     UIO.effectTotal {
@@ -45,11 +39,9 @@ final class IntBuffer(protected[nio] val buffer: JIntBuffer) extends Buffer[Int]
       Chunk.fromArray(array)
     }
 
-  override def put(element: Int): UIO[Unit] =
-    UIO.effectTotal(buffer.put(element)).unit
+  override def put(element: Int): UIO[Unit] = UIO.effectTotal(buffer.put(element)).unit
 
-  override def put(index: Int, element: Int): UIO[Unit] =
-    UIO.effectTotal(buffer.put(index, element)).unit
+  override def put(index: Int, element: Int): UIO[Unit] = UIO.effectTotal(buffer.put(index, element)).unit
 
   override protected def putChunkAll(chunk: Chunk[Int]): UIO[Unit] =
     UIO.effectTotal {
@@ -57,7 +49,6 @@ final class IntBuffer(protected[nio] val buffer: JIntBuffer) extends Buffer[Int]
       buffer.put(array)
     }.unit
 
-  override def asReadOnlyBuffer: UIO[IntBuffer] =
-    UIO.effectTotal(new IntBuffer(buffer.asReadOnlyBuffer()))
+  override def asReadOnlyBuffer: UIO[IntBuffer] = UIO.effectTotal(new IntBuffer(buffer.asReadOnlyBuffer()))
 
 }

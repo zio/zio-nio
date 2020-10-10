@@ -101,8 +101,7 @@ final class DatagramChannel private[channels] (override protected val channel: J
    *
    * @return `true` when the socket is both open and connected, otherwise `false`
    */
-  def isConnected: UIO[Boolean] =
-    UIO.effectTotal(channel.isConnected())
+  def isConnected: UIO[Boolean] = UIO.effectTotal(channel.isConnected())
 
   /**
    * Optionally returns the socket address that this channel's underlying socket is bound to.
@@ -134,8 +133,7 @@ final class DatagramChannel private[channels] (override protected val channel: J
    *
    * @return the underlying datagram socket
    */
-  def socket: UIO[JDatagramSocket] =
-    IO.effectTotal(channel.socket())
+  def socket: UIO[JDatagramSocket] = IO.effectTotal(channel.socket())
 
 }
 
@@ -159,7 +157,6 @@ object DatagramChannel {
     }.refineToOrDie[IOException]
       .toNioManaged
 
-  def fromJava(javaDatagramChannel: JDatagramChannel): DatagramChannel =
-    new DatagramChannel(javaDatagramChannel)
+  def fromJava(javaDatagramChannel: JDatagramChannel): DatagramChannel = new DatagramChannel(javaDatagramChannel)
 
 }

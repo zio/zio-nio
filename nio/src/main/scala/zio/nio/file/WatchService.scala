@@ -114,8 +114,7 @@ final class WatchService private (private[file] val javaWatchService: JWatchServ
 
   def close: IO[IOException, Unit] = IO.effect(javaWatchService.close()).refineToOrDie[IOException]
 
-  def poll: UIO[Option[WatchKey]] =
-    IO.effectTotal(Option(javaWatchService.poll()).map(new WatchKey(_)))
+  def poll: UIO[Option[WatchKey]] = IO.effectTotal(Option(javaWatchService.poll()).map(new WatchKey(_)))
 
   def poll(timeout: Duration): URIO[Blocking, Option[WatchKey]] =
     blocking
@@ -141,8 +140,7 @@ final class WatchService private (private[file] val javaWatchService: JWatchServ
 
 object WatchService {
 
-  def forDefaultFileSystem: ZManaged[Blocking, IOException, WatchService] =
-    FileSystem.default.newWatchService
+  def forDefaultFileSystem: ZManaged[Blocking, IOException, WatchService] = FileSystem.default.newWatchService
 
   def fromJava(javaWatchService: JWatchService): WatchService = new WatchService(javaWatchService)
 

@@ -17,8 +17,7 @@ final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset
 
   def canEncode: Boolean = javaCharset.canEncode
 
-  override def compare(that: Charset): Int =
-    javaCharset.compareTo(that.javaCharset)
+  override def compare(that: Charset): Int = javaCharset.compareTo(that.javaCharset)
 
   def contains(cs: Charset): Boolean = javaCharset.contains(cs.javaCharset)
 
@@ -44,8 +43,7 @@ final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset
 
   def name: String = javaCharset.name()
 
-  def newDecoder: CharsetDecoder =
-    CharsetDecoder.fromJava(javaCharset.newDecoder())
+  def newDecoder: CharsetDecoder = CharsetDecoder.fromJava(javaCharset.newDecoder())
 
   def newEncoder: CharsetEncoder = CharsetEncoder.fromJava(javaCharset.newEncoder())
 

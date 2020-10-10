@@ -113,14 +113,12 @@ final class SocketChannel(override protected[channels] val channel: JSocketChann
 
   final class NonBlockingSocketOps private[SocketChannel] () extends Ops {
 
-    def isConnectionPending: UIO[Boolean] =
-      IO.effectTotal(channel.isConnectionPending)
+    def isConnectionPending: UIO[Boolean] = IO.effectTotal(channel.isConnectionPending)
 
     def connect(remote: SocketAddress): IO[IOException, Boolean] =
       IO.effect(channel.connect(remote.jSocketAddress)).refineToOrDie[IOException]
 
-    def finishConnect: IO[IOException, Boolean] =
-      IO.effect(channel.finishConnect()).refineToOrDie[IOException]
+    def finishConnect: IO[IOException, Boolean] = IO.effect(channel.finishConnect()).refineToOrDie[IOException]
 
   }
 
@@ -136,17 +134,13 @@ final class SocketChannel(override protected[channels] val channel: JSocketChann
   def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
     IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
-  def shutdownInput: IO[IOException, Unit] =
-    IO.effect(channel.shutdownInput()).refineToOrDie[IOException].unit
+  def shutdownInput: IO[IOException, Unit] = IO.effect(channel.shutdownInput()).refineToOrDie[IOException].unit
 
-  def shutdownOutput: IO[IOException, Unit] =
-    IO.effect(channel.shutdownOutput()).refineToOrDie[IOException].unit
+  def shutdownOutput: IO[IOException, Unit] = IO.effect(channel.shutdownOutput()).refineToOrDie[IOException].unit
 
-  def socket: UIO[JSocket] =
-    IO.effectTotal(channel.socket())
+  def socket: UIO[JSocket] = IO.effectTotal(channel.socket())
 
-  def isConnected: UIO[Boolean] =
-    IO.effectTotal(channel.isConnected)
+  def isConnected: UIO[Boolean] = IO.effectTotal(channel.isConnected)
 
   def remoteAddress: IO[IOException, SocketAddress] =
     IO.effect(SocketAddress.fromJava(channel.getRemoteAddress())).refineToOrDie[IOException]
@@ -158,8 +152,7 @@ final class SocketChannel(override protected[channels] val channel: JSocketChann
 
 object SocketChannel {
 
-  def fromJava(javaSocketChannel: JSocketChannel): SocketChannel =
-    new SocketChannel(javaSocketChannel)
+  def fromJava(javaSocketChannel: JSocketChannel): SocketChannel = new SocketChannel(javaSocketChannel)
 
   val open: Managed[IOException, SocketChannel] =
     IO.effect(new SocketChannel(JSocketChannel.open())).refineToOrDie[IOException].toNioManaged
@@ -214,8 +207,8 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
     def accept: Managed[IOException, Option[SocketChannel]] =
       IO.effect(Option(channel.accept()).map(new SocketChannel(_)))
         .refineToOrDie[IOException]
-        .toManaged(IO.whenCase(_) {
-          case Some(channel) => channel.close.ignore
+        .toManaged(IO.whenCase(_) { case Some(channel) =>
+          channel.close.ignore
         })
 
   }
@@ -244,6 +237,5 @@ object ServerSocketChannel {
   val open: Managed[IOException, ServerSocketChannel] =
     IO.effect(new ServerSocketChannel(JServerSocketChannel.open())).refineToOrDie[IOException].toNioManaged
 
-  def fromJava(javaChannel: JServerSocketChannel): ServerSocketChannel =
-    new ServerSocketChannel(javaChannel)
+  def fromJava(javaChannel: JServerSocketChannel): ServerSocketChannel = new ServerSocketChannel(javaChannel)
 }

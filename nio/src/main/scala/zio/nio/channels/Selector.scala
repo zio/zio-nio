@@ -66,8 +66,7 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
       loop
     }
 
-  def removeKey(key: SelectionKey): UIO[Unit] =
-    IO.effectTotal(selector.selectedKeys().remove(key.selectionKey)).unit
+  def removeKey(key: SelectionKey): UIO[Unit] = IO.effectTotal(selector.selectedKeys().remove(key.selectionKey)).unit
 
   /**
    * Selects a set of keys whose corresponding channels are ready for I/O operations.
@@ -125,8 +124,7 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * Invoking this method more than once between two successive selection
    * operations has the same effect as invoking it just once.
    */
-  def wakeup: IO[Nothing, Unit] =
-    IO.effectTotal(selector.wakeup()).unit
+  def wakeup: IO[Nothing, Unit] = IO.effectTotal(selector.wakeup()).unit
 
   /**
    * Closes this selector.
@@ -141,8 +139,7 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * invoking this method or the wakeup method, will cause a
    * `ClosedSelectorException` to be raised as a defect.
    */
-  def close: IO[IOException, Unit] =
-    IO.effect(selector.close()).refineToOrDie[IOException]
+  def close: IO[IOException, Unit] = IO.effect(selector.close()).refineToOrDie[IOException]
 
 }
 

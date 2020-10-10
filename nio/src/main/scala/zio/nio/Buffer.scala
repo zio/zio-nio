@@ -122,8 +122,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    *
    * @param newPosition Must be >= 0 and <= the current limit.
    */
-  final def position(newPosition: Int): UIO[Unit] =
-    UIO.effectTotal(buffer.position(newPosition)).unit
+  final def position(newPosition: Int): UIO[Unit] = UIO.effectTotal(buffer.position(newPosition)).unit
 
   /**
    * Moves this buffer's position forward or backwards by a delta.
@@ -150,8 +149,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    *
    * @param newLimit Must be >= 0 and <= this buffer's capacity.
    */
-  final def limit(newLimit: Int): UIO[Unit] =
-    UIO.effectTotal(buffer.limit(newLimit)).unit
+  final def limit(newLimit: Int): UIO[Unit] = UIO.effectTotal(buffer.limit(newLimit)).unit
 
   /**
    * Moves this buffer's limit forward or backwards by a delta.
@@ -401,8 +399,7 @@ object Buffer {
    *
    * @param capacity The number of bytes to allocate.
    */
-  def byte(capacity: Int): UIO[ByteBuffer] =
-    UIO.effectTotal(byteFromJava(JByteBuffer.allocate(capacity)))
+  def byte(capacity: Int): UIO[ByteBuffer] = UIO.effectTotal(byteFromJava(JByteBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -412,8 +409,7 @@ object Buffer {
    *
    * @param chunk The data to copy into the new buffer.
    */
-  def byte(chunk: Chunk[Byte]): UIO[ByteBuffer] =
-    UIO.effectTotal(byteFromJava(JByteBuffer.wrap(chunk.toArray)))
+  def byte(chunk: Chunk[Byte]): UIO[ByteBuffer] = UIO.effectTotal(byteFromJava(JByteBuffer.wrap(chunk.toArray)))
 
   /**
    * Allocates a direct byte buffer.
@@ -424,8 +420,7 @@ object Buffer {
    *
    * @param capacity The number of bytes to allocate.
    */
-  def byteDirect(capacity: Int): UIO[ByteBuffer] =
-    UIO.effectTotal(byteFromJava(JByteBuffer.allocateDirect(capacity)))
+  def byteDirect(capacity: Int): UIO[ByteBuffer] = UIO.effectTotal(byteFromJava(JByteBuffer.allocateDirect(capacity)))
 
   /**
    * Wraps an existing Java `ByteBuffer`.
@@ -444,8 +439,7 @@ object Buffer {
    *
    * @param capacity The number of characters to allocate.
    */
-  def char(capacity: Int): UIO[CharBuffer] =
-    UIO.effectTotal(charFromJava(JCharBuffer.allocate(capacity)))
+  def char(capacity: Int): UIO[CharBuffer] = UIO.effectTotal(charFromJava(JCharBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -455,8 +449,7 @@ object Buffer {
    *
    * @param chunk The data to copy into the new buffer.
    */
-  def char(chunk: Chunk[Char]): UIO[CharBuffer] =
-    UIO.effectTotal(charFromJava(JCharBuffer.wrap(chunk.toArray)))
+  def char(chunk: Chunk[Char]): UIO[CharBuffer] = UIO.effectTotal(charFromJava(JCharBuffer.wrap(chunk.toArray)))
 
   /**
    * Creates a read-only character buffer wrapping a character sequence.
@@ -474,8 +467,7 @@ object Buffer {
     charSequence: CharSequence,
     start: Int,
     end: Int
-  ): UIO[CharBuffer] =
-    UIO.effectTotal(charFromJava(JCharBuffer.wrap(charSequence, start, end)))
+  ): UIO[CharBuffer] = UIO.effectTotal(charFromJava(JCharBuffer.wrap(charSequence, start, end)))
 
   /**
    * Creates a read-only character buffer wrapping a character sequence.
@@ -505,8 +497,7 @@ object Buffer {
    *
    * @param capacity The number of floats to allocate.
    */
-  def float(capacity: Int): UIO[FloatBuffer] =
-    UIO.effectTotal(floatFromJava(JFloatBuffer.allocate(capacity)))
+  def float(capacity: Int): UIO[FloatBuffer] = UIO.effectTotal(floatFromJava(JFloatBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -516,8 +507,7 @@ object Buffer {
    *
    * @param chunk The data to copy into the new buffer.
    */
-  def float(chunk: Chunk[Float]): UIO[FloatBuffer] =
-    UIO.effectTotal(floatFromJava(JFloatBuffer.wrap(chunk.toArray)))
+  def float(chunk: Chunk[Float]): UIO[FloatBuffer] = UIO.effectTotal(floatFromJava(JFloatBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `FloatBuffer`.
@@ -536,8 +526,7 @@ object Buffer {
    *
    * @param capacity The number of doubles to allocate.
    */
-  def double(capacity: Int): UIO[DoubleBuffer] =
-    UIO.effectTotal(doubleFromJava(JDoubleBuffer.allocate(capacity)))
+  def double(capacity: Int): UIO[DoubleBuffer] = UIO.effectTotal(doubleFromJava(JDoubleBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -567,8 +556,7 @@ object Buffer {
    *
    * @param capacity The number of ints to allocate.
    */
-  def int(capacity: Int): UIO[IntBuffer] =
-    UIO.effectTotal(intFromJava(JIntBuffer.allocate(capacity)))
+  def int(capacity: Int): UIO[IntBuffer] = UIO.effectTotal(intFromJava(JIntBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -578,8 +566,7 @@ object Buffer {
    *
    * @param chunk The data to copy into the new buffer.
    */
-  def int(chunk: Chunk[Int]): UIO[IntBuffer] =
-    UIO.effectTotal(intFromJava(JIntBuffer.wrap(chunk.toArray)))
+  def int(chunk: Chunk[Int]): UIO[IntBuffer] = UIO.effectTotal(intFromJava(JIntBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `IntBuffer`.
@@ -598,8 +585,7 @@ object Buffer {
    *
    * @param capacity The number of longs to allocate.
    */
-  def long(capacity: Int): UIO[LongBuffer] =
-    UIO.effectTotal(longFromJava(JLongBuffer.allocate(capacity)))
+  def long(capacity: Int): UIO[LongBuffer] = UIO.effectTotal(longFromJava(JLongBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -609,8 +595,7 @@ object Buffer {
    *
    * @param chunk The data to copy into the new buffer.
    */
-  def long(chunk: Chunk[Long]): UIO[LongBuffer] =
-    UIO.effectTotal(longFromJava(JLongBuffer.wrap(chunk.toArray)))
+  def long(chunk: Chunk[Long]): UIO[LongBuffer] = UIO.effectTotal(longFromJava(JLongBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `LongBuffer`.
@@ -629,8 +614,7 @@ object Buffer {
    *
    * @param capacity The number of shorts to allocate.
    */
-  def short(capacity: Int): UIO[ShortBuffer] =
-    UIO.effectTotal(shortFromJava(JShortBuffer.allocate(capacity)))
+  def short(capacity: Int): UIO[ShortBuffer] = UIO.effectTotal(shortFromJava(JShortBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -640,8 +624,7 @@ object Buffer {
    *
    * @param chunk The data to copy into the new buffer.
    */
-  def short(chunk: Chunk[Short]): UIO[ShortBuffer] =
-    UIO.effectTotal(shortFromJava(JShortBuffer.wrap(chunk.toArray)))
+  def short(chunk: Chunk[Short]): UIO[ShortBuffer] = UIO.effectTotal(shortFromJava(JShortBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `ShortBuffer`.

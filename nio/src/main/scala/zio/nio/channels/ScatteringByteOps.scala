@@ -103,7 +103,6 @@ trait ScatteringByteOps {
 
 object ScatteringByteOps {
 
-  private def unwrap(dsts: Seq[ByteBuffer]): Array[JByteBuffer] =
-    dsts.map(d => d.buffer).toArray
+  private def unwrap(dsts: Seq[ByteBuffer]): Array[JByteBuffer] = dsts.map(d => d.buffer).toArray
 
 }

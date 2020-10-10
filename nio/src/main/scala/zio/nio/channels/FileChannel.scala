@@ -39,8 +39,7 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
      *
      * @param size The new size, must be >= 0
      */
-    def truncate(size: Long): IO[IOException, Unit] =
-      IO.effect(channel.truncate(size)).unit.refineToOrDie[IOException]
+    def truncate(size: Long): IO[IOException, Unit] = IO.effect(channel.truncate(size)).unit.refineToOrDie[IOException]
 
     /**
      * Forces any updates to this channel's file to be written to the storage device that contains it.
@@ -48,8 +47,7 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
      * @param metadata If true then this method is required to force changes to both the file's content and metadata to
      *                 be written to storage; otherwise, it need only force content changes to be written
      */
-    def force(metadata: Boolean): IO[IOException, Unit] =
-      IO.effect(channel.force(metadata)).refineToOrDie[IOException]
+    def force(metadata: Boolean): IO[IOException, Unit] = IO.effect(channel.force(metadata)).refineToOrDie[IOException]
 
     /**
      * Transfers bytes from this channel's file to the given writable byte channel.

@@ -15,8 +15,7 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) exten
 
   def provider: jf.spi.FileSystemProvider = javaFileSystem.provider()
 
-  def close: IO[IOException, Unit] =
-    IO.effect(javaFileSystem.close()).refineToOrDie[IOException]
+  def close: IO[IOException, Unit] = IO.effect(javaFileSystem.close()).refineToOrDie[IOException]
 
   def isOpen: UIO[Boolean] = UIO.effectTotal(javaFileSystem.isOpen())
 

@@ -103,7 +103,6 @@ trait GatheringByteOps {
 
 object GatheringByteOps {
 
-  private def unwrap(srcs: List[ByteBuffer]): Array[JByteBuffer] =
-    srcs.map(d => d.buffer).toArray
+  private def unwrap(srcs: List[ByteBuffer]): Array[JByteBuffer] = srcs.map(d => d.buffer).toArray
 
 }

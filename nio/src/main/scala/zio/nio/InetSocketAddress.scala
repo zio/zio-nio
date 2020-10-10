@@ -71,8 +71,7 @@ final class InetSocketAddress private[nio] (private val jInetSocketAddress: JIne
    * Note: This method may trigger a name service reverse lookup if the
    * address was created with a literal IP address.
    */
-  def hostName: UIO[String] =
-    UIO.effectTotal(jInetSocketAddress.getHostName)
+  def hostName: UIO[String] = UIO.effectTotal(jInetSocketAddress.getHostName)
 
   /**
    * Returns the hostname, or the String form of the address if it doesn't
@@ -98,8 +97,7 @@ object InetSocketAddress {
    *
    * The socket address will be ''resolved''.
    */
-  def wildCard(port: Int): UIO[InetSocketAddress] =
-    UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(port)))
+  def wildCard(port: Int): UIO[InetSocketAddress] = UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(port)))
 
   /**
    * Creates a socket address where the IP address is the wildcard address and

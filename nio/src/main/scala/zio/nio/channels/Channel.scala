@@ -14,14 +14,12 @@ trait Channel extends IOCloseable {
   /**
    * Closes this channel.
    */
-  final def close: IO[IOException, Unit] =
-    IO.effect(channel.close()).refineToOrDie[IOException]
+  final def close: IO[IOException, Unit] = IO.effect(channel.close()).refineToOrDie[IOException]
 
   /**
    * Tells whether or not this channel is open.
    */
-  final def isOpen: UIO[Boolean] =
-    IO.effectTotal(channel.isOpen)
+  final def isOpen: UIO[Boolean] = IO.effectTotal(channel.isOpen)
 }
 
 /**

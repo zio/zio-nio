@@ -40,8 +40,7 @@ object SelectorSpec extends BaseSpec {
       }
     )
 
-  def byteArrayToString(array: Array[Byte]): String =
-    array.takeWhile(_ != 10).map(_.toChar).mkString.trim
+  def byteArrayToString(array: Array[Byte]): String = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
 
   def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
     statusCheck.fold(_ => false, identity)
@@ -62,9 +61,8 @@ object SelectorSpec extends BaseSpec {
                        for {
                          scopeResult     <- scope(channel.useNonBlockingManaged(_.accept))
                          (_, maybeClient) = scopeResult
-                         _               <- IO.whenCase(maybeClient) {
-                                              case Some(client) =>
-                                                client.configureBlocking(false) *> client.register(selector, Set(Operation.Read))
+                         _               <- IO.whenCase(maybeClient) { case Some(client) =>
+                                              client.configureBlocking(false) *> client.register(selector, Set(Operation.Read))
                                             }
                        } yield ()
                      case channel: SocketChannel if readyOps(Operation.Read)         =>

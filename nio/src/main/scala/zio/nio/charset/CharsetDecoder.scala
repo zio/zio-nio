@@ -52,14 +52,12 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
   def flush(out: CharBuffer): UIO[CoderResult] =
     out.withJavaBuffer(jOut => UIO.effectTotal(CoderResult.fromJava(javaDecoder.flush(jOut))))
 
-  def malformedInputAction: UIO[j.CodingErrorAction] =
-    UIO.effectTotal(javaDecoder.malformedInputAction())
+  def malformedInputAction: UIO[j.CodingErrorAction] = UIO.effectTotal(javaDecoder.malformedInputAction())
 
   def onMalformedInput(errorAction: j.CodingErrorAction): UIO[Unit] =
     UIO.effectTotal(javaDecoder.onMalformedInput(errorAction)).unit
 
-  def unmappableCharacterAction: UIO[j.CodingErrorAction] =
-    UIO.effectTotal(javaDecoder.unmappableCharacterAction())
+  def unmappableCharacterAction: UIO[j.CodingErrorAction] = UIO.effectTotal(javaDecoder.unmappableCharacterAction())
 
   def onUnmappableCharacter(errorAction: j.CodingErrorAction): UIO[Unit] =
     UIO.effectTotal(javaDecoder.onUnmappableCharacter(errorAction)).unit
@@ -68,8 +66,7 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
 
   def replacement: UIO[String] = UIO.effectTotal(javaDecoder.replacement())
 
-  def replaceWith(replacement: String): UIO[Unit] =
-    UIO.effectTotal(javaDecoder.replaceWith(replacement)).unit
+  def replaceWith(replacement: String): UIO[Unit] = UIO.effectTotal(javaDecoder.replaceWith(replacement)).unit
 
   /**
    * Resets this decoder, clearing any internal state.
@@ -163,7 +160,6 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
 
 object CharsetDecoder {
 
-  def fromJava(javaDecoder: j.CharsetDecoder): CharsetDecoder =
-    new CharsetDecoder(javaDecoder)
+  def fromJava(javaDecoder: j.CharsetDecoder): CharsetDecoder = new CharsetDecoder(javaDecoder)
 
 }
