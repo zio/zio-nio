@@ -35,21 +35,20 @@ object StreamsBasedServer extends App {
       .map(conn => ZStream.managed(conn.ensuring(console.putStrLn("Connection closed")).withEarlyRelease))
       .flatMapPar[R, Throwable, Unit](16) { connection =>
         connection
-          .mapM {
-            case (closeConn, channel) =>
-              for {
-                _    <- console.putStrLn("Received connection")
-                data <- ZStream
-                          .fromEffectOption(
-                            channel.readChunk(64).tap(_ => console.putStrLn("Read chunk")).orElse(ZIO.fail(None))
-                          )
-                          .flattenChunks
-                          .take(4)
-                          .transduce(ZTransducer.utf8Decode)
-                          .run(Sink.foldLeft("")(_ + (_: String)))
-                _    <- closeConn
-                _    <- f(data)
-              } yield ()
+          .mapM { case (closeConn, channel) =>
+            for {
+              _    <- console.putStrLn("Received connection")
+              data <- ZStream
+                        .fromEffectOption(
+                          channel.readChunk(64).tap(_ => console.putStrLn("Read chunk")).orElse(ZIO.fail(None))
+                        )
+                        .flattenChunks
+                        .take(4)
+                        .transduce(ZTransducer.utf8Decode)
+                        .run(Sink.foldLeft("")(_ + (_: String)))
+              _    <- closeConn
+              _    <- f(data)
+            } yield ()
           }
       }
 }

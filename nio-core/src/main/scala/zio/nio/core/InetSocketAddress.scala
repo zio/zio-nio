@@ -56,8 +56,7 @@ final class InetSocketAddress private[nio] (private val jInetSocketAddress: JIne
    * Note: This method may trigger a name service reverse lookup if the
    * address was created with a literal IP address.
    */
-  def hostName: UIO[String] =
-    UIO.effectTotal(jInetSocketAddress.getHostName)
+  def hostName: UIO[String] = UIO.effectTotal(jInetSocketAddress.getHostName)
 
   /**
    * Returns the hostname, or the String form of the address if it doesn't
@@ -91,16 +90,14 @@ object SocketAddress {
    *
    * The socket address will be ''resolved''.
    */
-  def inetSocketAddress(port: Int): UIO[InetSocketAddress] =
-    InetSocketAddress(port)
+  def inetSocketAddress(port: Int): UIO[InetSocketAddress] = InetSocketAddress(port)
 
   /**
    * Creates a socket address from an IP address and a port number.
    *
    * The socket address will be ''resolved''.
    */
-  def inetSocketAddress(hostname: String, port: Int): UIO[InetSocketAddress] =
-    InetSocketAddress(hostname, port)
+  def inetSocketAddress(hostname: String, port: Int): UIO[InetSocketAddress] = InetSocketAddress(hostname, port)
 
   /**
    * Creates a socket address from a hostname and a port number.
@@ -108,8 +105,7 @@ object SocketAddress {
    * An attempt will be made to resolve the hostname into an `InetAddress`.
    * If that attempt fails, the socket address will be flagged as ''unresolved''.
    */
-  def inetSocketAddress(address: InetAddress, port: Int): UIO[InetSocketAddress] =
-    InetSocketAddress(address, port)
+  def inetSocketAddress(address: InetAddress, port: Int): UIO[InetSocketAddress] = InetSocketAddress(address, port)
 
   /**
    * Creates an unresolved socket address from a hostname and a port number.
@@ -122,8 +118,7 @@ object SocketAddress {
 
   private object InetSocketAddress {
 
-    def apply(port: Int): UIO[InetSocketAddress] =
-      UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(port)))
+    def apply(port: Int): UIO[InetSocketAddress] = UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(port)))
 
     def apply(host: String, port: Int): UIO[InetSocketAddress] =
       UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(host, port)))

@@ -149,11 +149,9 @@ class AsynchronousSocketChannel(private val channel: JAsynchronousSocketChannel)
   final def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
     IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
-  final def shutdownInput: IO[IOException, Unit] =
-    IO.effect(channel.shutdownInput()).refineToOrDie[IOException].unit
+  final def shutdownInput: IO[IOException, Unit] = IO.effect(channel.shutdownInput()).refineToOrDie[IOException].unit
 
-  final def shutdownOutput: IO[IOException, Unit] =
-    IO.effect(channel.shutdownOutput()).refineToOrDie[IOException].unit
+  final def shutdownOutput: IO[IOException, Unit] = IO.effect(channel.shutdownOutput()).refineToOrDie[IOException].unit
 
   final def remoteAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(

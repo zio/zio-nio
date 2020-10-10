@@ -22,6 +22,5 @@ trait GatheringByteChannel extends Channel {
 
   final def writeChunk(src: Chunk[Byte]): IO[Exception, Long] = writeChunks(List(src))
 
-  private def unwrap(srcs: List[ByteBuffer]): Array[JByteBuffer] =
-    srcs.map(d => d.byteBuffer).toList.toArray
+  private def unwrap(srcs: List[ByteBuffer]): Array[JByteBuffer] = srcs.map(d => d.byteBuffer).toList.toArray
 }

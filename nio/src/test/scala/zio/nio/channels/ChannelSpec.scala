@@ -65,9 +65,8 @@ object ChannelSpec extends BaseSpec {
                            _      <- started.succeed(addr)
                            result <- server.accept
                                        .use(worker => worker.readChunk(3) *> worker.readChunk(3) *> ZIO.succeed(false))
-                                       .catchSome {
-                                         case _: java.io.EOFException =>
-                                           ZIO.succeed(true)
+                                       .catchSome { case _: java.io.EOFException =>
+                                         ZIO.succeed(true)
                                        }
                          } yield result
                        }.fork

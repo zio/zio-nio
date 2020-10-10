@@ -26,8 +26,7 @@ object SelectorSpec extends BaseSpec {
       }
     )
 
-  def byteArrayToString(array: Array[Byte]): String =
-    array.takeWhile(_ != 10).map(_.toChar).mkString.trim
+  def byteArrayToString(array: Array[Byte]): String = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
 
   def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
     statusCheck.fold(_ => false, identity)
