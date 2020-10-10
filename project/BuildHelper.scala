@@ -51,12 +51,12 @@ object BuildHelper {
     }
   )
 
-  val ZioCoreVersion = "1.0.1"
+  val ZioCoreVersion = "1.0.2"
 
   private val Scala211     = "2.11.12"
   private val Scala212     = "2.12.11"
   private val Scala213     = "2.13.3"
-  private val dottyVersion = "0.26.0"
+  private val dottyVersion = "0.27.0-RC1"
 
   private val stdOptions = Seq(
     "-deprecation",
