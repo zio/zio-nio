@@ -22,8 +22,11 @@ Opening a file for a given path (with no additional open attributes) returns a `
 import java.nio.file.StandardOpenOption
 
 val path = Path("file.txt")
-val openOps = List(StandardOpenOption.READ, StandardOpenOption.WRITE)
-val channelM = AsynchronousFileChannel.open(path, openOps: _*).use { channel =>
+val channelM = AsynchronousFileChannel.open(
+  path, 
+  StandardOpenOption.READ,
+  StandardOpenOption.WRITE
+).use { channel =>
   readWriteOp(channel) *> lockOp(channel)
 }
 ```
