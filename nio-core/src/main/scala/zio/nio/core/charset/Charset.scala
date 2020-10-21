@@ -5,6 +5,7 @@ package charset
 
 import java.nio.{ charset => j }
 import java.{ util => ju }
+import java.nio.charset.IllegalCharsetNameException
 
 import com.github.ghik.silencer.silent
 
@@ -17,8 +18,7 @@ final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset
 
   def canEncode: Boolean = javaCharset.canEncode
 
-  override def compare(that: Charset): Int =
-    javaCharset.compareTo(that.javaCharset)
+  override def compare(that: Charset): Int = javaCharset.compareTo(that.javaCharset)
 
   def contains(cs: Charset): Boolean = javaCharset.contains(cs.javaCharset)
 
@@ -32,10 +32,11 @@ final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset
   def encode(charBuffer: CharBuffer): UIO[ByteBuffer] =
     charBuffer.withJavaBuffer(jBuf => UIO.effectTotal(Buffer.byteFromJava(javaCharset.encode(jBuf))))
 
-  override def equals(other: Any): Boolean = other match {
-    case cs: Charset => javaCharset.equals(cs.javaCharset)
-    case _           => false
-  }
+  override def equals(other: Any): Boolean =
+    other match {
+      case cs: Charset => javaCharset.equals(cs.javaCharset)
+      case _           => false
+    }
 
   override def hashCode: Int = javaCharset.hashCode()
 
@@ -43,8 +44,7 @@ final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset
 
   def name: String = javaCharset.name()
 
-  def newDecoder: CharsetDecoder =
-    CharsetDecoder.fromJava(javaCharset.newDecoder())
+  def newDecoder: CharsetDecoder = CharsetDecoder.fromJava(javaCharset.newDecoder())
 
   def newEncoder: CharsetEncoder = CharsetEncoder.fromJava(javaCharset.newEncoder())
 
@@ -54,21 +54,21 @@ final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset
     for {
       charBuf <- Buffer.char(chunk)
       byteBuf <- encode(charBuf)
-      chunk   <- byteBuf.getChunk().orDie
+      chunk   <- byteBuf.getChunk()
     } yield chunk
 
-  def encodeString(s: String): UIO[Chunk[Byte]] =
+  def encodeString(s: CharSequence): UIO[Chunk[Byte]] =
     for {
       charBuf <- Buffer.char(s)
       byteBuf <- encode(charBuf)
-      chunk   <- byteBuf.getChunk().orDie
+      chunk   <- byteBuf.getChunk()
     } yield chunk
 
   def decodeChunk(chunk: Chunk[Byte]): UIO[Chunk[Char]] =
     for {
       byteBuf <- Buffer.byte(chunk)
       charBuf <- decode(byteBuf)
-      chunk   <- charBuf.getChunk().orDie
+      chunk   <- charBuf.getChunk()
     } yield chunk
 
   def decodeString(chunk: Chunk[Byte]): UIO[String] =
@@ -90,9 +90,33 @@ object Charset {
 
   val defaultCharset: Charset = fromJava(j.Charset.defaultCharset())
 
+  /**
+   * Returns a charset object for the named charset.
+   *
+   * @throws java.nio.charset.IllegalCharsetNameException if the given charset name is illegal
+   * @throws java.nio.charset.UnsupportedCharsetException if no support for the named charset is available in this instance of the Java virtual machine
+   */
   def forName(name: String): Charset = fromJava(j.Charset.forName(name))
 
+  /**
+   * Tells whether the named charset is supported.
+   *
+   * @throws java.nio.charset.IllegalCharsetNameException if the given charset name is illegal
+   */
   def isSupported(name: String): Boolean = j.Charset.isSupported(name)
+
+  /**
+   * Tells whether the name is a legal charset name, ans is support by the JVM.
+   */
+  def isLegalAndSupported(name: String): Boolean =
+    util.control.Exception.failAsValue(classOf[IllegalCharsetNameException])(false)(isSupported(name))
+
+  /**
+   * Returns a charset for the given name, if it is a legal name supported by the JVM.
+   *
+   * @return The charset if it is supported, otherwise `None`
+   */
+  def forNameIfSupported(name: String): Option[Charset] = if (isLegalAndSupported(name)) Some(forName(name)) else None
 
   object Standard {
 

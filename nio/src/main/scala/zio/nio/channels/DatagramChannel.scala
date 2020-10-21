@@ -1,11 +1,11 @@
 package zio.nio.channels
 
 import java.io.IOException
-import java.net.{ DatagramSocket => JDatagramSocket, SocketAddress => JSocketAddress }
+import java.net.{ SocketOption, DatagramSocket => JDatagramSocket, SocketAddress => JSocketAddress }
 import java.nio.channels.{ DatagramChannel => JDatagramChannel }
 
 import zio.{ IO, Managed, UIO }
-import zio.nio.core.{ ByteBuffer, SocketAddress, SocketOption }
+import zio.nio.core.{ ByteBuffer, SocketAddress }
 
 /**
  * A [[java.nio.channels.DatagramChannel]] wrapper allowing for idiomatic [[zio.ZIO]] interoperability.
@@ -35,8 +35,7 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    *
    * @return `true` when the socket is both open and connected, otherwise `false`
    */
-  def isConnected: UIO[Boolean] =
-    UIO.effectTotal(channel.isConnected())
+  def isConnected: UIO[Boolean] = UIO.effectTotal(channel.isConnected())
 
   /**
    * Optionally returns the socket address that this channel's underlying socket is bound to.
@@ -45,16 +44,6 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    */
   def localAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(channel.getLocalAddress()).refineToOrDie[IOException].map(a => Option(a).map(new SocketAddress(_)))
-
-  /**
-   * Reads a datagram into the given [[zio.nio.core.ByteBuffer]]. This effect can only succeed
-   * if the channel is connected, and it only accepts datagrams from the connected remote address.
-   *
-   * @param dst the destination buffer
-   * @return the number of bytes that were read from this channel
-   */
-  def read(dst: ByteBuffer): IO[IOException, Int] =
-    IO.effect(channel.read(dst.byteBuffer)).refineToOrDie[IOException]
 
   /**
    * Receives a datagram via this channel into the given [[zio.nio.core.ByteBuffer]].
@@ -91,33 +80,22 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    * @return the datagram channel with the given socket option set to the provided value
    */
   def setOption[T](name: SocketOption[T], value: T): IO[IOException, DatagramChannel] =
-    IO.effect(channel.setOption(name.jSocketOption, value)).refineToOrDie[IOException].map(new DatagramChannel(_))
+    IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].map(new DatagramChannel(_))
 
   /**
    * Returns a reference to this channel's underlying datagram socket.
    *
    * @return the underlying datagram socket
    */
-  def socket: UIO[JDatagramSocket] =
-    IO.effectTotal(channel.socket())
+  def socket: UIO[JDatagramSocket] = IO.effectTotal(channel.socket())
 
   /**
    * Returns the set of operations supported by this channel.
    *
    * @return the set of valid operations
    */
-  def validOps: UIO[Int] =
-    UIO.effectTotal(channel.validOps())
+  def validOps: UIO[Int] = UIO.effectTotal(channel.validOps())
 
-  /**
-   * Writes a datagram read from the given [[zio.nio.core.ByteBuffer]]. This effect can only succeed
-   * if the channel is connected, and it only sends datagrams to the connected remote address.
-   *
-   * @param src the source buffer from which the datagram is to be read
-   * @return the number of bytes that were written to this channel
-   */
-  def write(src: ByteBuffer): IO[IOException, Int] =
-    IO.effect(channel.write(src.byteBuffer)).refineToOrDie[IOException]
 }
 
 object DatagramChannel {
@@ -129,8 +107,7 @@ object DatagramChannel {
    * @param local the local address
    * @return a datagram channel bound to the local address
    */
-  def bind(local: Option[SocketAddress]): Managed[IOException, DatagramChannel] =
-    open.flatMap(_.bind(local).toManaged_)
+  def bind(local: Option[SocketAddress]): Managed[IOException, DatagramChannel] = open.flatMap(_.bind(local).toManaged_)
 
   /**
    * Opens a datagram channel connected to the given remote address as a managed resource.
@@ -138,8 +115,7 @@ object DatagramChannel {
    * @param remote the remote address
    * @return a datagram channel connected to the remote address
    */
-  def connect(remote: SocketAddress): Managed[IOException, DatagramChannel] =
-    open.flatMap(_.connect(remote).toManaged_)
+  def connect(remote: SocketAddress): Managed[IOException, DatagramChannel] = open.flatMap(_.connect(remote).toManaged_)
 
   /**
    * Opens a new datagram channel as a managed resource. The channel will be

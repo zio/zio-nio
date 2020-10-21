@@ -21,7 +21,7 @@ class SelectorProvider(private val selectorProvider: JSelectorProvider) {
     IO.effect(selectorProvider.openDatagramChannel(family)).refineToOrDie[IOException]
 
   final val openPipe: IO[IOException, Pipe] =
-    IO.effect(new Pipe(selectorProvider.openPipe())).refineToOrDie[IOException]
+    IO.effect(Pipe.fromJava(selectorProvider.openPipe())).refineToOrDie[IOException]
 
   final val openSelector: IO[IOException, Selector] =
     IO.effect(new Selector(selectorProvider.openSelector())).refineToOrDie[IOException]

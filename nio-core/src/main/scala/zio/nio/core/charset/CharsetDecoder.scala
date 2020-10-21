@@ -3,11 +3,10 @@ package nio
 package core
 package charset
 
-import java.nio.charset.{ MalformedInputException, UnmappableCharacterException }
 import java.nio.{ charset => j }
+import java.nio.charset.{ MalformedInputException, UnmappableCharacterException }
 
-import zio.stream.ZStream
-import zio.stream.ZStream.Pull
+import zio.stream.{ Transducer, ZTransducer }
 
 final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends AnyVal {
 
@@ -32,30 +31,26 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
       }
     }
 
-  def autoDetect: UIO[AutoDetect] = UIO.effectTotal {
-    if (javaDecoder.isAutoDetecting()) {
-      if (javaDecoder.isCharsetDetected()) {
-        AutoDetect.Detected(Charset.fromJava(javaDecoder.detectedCharset()))
-      } else {
-        AutoDetect.NotDetected
-      }
-    } else {
-      AutoDetect.NotSupported
+  def autoDetect: UIO[AutoDetect] =
+    UIO.effectTotal {
+      if (javaDecoder.isAutoDetecting)
+        if (javaDecoder.isCharsetDetected)
+          AutoDetect.Detected(Charset.fromJava(javaDecoder.detectedCharset()))
+        else
+          AutoDetect.NotDetected
+      else
+        AutoDetect.NotSupported
     }
-  }
 
-  def flush(out: CharBuffer): UIO[CoderResult] = out.withJavaBuffer { jOut =>
-    UIO.effectTotal(CoderResult.fromJava(javaDecoder.flush(jOut)))
-  }
+  def flush(out: CharBuffer): UIO[CoderResult] =
+    out.withJavaBuffer(jOut => UIO.effectTotal(CoderResult.fromJava(javaDecoder.flush(jOut))))
 
-  def malformedInputAction: UIO[j.CodingErrorAction] =
-    UIO.effectTotal(javaDecoder.malformedInputAction())
+  def malformedInputAction: UIO[j.CodingErrorAction] = UIO.effectTotal(javaDecoder.malformedInputAction())
 
   def onMalformedInput(errorAction: j.CodingErrorAction): UIO[Unit] =
     UIO.effectTotal(javaDecoder.onMalformedInput(errorAction)).unit
 
-  def unmappableCharacterAction: UIO[j.CodingErrorAction] =
-    UIO.effectTotal(javaDecoder.unmappableCharacterAction())
+  def unmappableCharacterAction: UIO[j.CodingErrorAction] = UIO.effectTotal(javaDecoder.unmappableCharacterAction())
 
   def onUnmappableCharacter(errorAction: j.CodingErrorAction): UIO[Unit] =
     UIO.effectTotal(javaDecoder.onUnmappableCharacter(errorAction)).unit
@@ -64,124 +59,94 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
 
   def replacement: UIO[String] = UIO.effectTotal(javaDecoder.replacement())
 
-  def replaceWith(replacement: String): UIO[Unit] =
-    UIO.effectTotal(javaDecoder.replaceWith(replacement)).unit
+  def replaceWith(replacement: String): UIO[Unit] = UIO.effectTotal(javaDecoder.replaceWith(replacement)).unit
 
   def reset: UIO[Unit] = UIO.effectTotal(javaDecoder.reset()).unit
 
-  def decodeStream[R](
-    stream: ZStream[R, Nothing, Chunk[Byte]],
-    bufSize: Int = 5000
-  ): ZStream[R, j.CharacterCodingException, Chunk[Char]] =
-    decodeStreamError(stream, bufSize)(identity)
-
   /**
-   * Applies character decoding to a stream of byte chunks.
+   * Decodes a stream of bytes into characters according to this character set's encoding.
    *
-   * @param stream  The input stream of byte chunks.
    * @param bufSize The size of the internal buffer used for encoding.
    *                Must be at least 50.
-   * @param handleError Used to report decoding failures to the stream consumer.
    */
-  def decodeStreamError[R, E](
-    stream: ZStream[R, E, Chunk[Byte]],
-    bufSize: Int = 5000
-  )(handleError: j.CharacterCodingException => E): ZStream[R, E, Chunk[Char]] = {
-    val pull: ZManaged[R, Nothing, Pull[R, E, Chunk[Char]]] =
+  def transducer(bufSize: Int = 5000): Transducer[j.CharacterCodingException, Byte, Char] = {
+    val push: Managed[Nothing, Option[Chunk[Byte]] => IO[j.CharacterCodingException, Chunk[Char]]] = {
       for {
-        byteBuffer <- Buffer.byte(bufSize).toManaged_.orDie
-        charBuffer <- Buffer.char((bufSize.toFloat * this.averageCharsPerByte).round).toManaged_.orDie
-        inPull     <- stream.process
-        stateRef   <- Ref.make[StreamCodeState](StreamCodeState.Pull).toManaged_
+        byteBuffer <- Buffer.byte(bufSize).toManaged_
+        charBuffer <- Buffer.char((bufSize.toFloat * this.averageCharsPerByte).round).toManaged_
       } yield {
-        def handleCoderResult(coderResult: CoderResult) = coderResult match {
-          case CoderResult.Underflow | CoderResult.Overflow =>
-            byteBuffer.compact.orDie *>
-              charBuffer.flip *>
-              charBuffer.getChunk().orDie <*
-              charBuffer.clear
-          case CoderResult.Malformed(length) =>
-            ZIO.fail(Some(handleError(new MalformedInputException(length))))
-          case CoderResult.Unmappable(length) =>
-            ZIO.fail(Some(handleError(new UnmappableCharacterException(length))))
-        }
 
-        stateRef.get.flatMap {
-          case StreamCodeState.Pull =>
-            def decode(
-              inBytes: Chunk[Byte]
-            ): ZIO[Any, Some[E], Chunk[Char]] =
+        def handleCoderResult(coderResult: CoderResult) =
+          coderResult match {
+            case CoderResult.Underflow | CoderResult.Overflow =>
+              byteBuffer.compact *>
+                charBuffer.flip *>
+                charBuffer.getChunk() <*
+                charBuffer.clear
+            case CoderResult.Malformed(length)                =>
+              IO.fail(new MalformedInputException(length))
+            case CoderResult.Unmappable(length)               =>
+              IO.fail(new UnmappableCharacterException(length))
+          }
+
+        (_: Option[Chunk[Byte]])
+          .map { inChunk =>
+            def decodeChunk(inBytes: Chunk[Byte]): IO[j.CharacterCodingException, Chunk[Char]] =
               for {
-                bufRemaining <- byteBuffer.remaining
+                bufRemaining                 <- byteBuffer.remaining
                 (decodeBytes, remainingBytes) = {
-                  if (inBytes.length > bufRemaining) {
+                  if (inBytes.length > bufRemaining)
                     inBytes.splitAt(bufRemaining)
-                  } else {
+                  else
                     (inBytes, Chunk.empty)
-                  }
                 }
-                _ <- byteBuffer.putChunk(decodeBytes).orDie
-                _ <- byteBuffer.flip
-                result <- this.decode(
-                           byteBuffer,
-                           charBuffer,
-                           endOfInput = false
-                         )
-                decodedChars   <- handleCoderResult(result)
-                remainderChars <- if (remainingBytes.isEmpty) ZIO.succeed(Chunk.empty) else decode(remainingBytes)
+                _                            <- byteBuffer.putChunk(decodeBytes)
+                _                            <- byteBuffer.flip
+                result                       <- decode(
+                                                  byteBuffer,
+                                                  charBuffer,
+                                                  endOfInput = false
+                                                )
+                decodedChars                 <- handleCoderResult(result)
+                remainderChars               <- if (remainingBytes.isEmpty) IO.succeed(Chunk.empty) else decodeChunk(remainingBytes)
               } yield decodedChars ++ remainderChars
 
-            inPull.foldM(
-              _.map(e => ZIO.fail(Some(e))).getOrElse {
-                stateRef.set(StreamCodeState.EndOfInput).as(Chunk.empty)
-              },
-              decode
-            )
-          case StreamCodeState.EndOfInput =>
-            for {
-              _ <- byteBuffer.flip
-              result <- this.decode(
-                         byteBuffer,
-                         charBuffer,
-                         endOfInput = true
-                       )
-              outChars <- handleCoderResult(result)
-              _ <- ZIO.when(result == CoderResult.Underflow)(
-                    stateRef.set(StreamCodeState.Flush)
-                  )
-            } yield outChars
-          case StreamCodeState.Flush =>
-            for {
-              result <- this.flush(charBuffer)
-              outChars <- result match {
-                           case CoderResult.Underflow =>
-                             charBuffer.flip *> charBuffer.getChunk().orDie <* stateRef.set(
-                               StreamCodeState.Done
-                             )
-                           case CoderResult.Overflow =>
-                             charBuffer.flip *> charBuffer.getChunk().orDie <* charBuffer.clear
-                           case e =>
-                             ZIO.dieMessage(
-                               s"Error $e should not returned from decoder flush"
-                             )
-                         }
-            } yield outChars
-          case StreamCodeState.Done =>
-            IO.fail(None)
-        }
+            decodeChunk(inChunk)
+          }
+          .getOrElse {
+            def endOfInput: IO[j.CharacterCodingException, Chunk[Char]] =
+              for {
+                result         <- decode(
+                                    byteBuffer,
+                                    charBuffer,
+                                    endOfInput = true
+                                  )
+                decodedChars   <- handleCoderResult(result)
+                remainderChars <- if (result == CoderResult.Overflow) endOfInput else IO.succeed(Chunk.empty)
+              } yield decodedChars ++ remainderChars
+            byteBuffer.flip *> endOfInput.flatMap { decodedChars =>
+              def flushRemaining: IO[j.CharacterCodingException, Chunk[Char]] =
+                for {
+                  result         <- flush(charBuffer)
+                  decodedChars   <- handleCoderResult(result)
+                  remainderChars <- if (result == CoderResult.Overflow) flushRemaining else IO.succeed(Chunk.empty)
+                } yield decodedChars ++ remainderChars
+              flushRemaining.map(decodedChars ++ _)
+            } <* byteBuffer.clear <* charBuffer.clear
+          }
       }
+    }
 
     if (bufSize < 50)
-      ZStream.die(new IllegalArgumentException(s"Buffer size is $bufSize, must be >= 50"))
+      ZTransducer.die(new IllegalArgumentException(s"Buffer size is $bufSize, must be >= 50"))
     else
-      ZStream(pull)
+      ZTransducer(push)
   }
 
 }
 
 object CharsetDecoder {
 
-  def fromJava(javaDecoder: j.CharsetDecoder): CharsetDecoder =
-    new CharsetDecoder(javaDecoder)
+  def fromJava(javaDecoder: j.CharsetDecoder): CharsetDecoder = new CharsetDecoder(javaDecoder)
 
 }

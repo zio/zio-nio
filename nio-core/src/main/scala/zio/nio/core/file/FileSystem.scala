@@ -1,5 +1,6 @@
 package zio.nio.core.file
 
+import java.io.IOException
 import java.net.URI
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.{ file => jf }
@@ -12,8 +13,7 @@ import scala.jdk.CollectionConverters._
 final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
   def provider: jf.spi.FileSystemProvider = javaFileSystem.provider()
 
-  def close: ZIO[Blocking, Exception, Unit] =
-    effectBlocking(javaFileSystem.close()).refineToOrDie[Exception]
+  def close: ZIO[Blocking, Exception, Unit] = effectBlocking(javaFileSystem.close()).refineToOrDie[Exception]
 
   def isOpen: UIO[Boolean] = UIO.effectTotal(javaFileSystem.isOpen())
 
@@ -21,9 +21,10 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
 
   def getSeparator: String = javaFileSystem.getSeparator
 
-  def getRootDirectories: List[Path] = javaFileSystem.getRootDirectories.asScala.map(Path.fromJava).toList
+  def getRootDirectories: UIO[List[Path]] =
+    UIO.effectTotal(javaFileSystem.getRootDirectories.asScala.map(Path.fromJava).toList)
 
-  def getFileStores: List[jf.FileStore] = javaFileSystem.getFileStores.asScala.toList
+  def getFileStores: UIO[List[jf.FileStore]] = UIO.effectTotal(javaFileSystem.getFileStores.asScala.toList)
 
   def supportedFileAttributeViews: Set[String] = javaFileSystem.supportedFileAttributeViews().asScala.toSet
 
@@ -33,8 +34,8 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
 
   def getUserPrincipalLookupService: UserPrincipalLookupService = javaFileSystem.getUserPrincipalLookupService
 
-  def newWatchService: ZIO[Blocking, Exception, WatchService] =
-    effectBlocking(WatchService.fromJava(javaFileSystem.newWatchService())).refineToOrDie[Exception]
+  def newWatchService: ZIO[Blocking, IOException, WatchService] =
+    effectBlocking(WatchService.fromJava(javaFileSystem.newWatchService())).refineToOrDie[IOException]
 }
 
 object FileSystem {

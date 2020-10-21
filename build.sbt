@@ -30,14 +30,14 @@ lazy val zioNioCore = project
   .settings(stdSettings("zio-nio-core"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio"                %% "zio"                     % ZioCoreVersion,
-      "dev.zio"                %% "zio-streams"             % ZioCoreVersion,
-      "dev.zio"                %% "zio-test"                % ZioCoreVersion % Test,
-      "dev.zio"                %% "zio-test-sbt"            % ZioCoreVersion % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6"
+      "dev.zio" %% "zio"          % ZioCoreVersion,
+      "dev.zio" %% "zio-streams"  % ZioCoreVersion,
+      "dev.zio" %% "zio-test"     % ZioCoreVersion % Test,
+      "dev.zio" %% "zio-test-sbt" % ZioCoreVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
+  .settings(dottySettings)
 
 lazy val zioNio = project
   .in(file("nio"))
@@ -45,14 +45,14 @@ lazy val zioNio = project
   .settings(stdSettings("zio-nio"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio"                %% "zio"                     % ZioCoreVersion,
-      "dev.zio"                %% "zio-streams"             % ZioCoreVersion,
-      "dev.zio"                %% "zio-test"                % ZioCoreVersion % Test,
-      "dev.zio"                %% "zio-test-sbt"            % ZioCoreVersion % Test,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6"
+      "dev.zio" %% "zio"          % ZioCoreVersion,
+      "dev.zio" %% "zio-streams"  % ZioCoreVersion,
+      "dev.zio" %% "zio-test"     % ZioCoreVersion % Test,
+      "dev.zio" %% "zio-test-sbt" % ZioCoreVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
+  .settings(dottySettings)
 
 lazy val docs = project
   .in(file("zio-nio-docs"))
@@ -74,4 +74,5 @@ lazy val examples = project
     skip in publish := true,
     moduleName := "examples"
   )
+  .settings(dottySettings)
   .dependsOn(zioNio)

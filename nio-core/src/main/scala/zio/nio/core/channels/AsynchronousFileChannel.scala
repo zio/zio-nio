@@ -5,13 +5,13 @@ import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, 
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.OpenOption
 
-import zio.interop.javaz._
-import zio.nio.core.file.Path
-import zio.nio.core.{ Buffer, ByteBuffer }
 import zio.{ Chunk, IO }
+import zio.interop.javaz._
+import zio.nio.core.{ Buffer, ByteBuffer, eofCheck }
+import zio.nio.core.file.Path
 
-import scala.jdk.CollectionConverters._
 import scala.concurrent.ExecutionContextExecutorService
+import scala.jdk.CollectionConverters._
 
 class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) extends Channel {
 
@@ -23,61 +23,96 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
       .map(new FileLock(_))
       .refineToOrDie[Exception]
 
-  final private[nio] def readBuffer(dst: ByteBuffer, position: Long): IO[Exception, Int] =
+  /**
+   *  Reads data from this channel into buffer, returning the number of bytes read.
+   *
+   *  Fails with `java.io.EOFException` if end-of-stream is reached.
+   *
+   *  @param position The file position at which the transfer is to begin; must be non-negative
+   */
+  final def read(dst: ByteBuffer, position: Long): IO[Exception, Int] =
     dst.withJavaBuffer { buf =>
       effectAsyncWithCompletionHandler[Integer](channel.read(buf, position, (), _))
-        .map(_.intValue)
         .refineToOrDie[Exception]
+        .flatMap(eofCheck(_))
     }
 
-  final def read(capacity: Int, position: Long): IO[Exception, Chunk[Byte]] =
+  /**
+   *  Reads data from this channel as a `Chunk`.
+   *
+   *  Fails with `java.io.EOFException` if end-of-stream is reached.
+   *
+   *  @param position The file position at which the transfer is to begin; must be non-negative
+   */
+  final def readChunk(capacity: Int, position: Long): IO[Exception, Chunk[Byte]] =
     for {
       b     <- Buffer.byte(capacity)
-      count <- readBuffer(b, position)
-      a     <- b.array
-    } yield Chunk.fromArray(a).take(math.max(count, 0))
+      _     <- read(b, position)
+      _     <- b.flip
+      chunk <- b.getChunk()
+    } yield chunk
 
   final val size: IO[IOException, Long] =
     IO.effect(channel.size()).refineToOrDie[IOException]
 
-  final def truncate(size: Long): IO[Exception, Unit] =
-    IO.effect(channel.truncate(size)).refineToOrDie[Exception].unit
+  final def truncate(size: Long): IO[IOException, Unit] =
+    IO.effect(channel.truncate(size)).refineToOrDie[IOException].unit
 
-  final def tryLock(position: Long = 0L, size: Long = Long.MaxValue, shared: Boolean = false): IO[Exception, FileLock] =
-    IO.effect(new FileLock(channel.tryLock(position, size, shared))).refineToOrDie[Exception]
+  final def tryLock(
+    position: Long = 0L,
+    size: Long = Long.MaxValue,
+    shared: Boolean = false
+  ): IO[IOException, FileLock] =
+    IO.effect(new FileLock(channel.tryLock(position, size, shared))).refineToOrDie[IOException]
 
-  final private[nio] def writeBuffer(src: ByteBuffer, position: Long): IO[Exception, Int] =
+  final def write(src: ByteBuffer, position: Long): IO[Exception, Int] =
     src.withJavaBuffer { buf =>
       effectAsyncWithCompletionHandler[Integer](channel.write(buf, position, (), _))
         .map(_.intValue)
         .refineToOrDie[Exception]
     }
 
-  final def write(src: Chunk[Byte], position: Long): IO[Exception, Int] =
-    for {
-      b <- Buffer.byte(src)
-      r <- writeBuffer(b, position)
-    } yield r
+  /**
+   * Writes a chunk of bytes at a specified position in the file.
+   *
+   * More than one write operation may be performed to write the entire
+   * chunk.
+   *
+   * @param src The bytes to write.
+   * @param position Where in the file to write.
+   */
+  final def writeChunk(src: Chunk[Byte], position: Long): IO[Exception, Unit] =
+    Buffer.byte(src).flatMap { b =>
+      def go(pos: Long): IO[Exception, Unit] =
+        write(b, pos).flatMap { bytesWritten =>
+          b.hasRemaining.flatMap {
+            case true  => go(pos + bytesWritten.toLong)
+            case false => IO.unit
+          }
+        }
+      go(position)
+    }
 }
 
 object AsynchronousFileChannel {
 
-  def open(file: Path, options: OpenOption*): IO[Exception, AsynchronousFileChannel] =
+  def open(file: Path, options: OpenOption*): IO[IOException, AsynchronousFileChannel] =
     IO.effect(
-        new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*))
-      )
-      .refineToOrDie[Exception]
+      new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*))
+    ).refineToOrDie[IOException]
 
   def open(
     file: Path,
     options: Set[OpenOption],
     executor: Option[ExecutionContextExecutorService],
     attrs: Set[FileAttribute[_]]
-  ): IO[Exception, AsynchronousFileChannel] =
+  ): IO[IOException, AsynchronousFileChannel] =
     IO.effect(
-        new AsynchronousFileChannel(
-          JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
-        )
+      new AsynchronousFileChannel(
+        JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
       )
-      .refineToOrDie[Exception]
+    ).refineToOrDie[IOException]
+
+  def fromJava(javaAsynchronousFileChannel: JAsynchronousFileChannel): AsynchronousFileChannel =
+    new AsynchronousFileChannel(javaAsynchronousFileChannel)
 }

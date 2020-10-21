@@ -3,7 +3,7 @@ id: essentials_files
 title:  "File Channel"
 ---
 
-A `AsynchronousFileChannel` provides API for handling files in non-blocking way.
+An `AsynchronousFileChannel` provides an API for handling files in a non-blocking way.
 
 Required imports for presented snippets:
 
@@ -16,11 +16,17 @@ import zio.console._
 
 ## Basic operations 
 
-Opening file for given path (with no additional open attributes) returns a `ZManaged` instance on which we're running the intended operations. `ZManaged` makes sure that the channel gets closed afterwards:
+Opening a file for a given path (with no additional open attributes) returns a `ZManaged` instance on which we're running the intended operations. `ZManaged` makes sure that the channel gets closed afterwards:
 
 ```scala mdoc:silent
+import java.nio.file.StandardOpenOption
+
 val path = Path("file.txt")
-val channelM = AsynchronousFileChannel.open(path).use { channel => 
+val channelM = AsynchronousFileChannel.open(
+  path, 
+  StandardOpenOption.READ,
+  StandardOpenOption.WRITE
+).use { channel =>
   readWriteOp(channel) *> lockOp(channel)
 }
 ```
@@ -30,17 +36,17 @@ Reading and writing is performed as effects where raw `Byte` content is wrapped 
 ```scala mdoc:silent
 val readWriteOp = (channel: AsynchronousFileChannel) =>
   for {
-    chunk <- channel.read(20, 0)
+    chunk <- channel.readChunk(20, 0L)
     text  = chunk.map(_.toChar).mkString
     _     <- putStrLn(text)
   
     input = Chunk.fromArray("message".toArray.map(_.toByte))
-    _     <- channel.write(input, 0)
+    _     <- channel.writeChunk(input, 0L)
   } yield ()
 ```
 
-Contrary to previous operations file locks are performed with core `java.nio.channels.FileLock` class so
-it's not in an effect. Apart from basic acquire/release actions Core API offers e.g. partial locks and overlaps checks:
+Contrary to previous operations, file locks are performed with the core `java.nio.channels.FileLock` class so
+they are not in effects. Apart from basic acquire/release actions, the core API offers, among other things, partial locks and overlap checks:
 
 ```scala mdoc:silent
 val lockOp = (channel: AsynchronousFileChannel) =>
@@ -54,5 +60,5 @@ val lockOp = (channel: AsynchronousFileChannel) =>
   } yield ()
 ```
 
-Also it's worth mentioning that we are treating here `FileLock` as a resource. 
+Also it's worth mentioning that we are treating `FileLock` as a resource here. 
 For demonstration purposes we handled it in two different ways: using `bracket` and creating `Managed` for this.

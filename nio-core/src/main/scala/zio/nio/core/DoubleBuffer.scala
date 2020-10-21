@@ -1,56 +1,56 @@
 package zio.nio.core
 
-import zio.{ Chunk, IO, ZIO }
-import java.nio.{ BufferUnderflowException, ByteOrder, ReadOnlyBufferException, DoubleBuffer => JDoubleBuffer }
+import java.nio.{ ByteOrder, DoubleBuffer => JDoubleBuffer }
 
+import zio.{ Chunk, UIO, ZIO }
+
+/**
+ * A mutable buffer of doubles.
+ */
 final class DoubleBuffer(doubleBuffer: JDoubleBuffer) extends Buffer[Double](doubleBuffer) {
 
-  override protected[nio] def array: IO[Exception, Array[Double]] =
-    IO.effect(doubleBuffer.array()).refineToOrDie[Exception]
+  override protected[nio] def array: UIO[Array[Double]] = UIO.effectTotal(doubleBuffer.array())
 
-  override def order: ByteOrder = doubleBuffer.order
+  override def order: UIO[ByteOrder] = UIO.effectTotal(doubleBuffer.order)
 
-  override def slice: IO[Nothing, DoubleBuffer] =
-    IO.effectTotal(doubleBuffer.slice()).map(new DoubleBuffer(_))
+  override def slice: UIO[DoubleBuffer] = UIO.effectTotal(new DoubleBuffer(doubleBuffer.slice()))
 
-  override def compact: IO[ReadOnlyBufferException, Unit] =
-    IO.effect(doubleBuffer.compact()).unit.refineToOrDie[ReadOnlyBufferException]
+  override def compact: UIO[Unit] = UIO.effectTotal(doubleBuffer.compact()).unit
 
-  override def duplicate: IO[Nothing, DoubleBuffer] =
-    IO.effectTotal(new DoubleBuffer(doubleBuffer.duplicate()))
+  override def duplicate: UIO[DoubleBuffer] = UIO.effectTotal(new DoubleBuffer(doubleBuffer.duplicate()))
 
+  /**
+   * Provides the underlying Java double buffer for use in an effect.
+   *
+   * This is useful when using Java APIs that require a Java double buffer to be provided.
+   *
+   * @return The effect value constructed by `f` using the underlying buffer.
+   */
   def withJavaBuffer[R, E, A](f: JDoubleBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(doubleBuffer)
 
-  override def get: IO[BufferUnderflowException, Double] =
-    IO.effect(doubleBuffer.get()).refineToOrDie[BufferUnderflowException]
+  override def get: UIO[Double] = UIO.effectTotal(doubleBuffer.get())
 
-  override def get(i: Int): IO[IndexOutOfBoundsException, Double] =
-    IO.effect(doubleBuffer.get(i)).refineToOrDie[IndexOutOfBoundsException]
+  override def get(i: Int): UIO[Double] = UIO.effectTotal(doubleBuffer.get(i))
 
   override def getChunk(
     maxLength: Int = Int.MaxValue
-  ): IO[BufferUnderflowException, Chunk[Double]] =
-    IO.effect {
-        val array = Array.ofDim[Double](math.min(maxLength, doubleBuffer.remaining()))
-        doubleBuffer.get(array)
-        Chunk.fromArray(array)
-      }
-      .refineToOrDie[BufferUnderflowException]
+  ): UIO[Chunk[Double]] =
+    UIO.effectTotal {
+      val array = Array.ofDim[Double](math.min(maxLength, doubleBuffer.remaining()))
+      doubleBuffer.get(array)
+      Chunk.fromArray(array)
+    }
 
-  override def put(element: Double): IO[Exception, Unit] =
-    IO.effect(doubleBuffer.put(element)).unit.refineToOrDie[Exception]
+  override def put(element: Double): UIO[Unit] = UIO.effectTotal(doubleBuffer.put(element)).unit
 
-  override def put(index: Int, element: Double): IO[Exception, Unit] =
-    IO.effect(doubleBuffer.put(index, element)).unit.refineToOrDie[Exception]
+  override def put(index: Int, element: Double): UIO[Unit] = UIO.effectTotal(doubleBuffer.put(index, element)).unit
 
-  override def putChunk(chunk: Chunk[Double]): IO[Exception, Unit] =
-    IO.effect {
-        val array = chunk.toArray
-        doubleBuffer.put(array)
-      }
-      .unit
-      .refineToOrDie[Exception]
+  override protected def putChunkAll(chunk: Chunk[Double]): UIO[Unit] =
+    UIO.effectTotal {
+      val array = chunk.toArray
+      doubleBuffer.put(array)
+    }.unit
 
-  override def asReadOnlyBuffer: IO[Nothing, DoubleBuffer] =
-    IO.effectTotal(doubleBuffer.asReadOnlyBuffer()).map(new DoubleBuffer(_))
+  override def asReadOnlyBuffer: UIO[DoubleBuffer] = UIO.effectTotal(new DoubleBuffer(doubleBuffer.asReadOnlyBuffer()))
+
 }

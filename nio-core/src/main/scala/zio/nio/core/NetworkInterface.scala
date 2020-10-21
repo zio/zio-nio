@@ -8,13 +8,11 @@ import zio.IO
 import scala.collection.JavaConverters._
 
 class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetworkInterface) {
-  import NetworkInterface.JustSocketException
 
   def name: String = jNetworkInterface.getName
 
   @silent
-  def inetAddresses: Iterator[InetAddress] =
-    jNetworkInterface.getInetAddresses.asScala.map(new InetAddress(_))
+  def inetAddresses: List[InetAddress] = jNetworkInterface.getInetAddresses.asScala.map(new InetAddress(_)).toList
 
   @silent
   def interfaceAddresses: List[InterfaceAddress] =
@@ -31,50 +29,46 @@ class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetwor
   def displayName: String = jNetworkInterface.getDisplayName
 
   val isUp: IO[SocketException, Boolean] =
-    IO.effect(jNetworkInterface.isUp).refineOrDie(JustSocketException)
+    IO.effect(jNetworkInterface.isUp).refineToOrDie[SocketException]
 
   val isLoopback: IO[SocketException, Boolean] =
-    IO.effect(jNetworkInterface.isLoopback).refineOrDie(JustSocketException)
+    IO.effect(jNetworkInterface.isLoopback).refineToOrDie[SocketException]
 
   val isPointToPoint: IO[SocketException, Boolean] =
-    IO.effect(jNetworkInterface.isPointToPoint).refineOrDie(JustSocketException)
+    IO.effect(jNetworkInterface.isPointToPoint).refineToOrDie[SocketException]
 
   val supportsMulticast: IO[SocketException, Boolean] =
-    IO.effect(jNetworkInterface.supportsMulticast).refineOrDie(JustSocketException)
+    IO.effect(jNetworkInterface.supportsMulticast).refineToOrDie[SocketException]
 
   val hardwareAddress: IO[SocketException, Array[Byte]] =
-    IO.effect(jNetworkInterface.getHardwareAddress).refineOrDie(JustSocketException)
+    IO.effect(jNetworkInterface.getHardwareAddress).refineToOrDie[SocketException]
 
   val mtu: IO[SocketException, Int] =
-    IO.effect(jNetworkInterface.getMTU).refineOrDie(JustSocketException)
+    IO.effect(jNetworkInterface.getMTU).refineToOrDie[SocketException]
 
   def isVirtual: Boolean = jNetworkInterface.isVirtual
 }
 
 object NetworkInterface {
 
-  val JustSocketException: PartialFunction[Throwable, SocketException] = {
-    case e: SocketException => e
-  }
-
   def byName(name: String): IO[SocketException, NetworkInterface] =
     IO.effect(JNetworkInterface.getByName(name))
-      .refineOrDie(JustSocketException)
+      .refineToOrDie[SocketException]
       .map(new NetworkInterface(_))
 
   def byIndex(index: Integer): IO[SocketException, NetworkInterface] =
     IO.effect(JNetworkInterface.getByIndex(index))
-      .refineOrDie(JustSocketException)
+      .refineToOrDie[SocketException]
       .map(new NetworkInterface(_))
 
   def byInetAddress(address: InetAddress): IO[SocketException, NetworkInterface] =
     IO.effect(JNetworkInterface.getByInetAddress(address.jInetAddress))
-      .refineOrDie(JustSocketException)
+      .refineToOrDie[SocketException]
       .map(new NetworkInterface(_))
 
   @silent
   def networkInterfaces: IO[SocketException, Iterator[NetworkInterface]] =
     IO.effect(JNetworkInterface.getNetworkInterfaces.asScala)
-      .refineOrDie(JustSocketException)
+      .refineToOrDie[SocketException]
       .map(_.map(new NetworkInterface(_)))
 }
