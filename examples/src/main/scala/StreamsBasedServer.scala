@@ -2,15 +2,15 @@ import zio._
 import zio.clock.Clock
 import zio.console.Console
 import zio.duration._
-import zio.nio.core.SocketAddress
 import zio.nio.channels._
+import zio.nio.core.SocketAddress
 import zio.stream._
 
 object StreamsBasedServer extends App {
 
-  override def run(args: List[String]): ZIO[zio.ZEnv, Nothing, Int] =
+  override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] =
     server(8080, 16).orDie
-      .as(0)
+      .as(ExitCode.success)
 
   def server(port: Int, parallelism: Int): ZIO[ZEnv, Exception, Unit] =
     AsynchronousServerSocketChannel()
@@ -18,10 +18,10 @@ object StreamsBasedServer extends App {
         for {
           _ <- SocketAddress.inetSocketAddress("localhost", port) >>= socket.bind
           _ <- ZStream
-                .repeatEffect(socket.accept.preallocate)
-                .map(_.withEarlyRelease)
-                .mapMPar(parallelism)(_.use((handleChannel _).tupled))
-                .runDrain
+                 .repeatEffect(socket.accept.preallocate)
+                 .map(_.withEarlyRelease)
+                 .mapMPar(parallelism)(_.use((handleChannel _).tupled))
+                 .runDrain
         } yield ()
       )
 
@@ -30,17 +30,18 @@ object StreamsBasedServer extends App {
     channel: AsynchronousSocketChannel
   ): ZIO[Clock with Console, Nothing, Unit] =
     for {
-      _ <- console.putStrLn("Received connection")
+      _    <- console.putStrLn("Received connection")
       data <- ZStream
-               .fromEffectOption(
-                 channel.read(64).tap(_ => console.putStrLn("Read chunk")).orElse(ZIO.fail(None))
-               )
-               .take(4)
-               .transduce(ZSink.utf8DecodeChunk)
-               .run(Sink.foldLeft("")(_ + (_: String)))
-      _ <- closeConn
-      _ <- console.putStrLn(s"Read data: ${data.mkString}") *>
-            clock.sleep(3.seconds) *>
-            console.putStrLn("Done")
+                .fromEffectOption(
+                  channel.readChunk(64).tap(_ => console.putStrLn("Read chunk")).orElse(ZIO.fail(None))
+                )
+                .flattenChunks
+                .take(4)
+                .transduce(ZTransducer.utf8Decode)
+                .run(Sink.foldLeft("")(_ + (_: String)))
+      _    <- closeConn
+      _    <- console.putStrLn(s"Read data: ${data.mkString}") *>
+                clock.sleep(3.seconds) *>
+                console.putStrLn("Done")
     } yield ()
 }
