@@ -53,8 +53,7 @@ object DatagramChannelSpec extends BaseSpec {
         } yield assert(same)(isTrue)
       },
       testM("close channel unbind port") {
-        def client(address: SocketAddress): IO[IOException, Unit] =
-          DatagramChannel.open.use(_.connect(address).unit)
+        def client(address: SocketAddress): IO[IOException, Unit] = DatagramChannel.open.use(_.connect(address).unit)
 
         def server(
           address: SocketAddress,

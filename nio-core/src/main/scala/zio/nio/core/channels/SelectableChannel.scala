@@ -134,8 +134,8 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
   def accept: Managed[IOException, Option[SocketChannel]] =
     IO.effect(Option(channel.accept()).map(new SocketChannel(_)))
       .refineToOrDie[IOException]
-      .toManaged(IO.whenCase(_) {
-        case Some(channel) => channel.close.ignore
+      .toManaged(IO.whenCase(_) { case Some(channel) =>
+        channel.close.ignore
       })
 
   val localAddress: IO[IOException, SocketAddress] =

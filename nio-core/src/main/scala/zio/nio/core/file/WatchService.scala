@@ -76,8 +76,7 @@ final class WatchService private (private[file] val javaWatchService: JWatchServ
 
 object WatchService {
 
-  def forDefaultFileSystem: ZManaged[Blocking, IOException, WatchService] =
-    FileSystem.default.newWatchService
+  def forDefaultFileSystem: ZManaged[Blocking, IOException, WatchService] = FileSystem.default.newWatchService
 
   def fromJava(javaWatchService: JWatchService): WatchService = new WatchService(javaWatchService)
 }

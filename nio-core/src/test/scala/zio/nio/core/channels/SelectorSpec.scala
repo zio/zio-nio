@@ -47,9 +47,8 @@ object SelectorSpec extends BaseSpec {
                                 for {
                                   scopeResult     <- scope(channel.accept)
                                   (_, maybeClient) = scopeResult
-                                  _               <- IO.whenCase(maybeClient) {
-                                                       case Some(client) =>
-                                                         client.configureBlocking(false) *> client.register(selector, Operation.Read)
+                                  _               <- IO.whenCase(maybeClient) { case Some(client) =>
+                                                       client.configureBlocking(false) *> client.register(selector, Operation.Read)
                                                      }
                                 } yield ()
                               case client: SocketChannel if readyOps(Operation.Read)          =>
