@@ -19,8 +19,14 @@ import zio.console._
 Opening a file for a given path (with no additional open attributes) returns a `ZManaged` instance on which we're running the intended operations. `ZManaged` makes sure that the channel gets closed afterwards:
 
 ```scala mdoc:silent
+import java.nio.file.StandardOpenOption
+
 val path = Path("file.txt")
-val channelM = AsynchronousFileChannel.open(path).use { channel => 
+val channelM = AsynchronousFileChannel.open(
+  path, 
+  StandardOpenOption.READ,
+  StandardOpenOption.WRITE
+).use { channel =>
   readWriteOp(channel) *> lockOp(channel)
 }
 ```
