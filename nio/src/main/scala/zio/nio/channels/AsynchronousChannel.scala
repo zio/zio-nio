@@ -5,6 +5,8 @@ import java.io.{ EOFException, IOException }
 import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
 import java.net.SocketOption
 import java.nio.channels.{
+  CompletionHandler,
+  Channel => JChannel,
   AsynchronousByteChannel => JAsynchronousByteChannel,
   AsynchronousServerSocketChannel => JAsynchronousServerSocketChannel,
   AsynchronousSocketChannel => JAsynchronousSocketChannel
@@ -13,7 +15,6 @@ import java.util.concurrent.TimeUnit
 
 import zio.clock.Clock
 import zio.duration._
-import zio.interop.javaz._
 import zio.stream.{ Stream, ZSink, ZStream }
 import zio._
 
@@ -25,17 +26,18 @@ import zio._
 abstract class AsynchronousByteChannel private[channels] (protected val channel: JAsynchronousByteChannel)
     extends Channel {
 
+  import AsynchronousByteChannel._
+
   /**
    *  Reads data from this channel into buffer, returning the number of bytes read.
    *
    *  Fails with `java.io.EOFException` if end-of-stream is reached.
    */
-  final def read(b: ByteBuffer): IO[Exception, Int] =
-    effectAsyncWithCompletionHandler[JInteger](h => channel.read(b.buffer, (), h))
-      .refineToOrDie[Exception]
+  final def read(b: ByteBuffer): IO[IOException, Int] =
+    effectAsyncChannel[JAsynchronousByteChannel, JInteger](channel)(c => c.read(b.buffer, (), _))
       .flatMap(eofCheck(_))
 
-  final def readChunk(capacity: Int): IO[Exception, Chunk[Byte]] =
+  final def readChunk(capacity: Int): IO[IOException, Chunk[Byte]] =
     for {
       b <- Buffer.byte(capacity)
       _ <- read(b)
@@ -46,17 +48,15 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
   /**
    *  Writes data into this channel from buffer, returning the number of bytes written.
    */
-  final def write(b: ByteBuffer): IO[Exception, Int] =
-    effectAsyncWithCompletionHandler[JInteger](h => channel.write(b.buffer, (), h))
-      .map(_.toInt)
-      .refineToOrDie[Exception]
+  final def write(b: ByteBuffer): IO[IOException, Int] =
+    effectAsyncChannel[JAsynchronousByteChannel, JInteger](channel)(c => c.write(b.buffer, (), _)).map(_.toInt)
 
   /**
    * Writes a chunk of bytes to this channel.
    *
    * More than one write operation may be performed to write out the entire chunk.
    */
-  final def writeChunk(chunk: Chunk[Byte]): ZIO[Clock, Exception, Unit] =
+  final def writeChunk(chunk: Chunk[Byte]): ZIO[Clock, IOException, Unit] =
     for {
       b <- Buffer.byte(chunk)
       _ <- write(b).repeatWhileM(_ => b.hasRemaining)
@@ -69,14 +69,14 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
    */
   def sink(
     bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
-  ): ZSink[Clock, Exception, Byte, Byte, Long] =
+  ): ZSink[Clock, IOException, Byte, Byte, Long] =
     ZSink {
       for {
         buffer   <- bufferConstruct.toManaged_
         countRef <- Ref.makeManaged(0L)
       } yield (_: Option[Chunk[Byte]])
         .map { chunk =>
-          def doWrite(total: Int, c: Chunk[Byte]): ZIO[Any with Clock, Exception, Int] = {
+          def doWrite(total: Int, c: Chunk[Byte]): ZIO[Any with Clock, IOException, Int] = {
             val x = for {
               remaining <- buffer.putChunk(c)
               _         <- buffer.flip
@@ -97,7 +97,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
           )
         }
         .getOrElse(
-          countRef.get.flatMap[Clock, (Either[Exception, Long], Chunk[Byte]), Unit](count =>
+          countRef.get.flatMap[Clock, (Either[IOException, Long], Chunk[Byte]), Unit](count =>
             ZIO.fail((Right(count), Chunk.empty))
           )
         )
@@ -111,7 +111,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
    */
   def stream(
     bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
-  ): Stream[Exception, Byte] =
+  ): Stream[IOException, Byte] =
     ZStream {
       bufferConstruct.toManaged_
         .map { buffer =>
@@ -126,6 +126,34 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
             case e               => Some(e)
           }
         }
+    }
+
+}
+
+object AsynchronousByteChannel {
+
+  private def completionHandlerCallback[A](k: IO[IOException, A] => Unit): CompletionHandler[A, Any] =
+    new CompletionHandler[A, Any] {
+      def completed(result: A, u: Any): Unit = k(IO.succeedNow(result))
+
+      def failed(t: Throwable, u: Any): Unit =
+        t match {
+          case e: IOException => k(IO.fail(e))
+          case _              => k(IO.die(t))
+        }
+    }
+
+  /**
+   * Encapsulates an asynchronous channel callback into an effect value, with interruption support.
+   *
+   * If the fiber waiting on the I/O operation is interrupted, the channel is closed, unblocking the fiber.
+   */
+  private[channels] def effectAsyncChannel[C <: JChannel, A](
+    channel: C
+  )(op: C => CompletionHandler[A, Any] => Any): IO[IOException, A] =
+    IO.effectAsyncInterrupt { k =>
+      op(channel)(completionHandlerCallback(k))
+      Left(IO.effect(channel.close()).ignore)
     }
 
 }
@@ -149,10 +177,10 @@ final class AsynchronousServerSocketChannel(protected val channel: JAsynchronous
   /**
    * Accepts a connection.
    */
-  val accept: Managed[Exception, AsynchronousSocketChannel] =
-    effectAsyncWithCompletionHandler[JAsynchronousSocketChannel](h => channel.accept((), h))
+  def accept: Managed[IOException, AsynchronousSocketChannel] =
+    AsynchronousByteChannel
+      .effectAsyncChannel[JAsynchronousServerSocketChannel, JAsynchronousSocketChannel](channel)(c => c.accept((), _))
       .map(AsynchronousSocketChannel.fromJava)
-      .refineToOrDie[Exception]
       .toNioManaged
 
   /**
@@ -200,45 +228,48 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
   def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
     IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
-  final def shutdownInput: IO[IOException, Unit] = IO.effect(channel.shutdownInput()).refineToOrDie[IOException].unit
+  def shutdownInput: IO[IOException, Unit] = IO.effect(channel.shutdownInput()).refineToOrDie[IOException].unit
 
-  final def shutdownOutput: IO[IOException, Unit] = IO.effect(channel.shutdownOutput()).refineToOrDie[IOException].unit
+  def shutdownOutput: IO[IOException, Unit] = IO.effect(channel.shutdownOutput()).refineToOrDie[IOException].unit
 
-  final def remoteAddress: IO[IOException, Option[SocketAddress]] =
+  def remoteAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(
       Option(channel.getRemoteAddress)
         .map(SocketAddress.fromJava)
     ).refineToOrDie[IOException]
 
-  final def localAddress: IO[IOException, Option[SocketAddress]] =
+  def localAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(
       Option(channel.getLocalAddress)
         .map(SocketAddress.fromJava)
     ).refineToOrDie[IOException]
 
-  final def connect(socketAddress: SocketAddress): IO[Exception, Unit] =
-    effectAsyncWithCompletionHandler[JVoid](h => channel.connect(socketAddress.jSocketAddress, (), h)).unit
-      .refineToOrDie[Exception]
+  def connect(socketAddress: SocketAddress): IO[IOException, Unit] =
+    AsynchronousByteChannel
+      .effectAsyncChannel[JAsynchronousSocketChannel, JVoid](channel)(c =>
+        c.connect(socketAddress.jSocketAddress, (), _)
+      )
+      .unit
 
   /**
    *  Reads data from this channel into buffer, returning the number of bytes read.
    *
    *  Fails with `java.io.EOFException` if end-of-stream is reached.
    */
-  final def read[A](dst: ByteBuffer, timeout: Duration): IO[Exception, Int] =
-    effectAsyncWithCompletionHandler[JInteger] { h =>
-      channel.read(
-        dst.buffer,
-        timeout.fold(Long.MaxValue, _.toNanos),
-        TimeUnit.NANOSECONDS,
-        (),
-        h
-      )
-    }
-      .refineToOrDie[Exception]
+  def read(dst: ByteBuffer, timeout: Duration): IO[IOException, Int] =
+    AsynchronousByteChannel
+      .effectAsyncChannel[JAsynchronousSocketChannel, JInteger](channel) { channel =>
+        channel.read(
+          dst.buffer,
+          timeout.fold(Long.MaxValue, _.toNanos),
+          TimeUnit.NANOSECONDS,
+          (),
+          _
+        )
+      }
       .flatMap(eofCheck(_))
 
-  final def readChunk[A](capacity: Int, timeout: Duration): IO[Exception, Chunk[Byte]] =
+  def readChunk(capacity: Int, timeout: Duration): IO[IOException, Chunk[Byte]] =
     for {
       b <- Buffer.byte(capacity)
       _ <- read(b, timeout)
@@ -251,34 +282,72 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
    *
    *  Fails with `java.io.EOFException` if end-of-stream is reached.
    */
-  final def read[A](
+  def read(
     dsts: List[ByteBuffer],
     timeout: Duration
-  ): IO[Exception, Long] =
-    effectAsyncWithCompletionHandler[JLong] { h =>
-      val a = dsts.map(_.buffer).toArray
-      channel.read(
-        a,
-        0,
-        a.length,
-        timeout.fold(Long.MaxValue, _.toNanos),
-        TimeUnit.NANOSECONDS,
-        (),
-        h
-      )
-    }
-      .refineToOrDie[Exception]
+  ): IO[IOException, Long] =
+    AsynchronousByteChannel
+      .effectAsyncChannel[JAsynchronousSocketChannel, JLong](channel) { channel =>
+        val a = dsts.map(_.buffer).toArray
+        channel.read(
+          a,
+          0,
+          a.length,
+          timeout.fold(Long.MaxValue, _.toNanos),
+          TimeUnit.NANOSECONDS,
+          (),
+          _
+        )
+      }
       .flatMap(eofCheck(_))
 
-  final def readChunks[A](
+  def readChunks(
     capacities: List[Int],
     timeout: Duration
-  ): IO[Exception, List[Chunk[Byte]]] =
+  ): IO[IOException, List[Chunk[Byte]]] =
+    IO.foreach(capacities)(Buffer.byte).flatMap { buffers =>
+      read(buffers, timeout) *> IO.foreach(buffers)(b => b.flip *> b.getChunk())
+    }
+
+  def write(src: ByteBuffer, timeout: Duration): IO[IOException, Int] =
+    AsynchronousByteChannel
+      .effectAsyncChannel[JAsynchronousSocketChannel, JInteger](channel) { channel =>
+        channel.write(src.buffer, timeout.fold(Long.MaxValue, _.toNanos), TimeUnit.NANOSECONDS, (), _)
+      }
+      .map(_.toInt)
+
+  def writeChunk(chunk: Chunk[Byte], timeout: Duration): IO[IOException, Unit] =
     for {
-      bs     <- ZIO.foreach(capacities)(Buffer.byte)
-      _      <- read(bs, timeout)
-      chunks <- ZIO.foreach(bs)(b => b.flip *> b.getChunk())
-    } yield chunks
+      b <- Buffer.byte(chunk.length)
+      _ <- b.putChunk(chunk)
+      _ <- b.flip
+      _ <- write(b, timeout)
+    } yield ()
+
+  def write(
+    srcs: List[ByteBuffer],
+    timeout: Duration
+  ): IO[IOException, Long] =
+    AsynchronousByteChannel
+      .effectAsyncChannel[JAsynchronousSocketChannel, JLong](channel) { channel =>
+        val a = srcs.map(_.buffer).toArray
+        channel.write(
+          a,
+          0,
+          a.length,
+          timeout.fold(Long.MaxValue, _.toNanos),
+          TimeUnit.NANOSECONDS,
+          (),
+          _
+        )
+      }
+      .map(_.toLong)
+
+  def writeChunks(chunks: List[Chunk[Byte]], timeout: Duration): IO[IOException, Long] =
+    IO.foreach(chunks) { chunk =>
+      Buffer.byte(chunk.length).tap(_.putChunk(chunk)).tap(_.flip)
+    }.flatMap(write(_, timeout))
+
 }
 
 object AsynchronousSocketChannel {

@@ -7,7 +7,6 @@ import java.nio.file.attribute.FileAttribute
 import java.nio.file.OpenOption
 
 import zio.{ Chunk, IO, Managed }
-import zio.interop.javaz._
 import zio.nio.file.Path
 
 import scala.concurrent.ExecutionContextExecutorService
@@ -15,13 +14,14 @@ import scala.jdk.CollectionConverters._
 
 class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) extends Channel {
 
+  import AsynchronousByteChannel.effectAsyncChannel
+
   final def force(metaData: Boolean): IO[IOException, Unit] =
     IO.effect(channel.force(metaData)).refineToOrDie[IOException]
 
-  final def lock(position: Long = 0L, size: Long = Long.MaxValue, shared: Boolean = false): IO[Exception, FileLock] =
-    effectAsyncWithCompletionHandler[JFileLock](channel.lock(position, size, shared, (), _))
+  final def lock(position: Long = 0L, size: Long = Long.MaxValue, shared: Boolean = false): IO[IOException, FileLock] =
+    effectAsyncChannel[JAsynchronousFileChannel, JFileLock](channel)(c => c.lock(position, size, shared, (), _))
       .map(new FileLock(_))
-      .refineToOrDie[Exception]
 
   /**
    *  Reads data from this channel into buffer, returning the number of bytes read.
@@ -30,10 +30,9 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
    *
    *  @param position The file position at which the transfer is to begin; must be non-negative
    */
-  final def read(dst: ByteBuffer, position: Long): IO[Exception, Int] =
+  final def read(dst: ByteBuffer, position: Long): IO[IOException, Int] =
     dst.withJavaBuffer { buf =>
-      effectAsyncWithCompletionHandler[Integer](channel.read(buf, position, (), _))
-        .refineToOrDie[Exception]
+      effectAsyncChannel[JAsynchronousFileChannel, Integer](channel)(c => c.read(buf, position, (), _))
         .flatMap(eofCheck(_))
     }
 
@@ -44,7 +43,7 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
    *
    *  @param position The file position at which the transfer is to begin; must be non-negative
    */
-  final def readChunk(capacity: Int, position: Long): IO[Exception, Chunk[Byte]] =
+  final def readChunk(capacity: Int, position: Long): IO[IOException, Chunk[Byte]] =
     for {
       b     <- Buffer.byte(capacity)
       _     <- read(b, position)
@@ -65,11 +64,10 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
   ): IO[IOException, FileLock] =
     IO.effect(new FileLock(channel.tryLock(position, size, shared))).refineToOrDie[IOException]
 
-  final def write(src: ByteBuffer, position: Long): IO[Exception, Int] =
+  final def write(src: ByteBuffer, position: Long): IO[IOException, Int] =
     src.withJavaBuffer { buf =>
-      effectAsyncWithCompletionHandler[Integer](channel.write(buf, position, (), _))
+      effectAsyncChannel[JAsynchronousFileChannel, Integer](channel)(c => c.write(buf, position, (), _))
         .map(_.intValue)
-        .refineToOrDie[Exception]
     }
 
   /**
@@ -81,9 +79,9 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
    * @param src The bytes to write.
    * @param position Where in the file to write.
    */
-  final def writeChunk(src: Chunk[Byte], position: Long): IO[Exception, Unit] =
+  final def writeChunk(src: Chunk[Byte], position: Long): IO[IOException, Unit] =
     Buffer.byte(src).flatMap { b =>
-      def go(pos: Long): IO[Exception, Unit] =
+      def go(pos: Long): IO[IOException, Unit] =
         write(b, pos).flatMap { bytesWritten =>
           b.hasRemaining.flatMap {
             case true  => go(pos + bytesWritten.toLong)
