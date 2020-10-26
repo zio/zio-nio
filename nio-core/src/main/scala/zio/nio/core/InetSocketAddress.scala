@@ -152,6 +152,12 @@ object InetSocketAddress {
   def inetAddressEphemeral(address: InetAddress): UIO[InetSocketAddress] = inetAddress(address, 0)
 
   /**
+   * Creates a socket address for localhost using the specified port.
+   */
+  def localHost(port: Int): IO[UnknownHostException, InetSocketAddress] =
+    InetAddress.localHost.flatMap(inetAddress(_, port))
+
+  /**
    * Creates an unresolved socket address from a hostname and a port number.
    *
    * No attempt will be made to resolve the hostname into an `InetAddress`.
