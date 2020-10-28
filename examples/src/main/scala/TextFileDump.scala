@@ -33,7 +33,7 @@ object TextFileDump extends App {
   }
 
   private def dump(charset: Charset, file: Path): ZIO[Console with Blocking, Exception, Unit] =
-    FileChannel.open(file).bracket(_.close.ignore) { fileChan =>
+    FileChannel.open(file).use { fileChan =>
       val inStream: ZStream[Blocking, Exception, Byte] = ZStream.repeatEffectChunkOption {
         fileChan.readChunk(1000).asSomeError.flatMap { chunk =>
           if (chunk.isEmpty) ZIO.fail(None) else ZIO.succeed(chunk)

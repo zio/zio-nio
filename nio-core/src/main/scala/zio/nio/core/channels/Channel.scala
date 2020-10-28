@@ -3,9 +3,12 @@ package zio.nio.core.channels
 import java.io.IOException
 import java.nio.channels.{ Channel => JChannel }
 
+import zio.nio.core.IOCloseable
 import zio.{ IO, UIO }
 
-trait Channel {
+trait Channel extends IOCloseable {
+
+  type Env = Any
 
   protected val channel: JChannel
 
