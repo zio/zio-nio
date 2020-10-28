@@ -1,5 +1,11 @@
 # ZIO-NIO
 
+## Forked Version with Extras
+
+This is a forked version of [ZIO-NIO](https://zio.github.io/zio-nio/) with [some additional capabilities added](extras.md).
+
+----
+
 | CI | Release | Snapshot | Discord |
 | --- | --- | --- | --- |
 | [![Build Status][badge-ci]][link-ci] | [![Release Artifacts][badge-releases]][link-releases] | [![Snapshot Artifacts][badge-snapshots]][link-snapshots] | [![badge-discord]][link-discord] |
