@@ -3,7 +3,7 @@ package zio.nio
 import java.io.EOFException
 
 import com.github.ghik.silencer.silent
-import zio.{ IO, ZIO }
+import zio.{ IO, ZIO, ZManaged }
 
 package object core {
 
@@ -39,4 +39,11 @@ package object core {
       }
   }
 
+  implicit final private[nio] class IOCloseableManagement[-R, +E, +A <: IOCloseable { type Env >: R }](
+    val acquire: ZIO[R, E, A]
+  ) extends AnyVal {
+
+    def toNioManaged: ZManaged[R, E, A] = acquire.toManaged[R](_.close.ignore)
+
+  }
 }
