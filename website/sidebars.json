@@ -4,6 +4,7 @@
       "essentials/essentials_index",
       "essentials/essentials_files",
       "essentials/essentials_sockets",
+      "essentials/essentials_resources",
       "essentials/essentials_charsets"
     ]
   },

@@ -1,4 +1,5 @@
-package zio.nio.core.channels
+package zio.nio.core
+package channels
 
 import java.io.IOException
 import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
@@ -10,11 +11,10 @@ import java.nio.channels.{
 }
 import java.util.concurrent.TimeUnit
 
-import zio.{ Chunk, IO, Schedule, ZIO }
+import zio.{ Chunk, IO, Managed, Schedule, ZIO }
 import zio.clock.Clock
 import zio.duration._
 import zio.interop.javaz._
-import zio.nio.core.{ Buffer, ByteBuffer, SocketAddress, eofCheck }
 
 /**
  * A byte channel that reads and writes asynchronously.
@@ -85,10 +85,11 @@ final class AsynchronousServerSocketChannel(protected val channel: JAsynchronous
   /**
    * Accepts a connection.
    */
-  val accept: IO[Exception, AsynchronousSocketChannel] =
+  val accept: Managed[Exception, AsynchronousSocketChannel] =
     effectAsyncWithCompletionHandler[JAsynchronousSocketChannel](h => channel.accept((), h))
       .map(AsynchronousSocketChannel.fromJava)
       .refineToOrDie[Exception]
+      .toNioManaged
 
   /**
    * The `SocketAddress` that the socket is bound to,
@@ -105,15 +106,17 @@ final class AsynchronousServerSocketChannel(protected val channel: JAsynchronous
 
 object AsynchronousServerSocketChannel {
 
-  def apply(): IO[IOException, AsynchronousServerSocketChannel] =
+  def open(): Managed[IOException, AsynchronousServerSocketChannel] =
     IO.effect(new AsynchronousServerSocketChannel(JAsynchronousServerSocketChannel.open()))
       .refineToOrDie[IOException]
+      .toNioManaged
 
-  def apply(
+  def open(
     channelGroup: AsynchronousChannelGroup
-  ): IO[IOException, AsynchronousServerSocketChannel] =
+  ): Managed[IOException, AsynchronousServerSocketChannel] =
     IO.effect(new AsynchronousServerSocketChannel(JAsynchronousServerSocketChannel.open(channelGroup.channelGroup)))
       .refineToOrDie[IOException]
+      .toNioManaged
 }
 
 class AsynchronousSocketChannel(override protected val channel: JAsynchronousSocketChannel)
@@ -208,13 +211,15 @@ class AsynchronousSocketChannel(override protected val channel: JAsynchronousSoc
 
 object AsynchronousSocketChannel {
 
-  def apply(): IO[IOException, AsynchronousSocketChannel] =
+  def open(): Managed[IOException, AsynchronousSocketChannel] =
     IO.effect(new AsynchronousSocketChannel(JAsynchronousSocketChannel.open()))
       .refineToOrDie[IOException]
+      .toNioManaged
 
-  def apply(channelGroup: AsynchronousChannelGroup): IO[IOException, AsynchronousSocketChannel] =
+  def open(channelGroup: AsynchronousChannelGroup): Managed[IOException, AsynchronousSocketChannel] =
     IO.effect(new AsynchronousSocketChannel(JAsynchronousSocketChannel.open(channelGroup.channelGroup)))
       .refineToOrDie[IOException]
+      .toNioManaged
 
   def fromJava(asyncSocketChannel: JAsynchronousSocketChannel): AsynchronousSocketChannel =
     new AsynchronousSocketChannel(asyncSocketChannel)
