@@ -17,7 +17,7 @@ object SelectorSpec extends BaseSpec {
       testM("read/write") {
         for {
           started     <- Promise.make[Nothing, SocketAddress]
-          serverFiber <- server(started).fork
+          serverFiber <- server(started).useNow.fork
           addr        <- started.await
           clientFiber <- client(addr).fork
           _           <- serverFiber.join
@@ -31,8 +31,9 @@ object SelectorSpec extends BaseSpec {
   def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
     statusCheck.fold(_ => false, identity)
 
-  def server(started: Promise[Nothing, SocketAddress]): ZIO[Clock with Blocking, Exception, Unit] = {
+  def server(started: Promise[Nothing, SocketAddress]): ZManaged[Clock with Blocking, Exception, Unit] = {
     def serverLoop(
+      scope: Managed.Scope,
       selector: Selector,
       buffer: ByteBuffer
     ): ZIO[Blocking, Exception, Unit] =
@@ -44,20 +45,19 @@ object SelectorSpec extends BaseSpec {
                             {
                               case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
                                 for {
-                                  clientOpt <- channel.accept
-                                  client     = clientOpt.get
-                                  _         <- client.configureBlocking(false)
-                                  _         <- client.register(selector, Operation.Read)
+                                  scopeResult     <- scope(channel.accept)
+                                  (_, maybeClient) = scopeResult
+                                  _               <- IO.whenCase(maybeClient) { case Some(client) =>
+                                                       client.configureBlocking(false) *> client.register(selector, Operation.Read)
+                                                     }
                                 } yield ()
                               case client: SocketChannel if readyOps(Operation.Read)          =>
                                 for {
-                                  _     <- client.read(buffer)
-                                  array <- buffer.array
-                                  text   = byteArrayToString(array)
-                                  _     <- buffer.flip
-                                  _     <- client.write(buffer)
-                                  _     <- buffer.clear
-                                  _     <- client.close
+                                  _ <- client.read(buffer)
+                                  _ <- buffer.flip
+                                  _ <- client.write(buffer)
+                                  _ <- buffer.clear
+                                  _ <- client.close
                                 } yield ()
                             }
                           } *> selector.removeKey(key)
@@ -65,26 +65,27 @@ object SelectorSpec extends BaseSpec {
       } yield ()
 
     for {
-      address <- SocketAddress.inetSocketAddress(0)
-      _       <- Managed.make(Selector.make)(_.close.orDie).use { selector =>
-                   Managed.make(ServerSocketChannel.open)(_.close.orDie).use { channel =>
-                     for {
-                       _      <- channel.bind(address)
-                       _      <- channel.configureBlocking(false)
-                       _      <- channel.register(selector, Operation.Accept)
-                       buffer <- Buffer.byte(256)
-                       addr   <- channel.localAddress
-                       _      <- started.succeed(addr)
+      address  <- SocketAddress.inetSocketAddress(0).toManaged_
+      scope    <- Managed.scope
+      selector <- Selector.open
+      channel  <- ServerSocketChannel.open
+      _        <- Managed.fromEffect {
+                    for {
+                      _      <- channel.bind(address)
+                      _      <- channel.configureBlocking(false)
+                      _      <- channel.register(selector, Operation.Accept)
+                      buffer <- Buffer.byte(256)
+                      addr   <- channel.localAddress
+                      _      <- started.succeed(addr)
 
-                       /*
-                  *  we need to run the server loop twice:
-                  *  1. to accept the client request
-                  *  2. to read from the client channel
-                  */
-                       _ <- serverLoop(selector, buffer).repeat(Schedule.once)
-                     } yield ()
-                   }
-                 }
+                      /*
+                *  we need to run the server loop twice:
+                *  1. to accept the client request
+                *  2. to read from the client channel
+                */
+                      _ <- serverLoop(scope, selector, buffer).repeat(Schedule.once)
+                    } yield ()
+                  }
     } yield ()
   }
 
@@ -92,7 +93,7 @@ object SelectorSpec extends BaseSpec {
     val bytes = Chunk.fromArray("Hello world".getBytes)
     for {
       buffer <- Buffer.byte(bytes)
-      text   <- Managed.make(SocketChannel.open(address))(_.close.orDie).use { client =>
+      text   <- SocketChannel.open(address).use { client =>
                   for {
                     _     <- client.write(buffer)
                     _     <- buffer.clear

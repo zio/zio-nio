@@ -1,4 +1,5 @@
-package zio.nio.core.channels
+package zio.nio.core
+package channels
 
 import java.io.IOException
 import java.net.{ SocketOption, ServerSocket => JServerSocket, Socket => JSocket }
@@ -8,10 +9,9 @@ import java.nio.channels.{
   SocketChannel => JSocketChannel
 }
 
-import zio.{ IO, UIO }
+import zio.{ IO, Managed, UIO }
 import zio.nio.core.channels.SelectionKey.Operation
 import zio.nio.core.channels.spi.SelectorProvider
-import zio.nio.core.SocketAddress
 
 /**
  * A channel that can be multiplexed via a [[zio.nio.core.channels.Selector]].
@@ -102,11 +102,11 @@ object SocketChannel {
 
   def fromJava(javaSocketChannel: JSocketChannel): SocketChannel = new SocketChannel(javaSocketChannel)
 
-  val open: IO[IOException, SocketChannel] =
-    IO.effect(new SocketChannel(JSocketChannel.open())).refineToOrDie[IOException]
+  val open: Managed[IOException, SocketChannel] =
+    IO.effect(new SocketChannel(JSocketChannel.open())).refineToOrDie[IOException].toNioManaged
 
-  def open(remote: SocketAddress): IO[IOException, SocketChannel] =
-    IO.effect(new SocketChannel(JSocketChannel.open(remote.jSocketAddress))).refineToOrDie[IOException]
+  def open(remote: SocketAddress): Managed[IOException, SocketChannel] =
+    IO.effect(new SocketChannel(JSocketChannel.open(remote.jSocketAddress))).refineToOrDie[IOException].toNioManaged
 }
 
 final class ServerSocketChannel(override protected val channel: JServerSocketChannel) extends SelectableChannel {
@@ -126,12 +126,17 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
   /**
    * Accepts a socket connection.
    *
-   * Not you must manually manage the lifecyle of the returned socket, calling `close` when you're finished with it.
+   * Note that the accept operation is not performed until the returned managed resource is
+   * actually used. `Managed.preallocate` can be used to preform the accept immediately.
    *
    * @return None if this socket is in non-blocking mode and no connection is currently available to be accepted.
    */
-  def accept: IO[IOException, Option[SocketChannel]] =
-    IO.effect(Option(channel.accept()).map(new SocketChannel(_))).refineToOrDie[IOException]
+  def accept: Managed[IOException, Option[SocketChannel]] =
+    IO.effect(Option(channel.accept()).map(new SocketChannel(_)))
+      .refineToOrDie[IOException]
+      .toManaged(IO.whenCase(_) { case Some(channel) =>
+        channel.close.ignore
+      })
 
   val localAddress: IO[IOException, SocketAddress] =
     IO.effect(new SocketAddress(channel.getLocalAddress())).refineToOrDie[IOException]
@@ -139,8 +144,8 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
 
 object ServerSocketChannel {
 
-  val open: IO[IOException, ServerSocketChannel] =
-    IO.effect(new ServerSocketChannel(JServerSocketChannel.open())).refineToOrDie[IOException]
+  val open: Managed[IOException, ServerSocketChannel] =
+    IO.effect(new ServerSocketChannel(JServerSocketChannel.open())).refineToOrDie[IOException].toNioManaged
 
   def fromJava(javaChannel: JServerSocketChannel): ServerSocketChannel = new ServerSocketChannel(javaChannel)
 }
