@@ -57,11 +57,14 @@ trait GatheringByteOps {
 
   /**
    * A sink that will write all the bytes it receives to this channel.
+   * The sink's result is the number of bytes written.
    * '''Note:''' This method does not work well with a channel in non-blocking mode, as it will busy-wait whenever
    * the channel is not ready for writes. The returned sink should be run within the context of a `useBlocking`
    * call for correct blocking and interruption support.
    *
-   * @param bufferConstruct Optional, overrides how to construct the buffer used to transfer bytes received by the sink to this channel.
+   * @param bufferConstruct Optional, overrides how to construct the buffer used to transfer bytes received by the
+   *                        sink to this channel. By default a heap buffer is used, but a direct buffer will
+   *                        usually perform better.
    */
   def sink(
     bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
@@ -72,7 +75,7 @@ trait GatheringByteOps {
         countRef <- Ref.makeManaged(0L)
       } yield (_: Option[Chunk[Byte]])
         .map { chunk =>
-          def doWrite(total: Int, c: Chunk[Byte]): ZIO[Any with Clock, IOException, Int] = {
+          def doWrite(total: Int, c: Chunk[Byte]): ZIO[Clock, IOException, Int] = {
             val x = for {
               remaining <- buffer.putChunk(c)
               _         <- buffer.flip
@@ -81,6 +84,7 @@ trait GatheringByteOps {
                              .runSum
               _         <- buffer.clear
             } yield (count + total, remaining)
+            // can't safely recurse in for expression
             x.flatMap {
               case (result, remaining) if remaining.isEmpty => ZIO.succeed(result)
               case (result, remaining)                      => doWrite(result, remaining)
@@ -88,13 +92,13 @@ trait GatheringByteOps {
           }
 
           doWrite(0, chunk).foldM(
-            e => buffer.getChunk().flatMap(c => ZIO.fail((Left(e), c))),
+            e => buffer.getChunk().flatMap(ZSink.Push.fail(e, _)),
             count => countRef.update(_ + count.toLong)
           )
         }
         .getOrElse(
           countRef.get.flatMap[Any, (Either[IOException, Long], Chunk[Byte]), Unit](count =>
-            IO.fail((Right(count), Chunk.empty))
+            ZSink.Push.emit(count, Chunk.empty)
           )
         )
     }

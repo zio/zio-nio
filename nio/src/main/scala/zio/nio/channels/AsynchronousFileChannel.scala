@@ -1,25 +1,26 @@
 package zio.nio
 package channels
 
-import java.io.IOException
+import java.io.{ EOFException, IOException }
 import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock }
-import java.nio.file.attribute.FileAttribute
 import java.nio.file.OpenOption
+import java.nio.file.attribute.FileAttribute
 
-import zio.{ Chunk, IO, Managed }
+import zio.clock.Clock
 import zio.nio.file.Path
+import zio.stream.{ Stream, ZSink, ZStream }
+import zio._
 
 import scala.concurrent.ExecutionContextExecutorService
 import scala.jdk.CollectionConverters._
 
-class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) extends Channel {
+final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) extends Channel {
 
   import AsynchronousByteChannel.effectAsyncChannel
 
-  final def force(metaData: Boolean): IO[IOException, Unit] =
-    IO.effect(channel.force(metaData)).refineToOrDie[IOException]
+  def force(metaData: Boolean): IO[IOException, Unit] = IO.effect(channel.force(metaData)).refineToOrDie[IOException]
 
-  final def lock(position: Long = 0L, size: Long = Long.MaxValue, shared: Boolean = false): IO[IOException, FileLock] =
+  def lock(position: Long = 0L, size: Long = Long.MaxValue, shared: Boolean = false): IO[IOException, FileLock] =
     effectAsyncChannel[JAsynchronousFileChannel, JFileLock](channel)(c => c.lock(position, size, shared, (), _))
       .map(new FileLock(_))
 
@@ -30,7 +31,7 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
    *
    *  @param position The file position at which the transfer is to begin; must be non-negative
    */
-  final def read(dst: ByteBuffer, position: Long): IO[IOException, Int] =
+  def read(dst: ByteBuffer, position: Long): IO[IOException, Int] =
     dst.withJavaBuffer { buf =>
       effectAsyncChannel[JAsynchronousFileChannel, Integer](channel)(c => c.read(buf, position, (), _))
         .flatMap(eofCheck(_))
@@ -43,7 +44,7 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
    *
    *  @param position The file position at which the transfer is to begin; must be non-negative
    */
-  final def readChunk(capacity: Int, position: Long): IO[IOException, Chunk[Byte]] =
+  def readChunk(capacity: Int, position: Long): IO[IOException, Chunk[Byte]] =
     for {
       b     <- Buffer.byte(capacity)
       _     <- read(b, position)
@@ -51,20 +52,18 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
       chunk <- b.getChunk()
     } yield chunk
 
-  final val size: IO[IOException, Long] =
-    IO.effect(channel.size()).refineToOrDie[IOException]
+  def size: IO[IOException, Long] = IO.effect(channel.size()).refineToOrDie[IOException]
 
-  final def truncate(size: Long): IO[IOException, Unit] =
-    IO.effect(channel.truncate(size)).refineToOrDie[IOException].unit
+  def truncate(size: Long): IO[IOException, Unit] = IO.effect(channel.truncate(size)).refineToOrDie[IOException].unit
 
-  final def tryLock(
+  def tryLock(
     position: Long = 0L,
     size: Long = Long.MaxValue,
     shared: Boolean = false
   ): IO[IOException, FileLock] =
     IO.effect(new FileLock(channel.tryLock(position, size, shared))).refineToOrDie[IOException]
 
-  final def write(src: ByteBuffer, position: Long): IO[IOException, Int] =
+  def write(src: ByteBuffer, position: Long): IO[IOException, Int] =
     src.withJavaBuffer { buf =>
       effectAsyncChannel[JAsynchronousFileChannel, Integer](channel)(c => c.write(buf, position, (), _))
         .map(_.intValue)
@@ -79,7 +78,7 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
    * @param src The bytes to write.
    * @param position Where in the file to write.
    */
-  final def writeChunk(src: Chunk[Byte], position: Long): IO[IOException, Unit] =
+  def writeChunk(src: Chunk[Byte], position: Long): IO[IOException, Unit] =
     Buffer.byte(src).flatMap { b =>
       def go(pos: Long): IO[IOException, Unit] =
         write(b, pos).flatMap { bytesWritten =>
@@ -90,6 +89,90 @@ class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) e
         }
       go(position)
     }
+
+  /**
+   * A `ZStream` that reads from this channel.
+   *
+   * The stream terminates without error if the channel reaches end-of-stream.
+   *
+   * @param position The position in the file the stream will read from.
+   * @param bufferConstruct Optional, overrides how to construct the buffer used to transfer bytes read from
+   *                        this channel into the stream. By default a heap buffer is used, but a direct buffer will
+   *                        usually perform better.
+   */
+  def stream(position: Long, bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)): Stream[IOException, Byte] =
+    ZStream {
+      for {
+        posRef <- Ref.makeManaged(position)
+        buffer <- bufferConstruct.toManaged_
+      } yield {
+        val doRead = for {
+          pos   <- posRef.get
+          count <- read(buffer, pos)
+          _     <- posRef.set(pos + count.toLong)
+          _     <- buffer.flip
+          chunk <- buffer.getChunk()
+          _     <- buffer.clear
+        } yield chunk
+        doRead.mapError {
+          case _: EOFException => None
+          case e               => Some(e)
+        }
+      }
+    }
+
+  /**
+   * A sink that will write all the bytes it receives to this channel.
+   * The sink's result is the number of bytes written.
+   *
+   * @param position The position in the file the sink will write to.
+   * @param bufferConstruct Optional, overrides how to construct the buffer used to transfer bytes received by the
+   *                        sink to this channel. By default a heap buffer is used, but a direct buffer will
+   *                        usually perform better.
+   */
+  def sink(
+    position: Long,
+    bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
+  ): ZSink[Clock, IOException, Byte, Byte, Long] =
+    ZSink {
+      for {
+        buffer <- bufferConstruct.toManaged_
+        posRef <- Ref.makeManaged(position)
+      } yield (_: Option[Chunk[Byte]])
+        .map { chunk =>
+          def doWrite(currentPos: Long, c: Chunk[Byte]): ZIO[Clock, IOException, Long] = {
+            val x = for {
+              remaining <- buffer.putChunk(c)
+              _         <- buffer.flip
+              count     <- ZStream
+                             .repeatEffectWith(
+                               write(buffer, currentPos),
+                               Schedule.recurWhileM(Function.const(buffer.hasRemaining))
+                             )
+                             .runSum
+              _         <- buffer.clear
+            } yield (currentPos + count.toLong, remaining)
+            // can't safely recurse in for expression
+            x.flatMap {
+              case (result, remaining) if remaining.isEmpty => ZIO.succeed(result)
+              case (result, remaining)                      => doWrite(result, remaining)
+            }
+          }
+
+          for {
+            currentPos <- posRef.get
+            newPos     <- doWrite(currentPos, chunk).catchAll(e => buffer.getChunk().flatMap(ZSink.Push.fail(e, _)))
+            _          <- posRef.set(newPos)
+          } yield ()
+
+        }
+        .getOrElse(
+          posRef.get.flatMap[Any, (Either[IOException, Long], Chunk[Byte]), Unit](finalPos =>
+            ZSink.Push.emit(finalPos - position, Chunk.empty)
+          )
+        )
+    }
+
 }
 
 object AsynchronousFileChannel {

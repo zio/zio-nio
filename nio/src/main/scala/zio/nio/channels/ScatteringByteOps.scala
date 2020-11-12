@@ -78,7 +78,9 @@ trait ScatteringByteOps {
    *
    * The stream terminates without error if the channel reaches end-of-stream.
    *
-   * @param bufferConstruct Optional, overrides how to construct the buffer used to transfer bytes read from this channel into the stream.
+   * @param bufferConstruct Optional, overrides how to construct the buffer used to transfer bytes read from
+   *                        this channel into the stream. By default a heap buffer is used, but a direct buffer will
+   *                        usually perform better.
    */
   def stream(
     bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
