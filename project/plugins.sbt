@@ -1,4 +1,4 @@
-addSbtPlugin("ch.epfl.lamp"                      % "sbt-dotty"        % "0.4.2")
+addSbtPlugin("ch.epfl.lamp"                      % "sbt-dotty"        % "0.4.6")
 addSbtPlugin("ch.epfl.scala"                     % "sbt-bloop"        % "1.4.5")
 addSbtPlugin("com.geirsson"                      % "sbt-ci-release"   % "1.5.4")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
