@@ -37,10 +37,10 @@ object StreamDirWatch extends App {
                    case StandardWatchEventKinds.OVERFLOW     => "** Overflow **"
                    case other                                => s"Unknown: $other"
                  }
-                 val path = key.resolveEventPath(event).getOrElse(" ** PATH UNKNOWN **")
+                 val path = key.resolveEventPath(event).getOrElse("** PATH UNKNOWN **")
                  console.putStrLn(s"$desc, count: ${event.count()}, $path")
                }
-               key.pollEventsManaged.use(ZIO.foreach(_)(eventProcess))
+               key.pollEventsManaged.use(ZIO.foreach_(_)(eventProcess))
              }
       } yield ()
     }

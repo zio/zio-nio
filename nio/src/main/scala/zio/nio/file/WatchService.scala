@@ -67,10 +67,25 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
    */
   def pollEventsManaged: Managed[Nothing, List[WatchEvent[_]]] = pollEvents.toManaged_.ensuring(reset)
 
+  /**
+   * Resets this watch key, making it eligible to be re-queued in the `WatchService`.
+   * A key is typically reset after all the pending events retrieved from `pollEvents` have been processed.
+   * Use `pollEventsManaged` to automatically and reliably perform a reset.
+   */
   def reset: UIO[Boolean] = UIO.effectTotal(javaKey.reset())
 
+  /**
+   * Cancels the registration with the watch service. Upon return the watch key will be invalid.
+   * If the watch key is enqueued, waiting to be retrieved from the watch service, then it will remain in the
+   * queue until it is removed. Pending events, if any, remain pending and may be retrieved by invoking the
+   * pollEvents method after the key is cancelled. If this watch key has already been cancelled then invoking
+   * this method has no effect. Once cancelled, a watch key remains forever invalid.
+   */
   def cancel: UIO[Unit] = UIO.effectTotal(javaKey.cancel())
 
+  /**
+   * Returns the object for which this watch key was created.
+   */
   def watchable: Watchable =
     javaKey.watchable() match {
       case javaPath: JPath => Path.fromJava(javaPath)
@@ -123,6 +138,9 @@ final class WatchService private (private[file] val javaWatchService: JWatchServ
       )
       .orDie
 
+  /**
+   * Retrieves and removes next watch key, waiting if none are yet present.
+   */
   def take: URIO[Blocking, WatchKey] = blocking.effectBlockingInterrupt(new WatchKey(javaWatchService.take())).orDie
 
   /**
@@ -131,10 +149,7 @@ final class WatchService private (private[file] val javaWatchService: JWatchServ
    * Note the `WatchKey` objects returned by this stream must be reset before they will be
    * queued again with any additional events.
    */
-  def stream: ZStream[Blocking, Nothing, WatchKey] =
-    ZStream.repeatEffect {
-      IO.effectTotal(new WatchKey(javaWatchService.take()))
-    }
+  def stream: ZStream[Blocking, Nothing, WatchKey] = ZStream.repeatEffect(take)
 
 }
 
