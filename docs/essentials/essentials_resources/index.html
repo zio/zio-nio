@@ -1,0 +1,109 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><title>Resource Management · ZIO NIO</title><meta name="viewport" content="width=device-width"/><meta name="generator" content="Docusaurus"/><meta name="description" content="NIO offers several objects, primarily channels, that consume resources (such as operating system file handles) that need to be released when no longer needed. If channels are not closed reliably, resource leaks can occur, causing a number of issues."/><meta name="docsearch:language" content="en"/><meta property="og:title" content="Resource Management · ZIO NIO"/><meta property="og:type" content="website"/><meta property="og:url" content="https://zio.github.io/zio-nio/"/><meta property="og:description" content="NIO offers several objects, primarily channels, that consume resources (such as operating system file handles) that need to be released when no longer needed. If channels are not closed reliably, resource leaks can occur, causing a number of issues."/><meta name="twitter:card" content="summary"/><link rel="shortcut icon" href="/zio-nio/img/favicon.png"/><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/><script type="text/javascript" src="https://buttons.github.io/buttons.js"></script><script src="https://unpkg.com/vanilla-back-to-top@7.1.14/dist/vanilla-back-to-top.min.js"></script><script>
+        document.addEventListener('DOMContentLoaded', function() {
+          addBackToTop(
+            {"zIndex":100,"cornerOffset":100}
+          )
+        });
+        </script><script src="/zio-nio/js/scrollSpy.js"></script><link rel="stylesheet" href="/zio-nio/css/main.css"/><script src="/zio-nio/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/zio-nio/"><img class="logo" src="/zio-nio/img/navbar_brand2x.png" alt="ZIO NIO"/><h2 class="headerTitleWithLogo">ZIO NIO</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/zio-nio/docs/essentials/essentials_index" target="_self">Essentials</a></li><li class=""><a href="/zio-nio/docs/usecases/usecases_index" target="_self">Use Cases</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Essentials</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Essentials</h3><ul class=""><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_index">Overview</a></li><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_files">File Channel</a></li><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_sockets">Socket Channel</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/zio-nio/docs/essentials/essentials_resources">Resource Management</a></li><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_charsets">Character Sets</a></li></ul></div></div></section></div><script>
+            var coll = document.getElementsByClassName('collapsible');
+            var checkActiveCategory = true;
+            for (var i = 0; i < coll.length; i++) {
+              var links = coll[i].nextElementSibling.getElementsByTagName('*');
+              if (checkActiveCategory){
+                for (var j = 0; j < links.length; j++) {
+                  if (links[j].classList.contains('navListItemActive')){
+                    coll[i].nextElementSibling.classList.toggle('hide');
+                    coll[i].childNodes[1].classList.toggle('rotate');
+                    checkActiveCategory = false;
+                    break;
+                  }
+                }
+              }
+
+              coll[i].addEventListener('click', function() {
+                var arrow = this.childNodes[1];
+                arrow.classList.toggle('rotate');
+                var content = this.nextElementSibling;
+                content.classList.toggle('hide');
+              });
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+              createToggler('#navToggler', '#docsNav', 'docsSliderActive');
+              createToggler('#tocToggler', 'body', 'tocActive');
+
+              var headings = document.querySelector('.toc-headings');
+              headings && headings.addEventListener('click', function(event) {
+                var el = event.target;
+                while(el !== headings){
+                  if (el.tagName === 'A') {
+                    document.body.classList.remove('tocActive');
+                    break;
+                  } else{
+                    el = el.parentNode;
+                  }
+                }
+              }, false);
+
+              function createToggler(togglerSelector, targetSelector, className) {
+                var toggler = document.querySelector(togglerSelector);
+                var target = document.querySelector(targetSelector);
+
+                if (!toggler) {
+                  return;
+                }
+
+                toggler.onclick = function(event) {
+                  event.preventDefault();
+
+                  target.classList.toggle(className);
+                };
+              }
+            });
+        </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Resource Management</h1></header><article><div><span><p>NIO offers several objects, primarily channels, that consume resources (such as operating system file handles) that need to be released when no longer needed. If channels are not closed reliably, resource leaks can occur, causing a number of issues.</p>
+<p>For this reason, ZIO-NIO provides such resources using the <a href="https://zio.dev/docs/datatypes/datatypes_managed">ZIO <code>ZManaged</code> API</a>. For example, calling <code>FileChannel.open</code> will produce a value of <code>ZManaged[Blocking, IOException, FileChannel]</code>. The file will not actually be opened until the managed value is <em>used</em>.</p>
+<h2><a class="anchor" aria-hidden="true" id="simple-usage"></a><a href="#simple-usage" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Simple Usage</h2>
+<p>The most straight-forward way to use a managed resource is with the <code>use</code> method:</p>
+<pre><code class="hljs css language-scala mdoc:silent"><span class="hljs-keyword">import</span> zio._
+<span class="hljs-keyword">import</span> zio.blocking.<span class="hljs-type">Blocking</span>
+<span class="hljs-keyword">import</span> zio.nio.core.channels._
+<span class="hljs-keyword">import</span> zio.nio.core.file.<span class="hljs-type">Path</span>
+<span class="hljs-keyword">import</span> java.io.<span class="hljs-type">IOException</span>
+
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">useChannel</span></span>(f: <span class="hljs-type">FileChannel</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Blocking</span>, <span class="hljs-type">IOException</span>, <span class="hljs-type">Unit</span>] = ???
+
+<span class="hljs-keyword">val</span> effect: <span class="hljs-type">ZIO</span>[<span class="hljs-type">Blocking</span>, <span class="hljs-type">IOException</span>, <span class="hljs-type">Unit</span>] = <span class="hljs-type">FileChannel</span>.open(<span class="hljs-type">Path</span>(<span class="hljs-string">"foo.txt"</span>))
+  .use { fileChannel =&gt;
+    <span class="hljs-comment">// fileChannel is only valid in this lexical scope</span>
+    useChannel(fileChannel)
+  }
+</code></pre>
+<p>In the above example, the <code>FileChannel</code> will be opened and then provided to the function passed to <code>use</code>. The channel will always be closed when the <code>use</code> function completes, regardless of whether the operation succeeds, fails, dies or is interrupted. As long as the channel is only used within the function passed to <code>use</code>, then we're guaranteed not to have leaks.</p>
+<h2><a class="anchor" aria-hidden="true" id="flexible-resource-scoping"></a><a href="#flexible-resource-scoping" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Flexible Resource Scoping</h2>
+<p>Sometimes there are situations where <code>ZManaged#use</code> is too limiting, because the resource lifecycle needs to extend beyond a lexical scope. An example of this is registering channels with a <code>Selector</code>. How can we do this using <code>ZManaged</code> while still avoiding the possibility of leaks? One way is to use <a href="https://javadoc.io/doc/dev.zio/zio_2.13/latest/zio/ZManaged$.html#scope:zio.Managed[Nothing,zio.ZManaged.Scope]">the &quot;scope&quot; feature of <code>ZManaged</code></a>.</p>
+<p>A scope is itself a managed resource. Other managed resources can be attached to a scope, which gives them the same lifecycle as the scope. When the scope is released, all the other resources that have been attached to it will also be released.</p>
+<pre><code class="hljs css language-scala mdoc:silent"><span class="hljs-type">ZManaged</span>.scope.use { scope =&gt;
+
+  <span class="hljs-keyword">val</span> channel: <span class="hljs-type">IO</span>[<span class="hljs-type">IOException</span>, <span class="hljs-type">SocketChannel</span>] = scope(<span class="hljs-type">SocketChannel</span>.open).map {
+    <span class="hljs-keyword">case</span> (earlyRelease @ _, channel) =&gt; channel
+  }
+
+  <span class="hljs-comment">// use channel, perhaps with a Selector</span>
+  channel.flatMap(_.readChunk(<span class="hljs-number">10</span>))
+
+}
+<span class="hljs-comment">// the scope has now been released, as have all the resources attached to it</span>
+</code></pre>
+<p>Note that <code>scope</code> returns both the resource and an &quot;early release&quot; effect. This allows you to release the resource before the scope exits, if you know it is no longer needed. This allows efficient use of the resource while still having the safety net of the scope to ensure the release happens even if there are failures, defects or interruptions.</p>
+<p>The <code>zio.nio.core.channels.SelectorSpec</code> test demonstrates the use of scoping to ensure nothing leaks if an error occurs.</p>
+<h3><a class="anchor" aria-hidden="true" id="using-close-for-early-release"></a><a href="#using-close-for-early-release" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Using <code>close</code> for Early Release</h3>
+<p>In the case of channels, we don't actually need the early release features that <code>ZManaged</code> provides, as every channel has a built-in early release in the form of the <code>close</code> method. Closing a channel more than once is a perfectly safe thing to do, so you can use <code>close</code> to release a channel's resources early. When the <code>ZManaged</code> scope of the channel later ends, <code>close</code> will be called again, but it will be a no-op.</p>
+<h2><a class="anchor" aria-hidden="true" id="manual-resource-management"></a><a href="#manual-resource-management" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Manual Resource Management</h2>
+<p>It is also possible to switch to completely manual resource management. <a href="https://javadoc.io/doc/dev.zio/zio_2.13/latest/zio/ZManaged.html#reserve:zio.UIO[zio.Reservation[R,E,A]]">The <code>reserve</code> method</a> can be called on any <code>ZManaged</code> value, which gives you the acquisition and release of the resource as two separate effect values that you can use as you like. If you use these reservation effects directly, it is entirely up to you to avoid leaking resources. This requires code to be written very carefully, and an understanding the finer details of how failures, defects and interruption work in ZIO.</p>
+</span></div></article></div><div class="docLastUpdate"><em>Last updated on 12/30/2020 by Salar Rahmanian</em></div><div class="docs-prevnext"><a class="docs-prev button" href="/zio-nio/docs/essentials/essentials_sockets"><span class="arrow-prev">← </span><span>Socket Channel</span></a><a class="docs-next button" href="/zio-nio/docs/essentials/essentials_charsets"><span>Character Sets</span><span class="arrow-next"> →</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#simple-usage">Simple Usage</a></li><li><a href="#flexible-resource-scoping">Flexible Resource Scoping</a><ul class="toc-headings"><li><a href="#using-close-for-early-release">Using <code>close</code> for Early Release</a></li></ul></li><li><a href="#manual-resource-management">Manual Resource Management</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section><div><div class="gitter-open-chat-button">Open Chat</div><script type="text/javascript">
+        ((window.gitter = {}).chat = {}).options = {
+          showChatByDefault: false,
+          activationElement: '.gitter-open-chat-button',
+          room: 'zio/zio-nio'
+        };
+      </script><script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async="" defer=""></script></div></section><section class="sitemap"><a href="/zio-nio/" class="nav-home"><img src="/zio-nio/img/sidebar_brand2x.png" alt="ZIO NIO"/></a><div><h5>GitHub</h5><a class="github-button" href="https://github.com/zio/zio-nio" data-icon="octicon-star" data-count-href="/zio/zio-nio/stargazers" data-show-count="true" data-count-aria-label="# stargazers on GitHub" aria-label="Star this project on GitHub">Star</a></div><div><h5>Additional resources</h5><a href="https://javadoc.io/doc/dev.zio/zio_2.12/">Scaladoc of ZIO</a></div></section><section class="copyright">Copyright © 2020 ZIO Maintainers</section></footer></div></body></html>
