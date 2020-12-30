@@ -34,7 +34,7 @@ Learn more about ZIO-NIO at:
 * [Non Blocking IO](https://www.youtube.com/watch?v=uKc0Gx_lPsg)
 * [Blocking vs Non-blocking IO](http://tutorials.jenkov.com/java-nio/nio-vs-io.html)
 
-[Badge-CI]: https://github.com/zio/zio-actors/workflows/CI/badge.svg
+[Badge-CI]: https://github.com/zio/zio-nio/workflows/CI/badge.svg
 [badge-discord]: https://img.shields.io/discord/629491597070827530?logo=discord "chat on discord"
 [badge-releases]: https://img.shields.io/nexus/r/https/oss.sonatype.org/dev.zio/zio-nio_2.12.svg "Sonatype Releases"
 [badge-snapshots]: https://img.shields.io/nexus/s/https/oss.sonatype.org/dev.zio/zio-nio_2.12.svg "Sonatype Snapshots"
