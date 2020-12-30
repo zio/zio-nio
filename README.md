@@ -2,7 +2,7 @@
 
 | CI | Release | Snapshot | Discord |
 | --- | --- | --- | --- |
-| [![Build Status][badge-ci]][link-ci] | [![Release Artifacts][badge-releases]][link-releases] | [![Snapshot Artifacts][badge-snapshots]][link-snapshots] | [![badge-discord]][link-discord] |
+| ![CI][Badge-CI] | [![Release Artifacts][badge-releases]][link-releases] | [![Snapshot Artifacts][badge-snapshots]][link-snapshots] | [![badge-discord]][link-discord] |
 
 ZIO interface to Java NIO.
 
@@ -28,11 +28,10 @@ Learn more about ZIO-NIO at:
 * [Non Blocking IO](https://www.youtube.com/watch?v=uKc0Gx_lPsg)
 * [Blocking vs Non-blocking IO](http://tutorials.jenkov.com/java-nio/nio-vs-io.html)
 
-[badge-ci]: https://circleci.com/gh/zio/zio-nio/tree/master.svg?style=svg
+[Badge-CI]: https://github.com/zio/zio-actors/workflows/CI/badge.svg
 [badge-discord]: https://img.shields.io/discord/629491597070827530?logo=discord "chat on discord"
 [badge-releases]: https://img.shields.io/nexus/r/https/oss.sonatype.org/dev.zio/zio-nio_2.12.svg "Sonatype Releases"
 [badge-snapshots]: https://img.shields.io/nexus/s/https/oss.sonatype.org/dev.zio/zio-nio_2.12.svg "Sonatype Snapshots"
-[link-ci]: https://circleci.com/gh/zio/zio-nio/tree/master
 [link-discord]: https://discord.gg/2ccFBr4 "Discord"
 [link-releases]: https://oss.sonatype.org/content/repositories/releases/dev/zio/zio-nio_2.12/ "Sonatype Releases"
 [link-snapshots]: https://oss.sonatype.org/content/repositories/snapshots/dev/zio/zio-nio_2.12/ "Sonatype Snapshots"
