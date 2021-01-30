@@ -2,7 +2,6 @@ name: CI
 
 on:
   pull_request:
-    branches: ['*']
   push:
     branches: ['master']
   release:
@@ -38,7 +37,6 @@ jobs:
         with:
           fetch-depth: 0
       - uses: olafurpg/setup-scala@v10
-      - uses: olafurpg/setup-gpg@v3
       - run: sbt ci-release
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
