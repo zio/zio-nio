@@ -2,7 +2,6 @@ package zio.nio.channels
 
 import zio.nio.BaseSpec
 import zio.nio.core.{ Buffer, SocketAddress }
-import zio.test.{ suite, testM }
 import zio.{ IO, _ }
 import zio.test._
 import zio.test.Assertion._

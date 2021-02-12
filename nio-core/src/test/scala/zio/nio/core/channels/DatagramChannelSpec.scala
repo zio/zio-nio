@@ -4,7 +4,7 @@ import java.io.IOException
 
 import zio.nio.core._
 import zio.test.Assertion._
-import zio.test.{ suite, testM, _ }
+import zio.test._
 import zio.{ IO, _ }
 
 object DatagramChannelSpec extends BaseSpec {

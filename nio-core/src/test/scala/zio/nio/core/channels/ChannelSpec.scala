@@ -3,7 +3,6 @@ package zio.nio.core.channels
 import java.io.{ EOFException, FileNotFoundException, IOException }
 
 import zio.nio.core.{ BaseSpec, Buffer, EffectOps, SocketAddress }
-import zio.test.{ suite, testM }
 import zio.{ IO, _ }
 import zio.test._
 import zio.test.Assertion._
