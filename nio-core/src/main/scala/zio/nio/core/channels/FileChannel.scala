@@ -8,8 +8,8 @@ import java.nio.file.attribute.FileAttribute
 import com.github.ghik.silencer.silent
 import zio.blocking.{ Blocking, _ }
 import zio.nio.core.file.Path
-import zio.nio.core.{ ByteBuffer, MappedByteBuffer }
-import zio.{ IO, ZIO }
+import zio.nio.core.{ ByteBuffer, IOCloseableManagement, MappedByteBuffer }
+import zio.{ IO, ZIO, ZManaged }
 
 import scala.collection.JavaConverters._
 
@@ -85,13 +85,15 @@ object FileChannel {
     path: Path,
     options: Set[_ <: OpenOption],
     attrs: FileAttribute[_]*
-  ): ZIO[Blocking, IOException, FileChannel] =
+  ): ZManaged[Blocking, IOException, FileChannel] =
     effectBlocking(new FileChannel(JFileChannel.open(path.javaPath, options.asJava, attrs: _*)))
       .refineToOrDie[IOException]
+      .toNioManaged
 
-  def open(path: Path, options: OpenOption*): ZIO[Blocking, IOException, FileChannel] =
+  def open(path: Path, options: OpenOption*): ZManaged[Blocking, IOException, FileChannel] =
     effectBlocking(new FileChannel(JFileChannel.open(path.javaPath, options: _*)))
       .refineToOrDie[IOException]
+      .toNioManaged
 
   def fromJava(javaFileChannel: JFileChannel): FileChannel = new FileChannel(javaFileChannel)
 

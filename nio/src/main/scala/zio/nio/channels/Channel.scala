@@ -15,6 +15,5 @@ trait Channel {
   /**
    * Tells whether or not this channel is open.
    */
-  final def isOpen: UIO[Boolean] =
-    IO.effectTotal(channel.isOpen)
+  final def isOpen: UIO[Boolean] = IO.effectTotal(channel.isOpen)
 }

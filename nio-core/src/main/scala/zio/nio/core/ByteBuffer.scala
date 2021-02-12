@@ -8,25 +8,20 @@ import java.nio.{ ByteOrder, ByteBuffer => JByteBuffer }
  */
 class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) extends Buffer[Byte](byteBuffer) {
 
-  final override protected[nio] def array: UIO[Array[Byte]] =
-    UIO.effectTotal(byteBuffer.array())
+  final override protected[nio] def array: UIO[Array[Byte]] = UIO.effectTotal(byteBuffer.array())
 
   final def order: UIO[ByteOrder] = UIO.effectTotal(byteBuffer.order())
 
   /**
    * Changes the byte order used by this buffer for multi-byte reads and view buffers.
    */
-  def order(o: ByteOrder): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.order(o)).unit
+  def order(o: ByteOrder): UIO[Unit] = UIO.effectTotal(byteBuffer.order(o)).unit
 
-  final override def slice: UIO[ByteBuffer] =
-    UIO.effectTotal(new ByteBuffer(byteBuffer.slice()))
+  final override def slice: UIO[ByteBuffer] = UIO.effectTotal(new ByteBuffer(byteBuffer.slice()))
 
-  final override def compact: UIO[Unit] =
-    UIO.effectTotal(byteBuffer.compact()).unit
+  final override def compact: UIO[Unit] = UIO.effectTotal(byteBuffer.compact()).unit
 
-  final override def duplicate: UIO[ByteBuffer] =
-    UIO.effectTotal(new ByteBuffer(byteBuffer.duplicate()))
+  final override def duplicate: UIO[ByteBuffer] = UIO.effectTotal(new ByteBuffer(byteBuffer.duplicate()))
 
   /**
    * Provides the underlying Java byte buffer for use in an effect.
@@ -37,11 +32,9 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    */
   def withJavaBuffer[R, E, A](f: JByteBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(byteBuffer)
 
-  final override def get: UIO[Byte] =
-    UIO.effectTotal(byteBuffer.get())
+  final override def get: UIO[Byte] = UIO.effectTotal(byteBuffer.get())
 
-  final override def get(i: Int): UIO[Byte] =
-    UIO.effectTotal(byteBuffer.get(i))
+  final override def get(i: Int): UIO[Byte] = UIO.effectTotal(byteBuffer.get(i))
 
   /**
    * Reads bytes from the current position and returns them in a `Chunk`.
@@ -56,14 +49,11 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
       Chunk.fromArray(array)
     }
 
-  final override def put(element: Byte): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.put(element)).unit
+  final override def put(element: Byte): UIO[Unit] = UIO.effectTotal(byteBuffer.put(element)).unit
 
-  final override def put(index: Int, element: Byte): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.put(index, element)).unit
+  final override def put(index: Int, element: Byte): UIO[Unit] = UIO.effectTotal(byteBuffer.put(index, element)).unit
 
-  def putByteBuffer(source: ByteBuffer): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.put(source.byteBuffer)).unit
+  def putByteBuffer(source: ByteBuffer): UIO[Unit] = UIO.effectTotal(byteBuffer.put(source.byteBuffer)).unit
 
   final override protected def putChunkAll(chunk: Chunk[Byte]): UIO[Unit] =
     UIO.effectTotal {
@@ -71,26 +61,19 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
       byteBuffer.put(array)
     }.unit
 
-  final override def asReadOnlyBuffer: UIO[ByteBuffer] =
-    UIO.effectTotal(new ByteBuffer(byteBuffer.asReadOnlyBuffer()))
+  final override def asReadOnlyBuffer: UIO[ByteBuffer] = UIO.effectTotal(new ByteBuffer(byteBuffer.asReadOnlyBuffer()))
 
-  final def asCharBuffer: UIO[CharBuffer] =
-    UIO.effectTotal(new CharBuffer(byteBuffer.asCharBuffer()))
+  final def asCharBuffer: UIO[CharBuffer] = UIO.effectTotal(new CharBuffer(byteBuffer.asCharBuffer()))
 
-  final def asDoubleBuffer: UIO[DoubleBuffer] =
-    UIO.effectTotal(new DoubleBuffer(byteBuffer.asDoubleBuffer()))
+  final def asDoubleBuffer: UIO[DoubleBuffer] = UIO.effectTotal(new DoubleBuffer(byteBuffer.asDoubleBuffer()))
 
-  final def asFloatBuffer: UIO[FloatBuffer] =
-    UIO.effectTotal(new FloatBuffer(byteBuffer.asFloatBuffer()))
+  final def asFloatBuffer: UIO[FloatBuffer] = UIO.effectTotal(new FloatBuffer(byteBuffer.asFloatBuffer()))
 
-  final def asIntBuffer: UIO[IntBuffer] =
-    UIO.effectTotal(new IntBuffer(byteBuffer.asIntBuffer()))
+  final def asIntBuffer: UIO[IntBuffer] = UIO.effectTotal(new IntBuffer(byteBuffer.asIntBuffer()))
 
-  final def asLongBuffer: UIO[LongBuffer] =
-    UIO.effectTotal(new LongBuffer(byteBuffer.asLongBuffer()))
+  final def asLongBuffer: UIO[LongBuffer] = UIO.effectTotal(new LongBuffer(byteBuffer.asLongBuffer()))
 
-  final def asShortBuffer: UIO[ShortBuffer] =
-    UIO.effectTotal(new ShortBuffer(byteBuffer.asShortBuffer()))
+  final def asShortBuffer: UIO[ShortBuffer] = UIO.effectTotal(new ShortBuffer(byteBuffer.asShortBuffer()))
 
   /**
    * Relative put of a single character.
@@ -100,8 +83,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    * Dies with `BufferOverflowException` if there are fewer than 2 bytes remaining.
    * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  final def putChar(value: Char): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.putChar(value)).unit
+  final def putChar(value: Char): UIO[Unit] = UIO.effectTotal(byteBuffer.putChar(value)).unit
 
   /**
    * Absolute put of a single character.
@@ -111,8 +93,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-1.
    * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  final def putChar(index: Int, value: Char): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.putChar(index, value)).unit
+  final def putChar(index: Int, value: Char): UIO[Unit] = UIO.effectTotal(byteBuffer.putChar(index, value)).unit
 
   /**
    * Relative put of a single double.
@@ -122,8 +103,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    * Dies with `BufferOverflowException` if there are fewer than 8 bytes remaining.
    * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  final def putDouble(value: Double): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.putDouble(value)).unit
+  final def putDouble(value: Double): UIO[Unit] = UIO.effectTotal(byteBuffer.putDouble(value)).unit
 
   /**
    * Absolute put of a single double.
@@ -133,8 +113,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-7.
    * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  final def putDouble(index: Int, value: Double): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.putDouble(index, value)).unit
+  final def putDouble(index: Int, value: Double): UIO[Unit] = UIO.effectTotal(byteBuffer.putDouble(index, value)).unit
 
   /**
    * Relative put of a single float.
@@ -144,8 +123,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    * Dies with `BufferOverflowException` if there are fewer than 4 bytes remaining.
    * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  final def putFloat(value: Float): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.putFloat(value)).unit
+  final def putFloat(value: Float): UIO[Unit] = UIO.effectTotal(byteBuffer.putFloat(value)).unit
 
   /**
    * Absolute put of a single float.
@@ -155,8 +133,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-3.
    * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  final def putFloat(index: Int, value: Float): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.putFloat(index, value)).unit
+  final def putFloat(index: Int, value: Float): UIO[Unit] = UIO.effectTotal(byteBuffer.putFloat(index, value)).unit
 
   /**
    * Relative put of a single int.
@@ -166,8 +143,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    * Dies with `BufferOverflowException` if there are fewer than 4 bytes remaining.
    * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  final def putInt(value: Int): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.putInt(value)).unit
+  final def putInt(value: Int): UIO[Unit] = UIO.effectTotal(byteBuffer.putInt(value)).unit
 
   /**
    * Absolute put of a single int.
@@ -177,8 +153,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-3.
    * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  final def putInt(index: Int, value: Int): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.putInt(index, value)).unit
+  final def putInt(index: Int, value: Int): UIO[Unit] = UIO.effectTotal(byteBuffer.putInt(index, value)).unit
 
   /**
    * Relative put of a single long.
@@ -188,8 +163,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    * Dies with `BufferOverflowException` if there are fewer than 8 bytes remaining.
    * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  final def putLong(value: Long): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.putLong(value)).unit
+  final def putLong(value: Long): UIO[Unit] = UIO.effectTotal(byteBuffer.putLong(value)).unit
 
   /**
    * Absolute put of a single long.
@@ -199,8 +173,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-7.
    * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  final def putLong(index: Int, value: Long): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.putLong(index, value)).unit
+  final def putLong(index: Int, value: Long): UIO[Unit] = UIO.effectTotal(byteBuffer.putLong(index, value)).unit
 
   /**
    * Relative put of a single short.
@@ -210,8 +183,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    * Dies with `BufferOverflowException` if there are fewer than 2 bytes remaining.
    * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  final def putShort(value: Short): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.putShort(value)).unit
+  final def putShort(value: Short): UIO[Unit] = UIO.effectTotal(byteBuffer.putShort(value)).unit
 
   /**
    * Absolute put of a single short.
@@ -221,8 +193,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-1.
    * Dies with `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  final def putShort(index: Int, value: Short): UIO[Unit] =
-    UIO.effectTotal(byteBuffer.putShort(index, value)).unit
+  final def putShort(index: Int, value: Short): UIO[Unit] = UIO.effectTotal(byteBuffer.putShort(index, value)).unit
 
   /**
    * Relative get of a single character.
@@ -231,8 +202,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    *
    * Dies with `BufferUnderflowException` If there are fewer than 2 bytes remaining.
    */
-  final def getChar: UIO[Char] =
-    UIO.effectTotal(byteBuffer.getChar())
+  final def getChar: UIO[Char] = UIO.effectTotal(byteBuffer.getChar())
 
   /**
    * Absolute get of a single character.
@@ -241,8 +211,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    *
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-1.
    */
-  final def getChar(index: Int): UIO[Char] =
-    UIO.effectTotal(byteBuffer.getChar(index))
+  final def getChar(index: Int): UIO[Char] = UIO.effectTotal(byteBuffer.getChar(index))
 
   /**
    * Relative get of a single double.
@@ -251,8 +220,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    *
    * Dies with `BufferUnderflowException` If there are fewer than 8 bytes remaining.
    */
-  final def getDouble: UIO[Double] =
-    UIO.effectTotal(byteBuffer.getDouble())
+  final def getDouble: UIO[Double] = UIO.effectTotal(byteBuffer.getDouble())
 
   /**
    * Absolute get of a single double.
@@ -261,8 +229,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    *
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-7.
    */
-  final def getDouble(index: Int): UIO[Double] =
-    UIO.effectTotal(byteBuffer.getDouble(index))
+  final def getDouble(index: Int): UIO[Double] = UIO.effectTotal(byteBuffer.getDouble(index))
 
   /**
    * Relative get of a single float.
@@ -271,8 +238,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    *
    * Dies with `BufferUnderflowException` If there are fewer than 4 bytes remaining.
    */
-  final def getFloat: UIO[Float] =
-    UIO.effectTotal(byteBuffer.getFloat())
+  final def getFloat: UIO[Float] = UIO.effectTotal(byteBuffer.getFloat())
 
   /**
    * Absolute get of a single float.
@@ -281,8 +247,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    *
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-3.
    */
-  final def getFloat(index: Int): UIO[Float] =
-    UIO.effectTotal(byteBuffer.getFloat(index))
+  final def getFloat(index: Int): UIO[Float] = UIO.effectTotal(byteBuffer.getFloat(index))
 
   /**
    * Relative get of a single int.
@@ -291,8 +256,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    *
    * Dies with `BufferUnderflowException` If there are fewer than 4 bytes remaining.
    */
-  final def getInt: UIO[Int] =
-    UIO.effectTotal(byteBuffer.getInt())
+  final def getInt: UIO[Int] = UIO.effectTotal(byteBuffer.getInt())
 
   /**
    * Absolute get of a single int.
@@ -301,8 +265,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    *
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-3.
    */
-  final def getInt(index: Int): UIO[Int] =
-    UIO.effectTotal(byteBuffer.getInt(index))
+  final def getInt(index: Int): UIO[Int] = UIO.effectTotal(byteBuffer.getInt(index))
 
   /**
    * Relative get of a single long.
@@ -311,8 +274,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    *
    * Dies with `BufferUnderflowException` If there are fewer than 8 bytes remaining.
    */
-  final def getLong: UIO[Long] =
-    UIO.effectTotal(byteBuffer.getLong())
+  final def getLong: UIO[Long] = UIO.effectTotal(byteBuffer.getLong())
 
   /**
    * Absolute get of a single long.
@@ -321,8 +283,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    *
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-7.
    */
-  final def getLong(index: Int): UIO[Long] =
-    UIO.effectTotal(byteBuffer.getLong(index))
+  final def getLong(index: Int): UIO[Long] = UIO.effectTotal(byteBuffer.getLong(index))
 
   /**
    * Relative get of a single short.
@@ -331,8 +292,7 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    *
    * Dies with `BufferUnderflowException` If there are fewer than 2 bytes remaining.
    */
-  final def getShort: UIO[Short] =
-    UIO.effectTotal(byteBuffer.getShort())
+  final def getShort: UIO[Short] = UIO.effectTotal(byteBuffer.getShort())
 
   /**
    * Absolute get of a single short.
@@ -341,7 +301,6 @@ class ByteBuffer protected[nio] (private[nio] val byteBuffer: JByteBuffer) exten
    *
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit-1.
    */
-  final def getShort(index: Int): UIO[Short] =
-    UIO.effectTotal(byteBuffer.getShort(index))
+  final def getShort(index: Int): UIO[Short] = UIO.effectTotal(byteBuffer.getShort(index))
 
 }

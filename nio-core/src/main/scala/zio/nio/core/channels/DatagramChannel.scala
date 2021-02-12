@@ -1,11 +1,11 @@
-package zio.nio.core.channels
+package zio.nio.core
+package channels
 
 import java.io.IOException
 import java.net.{ SocketOption, DatagramSocket => JDatagramSocket, SocketAddress => JSocketAddress }
 import java.nio.channels.{ DatagramChannel => JDatagramChannel }
 
-import zio.{ IO, UIO }
-import zio.nio.core.{ ByteBuffer, SocketAddress }
+import zio.{ IO, Managed, UIO }
 
 /**
  * A [[java.nio.channels.DatagramChannel]] wrapper allowing for basic [[zio.ZIO]] interoperability.
@@ -49,8 +49,7 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    *
    * @return `true` when the socket is both open and connected, otherwise `false`
    */
-  def isConnected: UIO[Boolean] =
-    UIO.effectTotal(channel.isConnected())
+  def isConnected: UIO[Boolean] = UIO.effectTotal(channel.isConnected())
 
   /**
    * Optionally returns the socket address that this channel's underlying socket is bound to.
@@ -101,8 +100,7 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    *
    * @return the underlying datagram socket
    */
-  def socket: UIO[JDatagramSocket] =
-    IO.effectTotal(channel.socket())
+  def socket: UIO[JDatagramSocket] = IO.effectTotal(channel.socket())
 
 }
 
@@ -113,10 +111,11 @@ object DatagramChannel {
    *
    * @return a new datagram channel
    */
-  def open: IO[IOException, DatagramChannel] =
-    IO.effect(new DatagramChannel(JDatagramChannel.open())).refineToOrDie[IOException]
+  def open: Managed[IOException, DatagramChannel] =
+    IO.effect(new DatagramChannel(JDatagramChannel.open()))
+      .refineToOrDie[IOException]
+      .toNioManaged
 
-  def fromJava(javaDatagramChannel: JDatagramChannel): DatagramChannel =
-    new DatagramChannel(javaDatagramChannel)
+  def fromJava(javaDatagramChannel: JDatagramChannel): DatagramChannel = new DatagramChannel(javaDatagramChannel)
 
 }

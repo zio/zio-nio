@@ -1,6 +1,8 @@
 package zio.nio.core.channels
 
-import zio.nio.core.{ BaseSpec, Buffer, SocketAddress }
+import java.io.{ EOFException, FileNotFoundException, IOException }
+
+import zio.nio.core.{ BaseSpec, Buffer, EffectOps, SocketAddress }
 import zio.test.{ suite, testM }
 import zio.{ IO, _ }
 import zio.test._
@@ -15,14 +17,14 @@ object ChannelSpec extends BaseSpec {
           for {
             address <- SocketAddress.inetSocketAddress(0)
             sink    <- Buffer.byte(3)
-            _       <- Managed
-                         .make(AsynchronousServerSocketChannel())(_.close.orDie)
+            _       <- AsynchronousServerSocketChannel
+                         .open()
                          .use { server =>
                            for {
                              _    <- server.bind(address)
                              addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
                              _    <- started.succeed(addr)
-                             _    <- Managed.make(server.accept)(_.close.orDie).use { worker =>
+                             _    <- server.accept.use { worker =>
                                        worker.read(sink) *>
                                          sink.flip *>
                                          worker.write(sink)
@@ -35,7 +37,7 @@ object ChannelSpec extends BaseSpec {
         def echoClient(address: SocketAddress): IO[Exception, Boolean] =
           for {
             src    <- Buffer.byte(3)
-            result <- Managed.make(AsynchronousSocketChannel())(_.close.orDie).use { client =>
+            result <- AsynchronousSocketChannel.open().use { client =>
                         for {
                           _        <- client.connect(address)
                           sent     <- src.array
@@ -59,19 +61,17 @@ object ChannelSpec extends BaseSpec {
         def server(started: Promise[Nothing, SocketAddress]): IO[Exception, Fiber[Exception, Boolean]] =
           for {
             address <- SocketAddress.inetSocketAddress(0)
-            result  <- Managed
-                         .make(AsynchronousServerSocketChannel())(_.close.orDie)
+            result  <- AsynchronousServerSocketChannel
+                         .open()
                          .use { server =>
                            for {
                              _      <- server.bind(address)
                              addr   <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
                              _      <- started.succeed(addr)
-                             result <- Managed
-                                         .make(server.accept)(_.close.orDie)
+                             result <- server.accept
                                          .use(worker => worker.readChunk(3) *> worker.readChunk(3) *> ZIO.succeed(false))
-                                         .catchSome {
-                                           case _: java.io.EOFException =>
-                                             ZIO.succeed(true)
+                                         .catchSome { case _: java.io.EOFException =>
+                                           ZIO.succeed(true)
                                          }
                            } yield result
                          }
@@ -80,7 +80,7 @@ object ChannelSpec extends BaseSpec {
 
         def client(address: SocketAddress): IO[Exception, Unit] =
           for {
-            _ <- Managed.make(AsynchronousSocketChannel())(_.close.orDie).use { client =>
+            _ <- AsynchronousSocketChannel.open().use { client =>
                    for {
                      _ <- client.connect(address)
                      _  = client.writeChunk(Chunk.fromArray(Array[Byte](1, 1, 1)))
@@ -98,39 +98,45 @@ object ChannelSpec extends BaseSpec {
       },
       testM("close channel unbind port") {
         def client(address: SocketAddress): IO[Exception, Unit] =
-          for {
-            client <- AsynchronousSocketChannel()
-            _      <- client.connect(address)
-            _      <- client.close
-          } yield ()
+          AsynchronousSocketChannel.open().use {
+            _.connect(address)
+          }
 
         def server(
           address: SocketAddress,
           started: Promise[Nothing, SocketAddress]
-        ): IO[Exception, Fiber[Exception, Unit]] =
+        ): Managed[IOException, Fiber[Exception, Unit]] =
           for {
-            server <- AsynchronousServerSocketChannel()
-            _      <- server.bind(address)
-            addr   <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
-            _      <- started.succeed(addr)
-            worker <- server.accept
-                        .bracket(_.close.ignore *> server.close.ignore)(_ => ZIO.unit)
-                        .fork
+            server <- AsynchronousServerSocketChannel.open()
+            _      <- server.bind(address).toManaged_
+            addr   <- server.localAddress.someOrElseM(IO.die(new NoSuchElementException)).toManaged_
+            _      <- started.succeed(addr).toManaged_
+            worker <- server.accept.unit.fork
           } yield worker
 
         for {
-          address       <- SocketAddress.inetSocketAddress(0)
-          serverStarted <- Promise.make[Nothing, SocketAddress]
-          s1            <- server(address, serverStarted)
-          addr          <- serverStarted.await
-          _             <- client(addr)
-          _             <- s1.join
-          serverStarted <- Promise.make[Nothing, SocketAddress]
-          s2            <- server(addr, serverStarted)
-          _             <- serverStarted.await
-          _             <- client(addr)
-          _             <- s2.join
+          address        <- SocketAddress.inetSocketAddress(0)
+          serverStarted1 <- Promise.make[Nothing, SocketAddress]
+          _              <- server(address, serverStarted1).use { s1 =>
+                              serverStarted1.await.flatMap(client).zipRight(s1.join)
+                            }
+          serverStarted2 <- Promise.make[Nothing, SocketAddress]
+          _              <- server(address, serverStarted2).use { s2 =>
+                              serverStarted2.await.flatMap(client).zipRight(s2.join)
+                            }
         } yield assertCompletes
-      }
+      },
+      suite("explicit end-of-stream")(
+        testM("converts EOFException to None") {
+          assertM(IO.fail(new EOFException).eofCheck.run)(fails(isNone))
+        },
+        testM("converts non EOFException to Some") {
+          val e: IOException = new FileNotFoundException()
+          assertM(IO.fail(e).eofCheck.run)(fails(isSome(equalTo(e))))
+        },
+        testM("passes through success") {
+          assertM(IO.succeed(42).eofCheck.run)(succeeds(equalTo(42)))
+        }
+      )
     )
 }

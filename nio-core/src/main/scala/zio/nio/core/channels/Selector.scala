@@ -1,12 +1,13 @@
-package zio.nio.core.channels
+package zio.nio.core
+package channels
 
 import java.io.IOException
-import java.nio.channels.{ Selector => JSelector, SelectionKey => JSelectionKey }
+import java.nio.channels.{ SelectionKey => JSelectionKey, Selector => JSelector }
 
 import com.github.ghik.silencer.silent
 import zio.duration.Duration
 import zio.nio.core.channels.spi.SelectorProvider
-import zio.{ IO, UIO }
+import zio.{ IO, Managed, UIO }
 
 import scala.jdk.CollectionConverters._
 
@@ -17,7 +18,9 @@ import scala.jdk.CollectionConverters._
  * [[https://docs.oracle.com/javase/8/docs/api/java/nio/channels/Selector.html the documentation for the underlying Java]]
  * API before attempting to use this.
  */
-final class Selector(private[nio] val selector: JSelector) {
+final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
+
+  type Env = Any
 
   val isOpen: UIO[Boolean] = IO.effectTotal(selector.isOpen)
 
@@ -34,8 +37,7 @@ final class Selector(private[nio] val selector: JSelector) {
     IO.effectTotal(selector.selectedKeys())
       .map(_.asScala.toSet[JSelectionKey].map(new SelectionKey(_)))
 
-  def removeKey(key: SelectionKey): UIO[Unit] =
-    IO.effectTotal(selector.selectedKeys().remove(key.selectionKey)).unit
+  def removeKey(key: SelectionKey): UIO[Unit] = IO.effectTotal(selector.selectedKeys().remove(key.selectionKey)).unit
 
   /**
    * Selects a set of keys whose corresponding channels are ready for I/O operations.
@@ -74,8 +76,7 @@ final class Selector(private[nio] val selector: JSelector) {
    *
    * @return The number of keys, possibly zero, whose ready-operation sets were updated
    */
-  def select: IO[IOException, Int] =
-    IO.effect(selector.select()).refineToOrDie[IOException]
+  def select: IO[IOException, Int] = IO.effect(selector.select()).refineToOrDie[IOException]
 
   /**
    * Causes the first selection operation that has not yet returned to return immediately.
@@ -114,7 +115,10 @@ final class Selector(private[nio] val selector: JSelector) {
 
 object Selector {
 
-  val make: IO[IOException, Selector] =
-    IO.effect(new Selector(JSelector.open())).refineToOrDie[IOException]
+  /**
+   * Opens a selector.
+   */
+  val open: Managed[IOException, Selector] =
+    IO.effect(new Selector(JSelector.open())).refineToOrDie[IOException].toNioManaged
 
 }
