@@ -1,17 +1,16 @@
 package zio.nio.channels
 
-import java.io.{ EOFException, FileNotFoundException, IOException }
-import java.nio.channels
-import java.{ nio => jnio }
-
 import zio.blocking.Blocking
 import zio.duration._
 import zio.nio.{ BaseSpec, Buffer, EffectOps, InetSocketAddress, SocketAddress }
-import zio.test.{ suite, testM }
-import zio.{ IO, _ }
-import zio.test._
 import zio.test.Assertion._
+import zio.test._
 import zio.test.environment.live
+import zio.{ IO, _ }
+
+import java.io.{ EOFException, FileNotFoundException, IOException }
+import java.nio.channels
+import java.{ nio => jnio }
 
 object ChannelSpec extends BaseSpec {
 

@@ -1,12 +1,12 @@
 package zio.nio.channels
 
-import java.io.IOException
-
 import zio._
 import zio.blocking.Blocking
 import zio.nio._
 import zio.test.Assertion._
-import zio.test.{ suite, testM, _ }
+import zio.test._
+
+import java.io.IOException
 
 object DatagramChannelSpec extends BaseSpec {
 
