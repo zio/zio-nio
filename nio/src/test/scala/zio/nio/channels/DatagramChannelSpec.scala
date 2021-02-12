@@ -3,7 +3,7 @@ package zio.nio.channels
 import zio.nio._
 import zio.nio.core.{ Buffer, SocketAddress }
 import zio.test.Assertion._
-import zio.test.{ suite, testM, _ }
+import zio.test._
 import zio._
 
 object DatagramChannelSpec extends BaseSpec {
