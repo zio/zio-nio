@@ -24,6 +24,7 @@ ThisBuild / publishTo := sonatypePublishToBundle.value
 
 addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
 addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
+addCommandAlias("coverageReport", "clean coverage test coverageReport coverageAggregate")
 
 lazy val zioNioCore = project
   .in(file("nio-core"))
