@@ -103,7 +103,7 @@ object InetSocketAddress {
    * Creates a socket address where the IP address is the wildcard address and
    * the port is ephemeral.
    *
-   * The socket address wll be ''resolved''.
+   * The socket address will be ''resolved''.
    */
   def wildCardEphemeral: UIO[InetSocketAddress] = wildCard(0)
 
