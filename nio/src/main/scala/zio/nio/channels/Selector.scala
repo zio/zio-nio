@@ -1,16 +1,15 @@
 package zio.nio.channels
 
-import java.io.IOException
-import java.nio.channels.{ ClosedSelectorException, Selector => JSelector, SelectionKey => JSelectionKey }
-
-import zio.{ IO, Managed, UIO, ZIO }
 import com.github.ghik.silencer.silent
+import zio.blocking.Blocking
 import zio.duration.Duration
 import zio.nio.channels.spi.SelectorProvider
 import zio.nio.core.channels.SelectionKey
-import zio.blocking
-import zio.blocking.Blocking
+import zio.{ IO, Managed, UIO, ZIO, blocking }
 
+import java.io.IOException
+import java.nio.channels.{ ClosedSelectorException, SelectionKey => JSelectionKey, Selector => JSelector }
+import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 class Selector(private[nio] val selector: JSelector) {
@@ -24,11 +23,39 @@ class Selector(private[nio] val selector: JSelector) {
       .map(_.asScala.toSet[JSelectionKey].map(new SelectionKey(_)))
       .refineToOrDie[ClosedSelectorException]
 
+  /**
+   * Returns this selector's selected-key set.
+   *
+   * Note that the returned set it mutable - keys may be removed from, but not directly added to it.
+   * Any attempt to add an object to the key set will cause an `UnsupportedOperationException` to be thrown.
+   * The selected-key set is not thread-safe.
+   */
   @silent
-  final val selectedKeys: IO[ClosedSelectorException, Set[SelectionKey]] =
+  final val selectedKeys: IO[ClosedSelectorException, mutable.Set[SelectionKey]] =
     IO.effect(selector.selectedKeys())
-      .map(_.asScala.toSet[JSelectionKey].map(new SelectionKey(_)))
+      .map(_.asScala.map(new SelectionKey(_)))
       .refineToOrDie[ClosedSelectorException]
+
+  /**
+   * Performs an effect with each selected key.
+   *
+   * If the result of effect is true, the key will be removed from the selected-key set, which is
+   * usually what you want after successfully handling a selected key.
+   */
+  def foreachSelectedKey[R, E](f: SelectionKey => ZIO[R, E, Boolean]): ZIO[R, E, Unit] =
+    ZIO.effectTotal(selector.selectedKeys().iterator()).flatMap { iter =>
+      def loop: ZIO[R, E, Unit] =
+        ZIO.effectSuspendTotal {
+          if (iter.hasNext) {
+            val key = iter.next()
+            f(new SelectionKey(key)).flatMap(ZIO.when(_)(ZIO.effectTotal(iter.remove()))) *>
+              loop
+          } else
+            ZIO.unit
+        }
+
+      loop
+    }
 
   final def removeKey(key: SelectionKey): IO[ClosedSelectorException, Unit] =
     IO.effect(selector.selectedKeys().remove(key.selectionKey))

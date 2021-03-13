@@ -1,15 +1,15 @@
 package zio.nio.core
 
-import java.net.{ InetSocketAddress => JInetSocketAddress, SocketAddress => JSocketAddress }
+import java.net.{ UnknownHostException, InetSocketAddress => JInetSocketAddress, SocketAddress => JSocketAddress }
 
-import zio.UIO
+import zio.{ IO, UIO }
 
 /**
  * Representation of a socket address without a specific protocol.
  *
  * The concrete subclass [[InetSocketAddress]] is used in practice.
  */
-sealed class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocketAddress) {
+sealed class SocketAddress protected (private[nio] val jSocketAddress: JSocketAddress) {
 
   final override def equals(obj: Any): Boolean =
     obj match {
@@ -22,6 +22,18 @@ sealed class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocke
   final override def toString: String = jSocketAddress.toString
 }
 
+object SocketAddress {
+
+  def fromJava(jSocketAddress: JSocketAddress): SocketAddress =
+    jSocketAddress match {
+      case inet: JInetSocketAddress =>
+        new InetSocketAddress(inet)
+      case other                    =>
+        new SocketAddress(other)
+    }
+
+}
+
 /**
  * Representation of an IP Socket Address (IP address + port number).
  *
@@ -29,7 +41,10 @@ sealed class SocketAddress private[nio] (private[nio] val jSocketAddress: JSocke
  * will be made to resolve the hostname.
  * If resolution fails then the address is said to be unresolved but can still
  * be used on some circumstances like connecting through a proxy.
- * It provides an immutable object used by sockets for binding, connecting,
+ * However, note that network channels generally do ''not'' accept unresolved
+ * socket addresses.
+ *
+ * This class provides an immutable object used by sockets for binding, connecting,
  * or as returned values.
  *
  * The wildcard is a special local IP address. It usually means "any" and can
@@ -75,37 +90,72 @@ final class InetSocketAddress private[nio] (private val jInetSocketAddress: JIne
 
 }
 
-object SocketAddress {
-
-  private[nio] def fromJava(jSocketAddress: JSocketAddress) =
-    jSocketAddress match {
-      case inet: JInetSocketAddress =>
-        new InetSocketAddress(inet)
-      case other                    =>
-        new SocketAddress(other)
-    }
+object InetSocketAddress {
 
   /**
    * Creates a socket address where the IP address is the wildcard address and the port number a specified value.
    *
    * The socket address will be ''resolved''.
    */
-  def inetSocketAddress(port: Int): UIO[InetSocketAddress] = InetSocketAddress(port)
+  def wildCard(port: Int): UIO[InetSocketAddress] = UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(port)))
 
   /**
-   * Creates a socket address from an IP address and a port number.
+   * Creates a socket address where the IP address is the wildcard address and
+   * the port is ephemeral.
    *
    * The socket address will be ''resolved''.
    */
-  def inetSocketAddress(hostname: String, port: Int): UIO[InetSocketAddress] = InetSocketAddress(hostname, port)
+  def wildCardEphemeral: UIO[InetSocketAddress] = wildCard(0)
 
   /**
    * Creates a socket address from a hostname and a port number.
    *
-   * An attempt will be made to resolve the hostname into an `InetAddress`.
-   * If that attempt fails, the socket address will be flagged as ''unresolved''.
+   * This method will attempt to resolve the hostname; if this fails, the returned
+   * socket address will be ''unresolved''.
    */
-  def inetSocketAddress(address: InetAddress, port: Int): UIO[InetSocketAddress] = InetSocketAddress(address, port)
+  def hostName(hostName: String, port: Int): UIO[InetSocketAddress] =
+    UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(hostName, port)))
+
+  /**
+   * Creates a resolved socket address from a hostname and port number.
+   *
+   * If the hostname cannot be resolved, fails with `UnknownHostException`.
+   */
+  def hostNameResolved(hostName: String, port: Int): IO[UnknownHostException, InetSocketAddress] =
+    InetAddress.byName(hostName).flatMap(inetAddress(_, port))
+
+  /**
+   * Creates a socket address from a hostname, with an ephemeral port.
+   *
+   * This method will attempt to resolve the hostname; if this fails, the returned
+   * socket address will be ''unresolved''.
+   */
+  def hostNameEphemeral(hostName: String): UIO[InetSocketAddress] = this.hostName(hostName, 0)
+
+  /**
+   * Creates a resolved socket address from a hostname, with an ephemeral port.
+   *
+   * If the hostname cannot be resolved, fails with `UnknownHostException`.
+   */
+  def hostNameEphemeralResolved(hostName: String): IO[UnknownHostException, InetSocketAddress] =
+    InetAddress.byName(hostName).flatMap(inetAddressEphemeral)
+
+  /**
+   * Creates a socket address from an IP address and a port number.
+   */
+  def inetAddress(address: InetAddress, port: Int): UIO[InetSocketAddress] =
+    UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(address.jInetAddress, port)))
+
+  /**
+   * Creates a socket address from an IP address, with an ephemeral port.
+   */
+  def inetAddressEphemeral(address: InetAddress): UIO[InetSocketAddress] = inetAddress(address, 0)
+
+  /**
+   * Creates a socket address for localhost using the specified port.
+   */
+  def localHost(port: Int): IO[UnknownHostException, InetSocketAddress] =
+    InetAddress.localHost.flatMap(inetAddress(_, port))
 
   /**
    * Creates an unresolved socket address from a hostname and a port number.
@@ -113,21 +163,15 @@ object SocketAddress {
    * No attempt will be made to resolve the hostname into an `InetAddress`.
    * The socket address will be flagged as ''unresolved''.
    */
-  def unresolvedInetSocketAddress(hostname: String, port: Int): UIO[InetSocketAddress] =
-    InetSocketAddress.createUnresolved(hostname, port)
+  def unresolvedHostName(hostName: String, port: Int): UIO[InetSocketAddress] =
+    UIO.effectTotal(new InetSocketAddress(JInetSocketAddress.createUnresolved(hostName, port)))
 
-  private object InetSocketAddress {
+  /**
+   * Creates an unresolved socket address from a hostname using an ephemeral port.
+   *
+   * No attempt will be made to resolve the hostname into an `InetAddress`.
+   * The socket address will be flagged as ''unresolved''.
+   */
+  def unresolvedHostNameEphemeral(hostName: String): UIO[InetSocketAddress] = unresolvedHostName(hostName, 0)
 
-    def apply(port: Int): UIO[InetSocketAddress] = UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(port)))
-
-    def apply(host: String, port: Int): UIO[InetSocketAddress] =
-      UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(host, port)))
-
-    def apply(addr: InetAddress, port: Int): UIO[InetSocketAddress] =
-      UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(addr.jInetAddress, port)))
-
-    def createUnresolved(host: String, port: Int): UIO[InetSocketAddress] =
-      UIO.effectTotal(new InetSocketAddress(JInetSocketAddress.createUnresolved(host, port)))
-
-  }
 }

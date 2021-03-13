@@ -42,11 +42,11 @@ final class InetAddress private[nio] (private[nio] val jInetAddress: JInetAddres
     IO.effect(jInetAddress.isReachable(networkInterface.jNetworkInterface, ttl, timeout))
       .refineToOrDie[IOException]
 
-  def hostname: String = jInetAddress.getHostName
+  def hostName: String = jInetAddress.getHostName
 
   def canonicalHostName: String = jInetAddress.getCanonicalHostName
 
-  def address: Array[Byte] = jInetAddress.getAddress
+  def address: Chunk[Byte] = Chunk.fromArray(jInetAddress.getAddress)
 
   override def hashCode(): Int = jInetAddress.hashCode()
 
