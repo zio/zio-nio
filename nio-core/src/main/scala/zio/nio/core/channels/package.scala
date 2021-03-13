@@ -12,13 +12,11 @@ package object channels {
 
     def useNioBlocking[R1, E >: IOException, A](
       f: (C, C#BlockingOps) => ZIO[R1, E, A]
-    ): ZIO[R with R1 with Blocking, E, A] =
-      underlying.use(c => c.useBlocking(f(c, _)))
+    ): ZIO[R with R1 with Blocking, E, A] = underlying.use(c => c.useBlocking(f(c, _)))
 
     def useNioBlockingOps[R1, E >: IOException, A](
       f: C#BlockingOps => ZIO[R1, E, A]
-    ): ZIO[R with R1 with Blocking, E, A] =
-      useNioBlocking((_, ops) => f(ops))
+    ): ZIO[R with R1 with Blocking, E, A] = useNioBlocking((_, ops) => f(ops))
 
   }
 
