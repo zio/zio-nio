@@ -42,7 +42,7 @@ final class InetAddress private[nio] (private[nio] val jInetAddress: JInetAddres
     IO.effect(jInetAddress.isReachable(networkInterface.jNetworkInterface, ttl, timeout))
       .refineToOrDie[IOException]
 
-  def hostname: String = jInetAddress.getHostName
+  def hostName: String = jInetAddress.getHostName
 
   def canonicalHostName: String = jInetAddress.getCanonicalHostName
 

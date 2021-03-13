@@ -121,8 +121,8 @@ object InetSocketAddress {
    *
    * If the hostname cannot be resolved, fails with `UnknownHostException`.
    */
-  def hostnameResolved(hostname: String, port: Int): IO[UnknownHostException, InetSocketAddress] =
-    InetAddress.byName(hostname).flatMap(inetAddress(_, port))
+  def hostNameResolved(hostName: String, port: Int): IO[UnknownHostException, InetSocketAddress] =
+    InetAddress.byName(hostName).flatMap(inetAddress(_, port))
 
   /**
    * Creates a socket address from a hostname, with an ephemeral port.
@@ -130,15 +130,15 @@ object InetSocketAddress {
    * This method will attempt to resolve the hostname; if this fails, the returned
    * socket address will be ''unresolved''.
    */
-  def hostnameEphemeral(hostname: String): UIO[InetSocketAddress] = this.hostName(hostname, 0)
+  def hostNameEphemeral(hostName: String): UIO[InetSocketAddress] = this.hostName(hostName, 0)
 
   /**
    * Creates a resolved socket address from a hostname, with an ephemeral port.
    *
    * If the hostname cannot be resolved, fails with `UnknownHostException`.
    */
-  def hostnameEphemeralResolved(hostname: String): IO[UnknownHostException, InetSocketAddress] =
-    InetAddress.byName(hostname).flatMap(inetAddressEphemeral)
+  def hostNameEphemeralResolved(hostName: String): IO[UnknownHostException, InetSocketAddress] =
+    InetAddress.byName(hostName).flatMap(inetAddressEphemeral)
 
   /**
    * Creates a socket address from an IP address and a port number.
@@ -163,8 +163,8 @@ object InetSocketAddress {
    * No attempt will be made to resolve the hostname into an `InetAddress`.
    * The socket address will be flagged as ''unresolved''.
    */
-  def unresolvedHostname(hostname: String, port: Int): UIO[InetSocketAddress] =
-    UIO.effectTotal(new InetSocketAddress(JInetSocketAddress.createUnresolved(hostname, port)))
+  def unresolvedHostName(hostName: String, port: Int): UIO[InetSocketAddress] =
+    UIO.effectTotal(new InetSocketAddress(JInetSocketAddress.createUnresolved(hostName, port)))
 
   /**
    * Creates an unresolved socket address from a hostname using an ephemeral port.
@@ -172,6 +172,6 @@ object InetSocketAddress {
    * No attempt will be made to resolve the hostname into an `InetAddress`.
    * The socket address will be flagged as ''unresolved''.
    */
-  def unresolvedHostnameEphemeral(hostname: String): UIO[InetSocketAddress] = unresolvedHostname(hostname, 0)
+  def unresolvedHostNameEphemeral(hostName: String): UIO[InetSocketAddress] = unresolvedHostName(hostName, 0)
 
 }
