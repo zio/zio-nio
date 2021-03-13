@@ -7,17 +7,15 @@ import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.{ file => jf }
 
 import zio.blocking.{ Blocking, effectBlocking, effectBlockingIO }
-import zio.{ UIO, ZIO, ZManaged }
+import zio.{ IO, UIO, ZIO, ZManaged }
 
 import scala.jdk.CollectionConverters._
 
 final class FileSystem private (private val javaFileSystem: jf.FileSystem) extends IOCloseable {
 
-  type Env = Blocking
-
   def provider: jf.spi.FileSystemProvider = javaFileSystem.provider()
 
-  def close: ZIO[Blocking, IOException, Unit] = effectBlocking(javaFileSystem.close()).refineToOrDie[IOException]
+  def close: IO[IOException, Unit] = IO.effect(javaFileSystem.close()).refineToOrDie[IOException]
 
   def isOpen: UIO[Boolean] = UIO.effectTotal(javaFileSystem.isOpen())
 
@@ -48,7 +46,7 @@ object FileSystem {
   def default: FileSystem = new FileSystem(jf.FileSystems.getDefault)
 
   def getFileSystem(uri: URI): ZIO[Blocking, Exception, FileSystem] =
-    effectBlocking(new FileSystem(jf.FileSystems.getFileSystem(uri))).refineToOrDie[Exception]
+    effectBlockingIO(new FileSystem(jf.FileSystems.getFileSystem(uri)))
 
   def newFileSystem(uri: URI, env: (String, Any)*): ZManaged[Blocking, IOException, FileSystem] =
     effectBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(uri, env.toMap.asJava))).toNioManaged

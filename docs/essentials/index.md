@@ -31,8 +31,9 @@ or
 libraryDependencies += "dev.zio" %% "zio-nio" % "1.0.0-RC10"
 ```
 
-## Main abstractions
+## Main Abstractions
 
+ - **[Using Blocking APIs](blocking.md)** — How to deal with NIO APIs that block the calling thread
  - **[File Channel](files.md)** — For processing files that are available locally. For every operation a new fiber is started to perform the operation.
  - **[Socket Channel](sockets.md)** — Provides an API for remote communication with `InetSocket`s. 
  - **[Resource Management](resources.md)** - Avoiding resource leaks
@@ -52,8 +53,8 @@ import java.io.IOException
 
 val read100: ZIO[Blocking, Option[IOException], Chunk[Byte]] =
   FileChannel.open(Path("foo.txt"))
-    .asSomeError
-    .use(_.readChunk(100).eofCheck)
+    .useNioBlockingOps(_.readChunk(100))
+    .eofCheck
 ```
 
 End-of-stream will be signalled with `None`. Any errors will be wrapped in `Some`.

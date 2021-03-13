@@ -1,5 +1,6 @@
 package zio.nio.core.channels
 
+import java.io.IOException
 import java.nio.channels.CancelledKeyException
 
 import zio._
@@ -45,20 +46,22 @@ object SelectorSpec extends BaseSpec {
                             {
                               case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
                                 for {
-                                  scopeResult     <- scope(channel.accept)
+                                  scopeResult     <- scope(channel.useNonBlockingManaged(_.accept))
                                   (_, maybeClient) = scopeResult
                                   _               <- IO.whenCase(maybeClient) { case Some(client) =>
                                                        client.configureBlocking(false) *> client.register(selector, Operation.Read)
                                                      }
                                 } yield ()
-                              case client: SocketChannel if readyOps(Operation.Read)          =>
-                                for {
-                                  _ <- client.read(buffer)
-                                  _ <- buffer.flip
-                                  _ <- client.write(buffer)
-                                  _ <- buffer.clear
-                                  _ <- client.close
-                                } yield ()
+                              case channel: SocketChannel if readyOps(Operation.Read)         =>
+                                channel.useNonBlocking { client =>
+                                  for {
+                                    _ <- client.read(buffer)
+                                    _ <- buffer.flip
+                                    _ <- client.write(buffer)
+                                    _ <- buffer.clear
+                                    _ <- channel.close
+                                  } yield ()
+                                }
                             }
                           } *> selector.removeKey(key)
                         }
@@ -88,11 +91,11 @@ object SelectorSpec extends BaseSpec {
     } yield ()
   }
 
-  def client(address: SocketAddress): IO[Exception, String] = {
+  def client(address: SocketAddress): ZIO[Blocking, IOException, String] = {
     val bytes = Chunk.fromArray("Hello world".getBytes)
     for {
       buffer <- Buffer.byte(bytes)
-      text   <- SocketChannel.open(address).use { client =>
+      text   <- SocketChannel.open(address).useNioBlockingOps { client =>
                   for {
                     _     <- client.write(buffer)
                     _     <- buffer.clear

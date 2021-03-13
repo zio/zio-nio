@@ -59,9 +59,9 @@ import zio.ZIO
 
 // dump a file encoded in ISO8859 to the console
 
-FileChannel.open(Path("iso8859.txt")).use { fileChan =>
+FileChannel.open(Path("iso8859.txt")).useNioBlockingOps { fileOps =>
   val inStream: ZStream[Blocking, Exception, Byte] = ZStream.repeatEffectChunkOption {
-    fileChan.readChunk(1000).asSomeError.flatMap { chunk =>
+    fileOps.readChunk(1000).asSomeError.flatMap { chunk =>
       if (chunk.isEmpty) ZIO.fail(None) else ZIO.succeed(chunk)
     }
   }

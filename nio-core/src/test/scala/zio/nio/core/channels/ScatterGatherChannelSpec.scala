@@ -15,11 +15,12 @@ object ScatterGatherChannelSpec extends BaseSpec {
   override def spec =
     suite("ScatterGatherChannelSpec")(
       testM("scattering read") {
-        FileChannel.open(Path("nio-core/src/test/resources/scattering_read_test.txt"), StandardOpenOption.READ).use {
-          channel =>
+        FileChannel
+          .open(Path("nio-core/src/test/resources/scattering_read_test.txt"), StandardOpenOption.READ)
+          .useNioBlockingOps { ops =>
             for {
               buffs <- IO.collectAll(List(Buffer.byte(5), Buffer.byte(5)))
-              _     <- channel.read(buffs)
+              _     <- ops.read(buffs)
               list  <- ZIO.foreach(buffs) { (buffer: Buffer[Byte]) =>
                          for {
                            _     <- buffer.flip
@@ -29,13 +30,13 @@ object ScatterGatherChannelSpec extends BaseSpec {
 
                        }
             } yield assert(list)(equalTo("Hello" :: "World" :: Nil))
-        }
+          }
       },
       testM("gathering write") {
         val file = Path("nio-core/src/test/resources/gathering_write_test.txt")
         FileChannel
           .open(file, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
-          .use { channel =>
+          .useNioBlockingOps { ops =>
             for {
               buffs <- IO.collectAll(
                          List(
@@ -43,7 +44,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
                            Buffer.byte(Chunk.fromArray("World".getBytes))
                          )
                        )
-              _     <- channel.write(buffs)
+              _     <- ops.write(buffs)
               result = Source.fromFile(file.toFile).getLines().toSeq
             } yield assert(result)(equalTo(Seq("HelloWorld")))
           }

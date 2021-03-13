@@ -58,9 +58,9 @@ object FileChannelSpec extends BaseSpec {
         for {
           result <- FileChannel
                       .open(path, StandardOpenOption.READ)
-                      .use { channel =>
+                      .useNioBlockingOps { ops =>
                         for {
-                          buffer <- channel.map(FileChannel.MapMode.READ_ONLY, 0L, 6L)
+                          buffer <- ops.map(FileChannel.MapMode.READ_ONLY, 0L, 6L)
                           bytes  <- buffer.getChunk()
                         } yield assert(bytes)(equalTo(Chunk.fromArray("Hello ".getBytes(StandardCharsets.UTF_8))))
                       }
@@ -70,11 +70,11 @@ object FileChannelSpec extends BaseSpec {
         val path = Path("nio-core/src/test/resources/async_file_read_test.txt")
         FileChannel
           .open(path, StandardOpenOption.READ)
-          .use { channel =>
+          .useNioBlocking { (channel, ops) =>
             for {
               size <- channel.size
-              _    <- channel.readChunk(size.toInt)
-              _    <- channel.readChunk(1)
+              _    <- ops.readChunk(size.toInt)
+              _    <- ops.readChunk(1)
             } yield ()
           }
           .flip
