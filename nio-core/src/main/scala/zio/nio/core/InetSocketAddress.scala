@@ -113,8 +113,8 @@ object InetSocketAddress {
    * This method will attempt to resolve the hostname; if this fails, the returned
    * socket address will be ''unresolved''.
    */
-  def hostname(hostname: String, port: Int): UIO[InetSocketAddress] =
-    UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(hostname, port)))
+  def hostName(hostName: String, port: Int): UIO[InetSocketAddress] =
+    UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(hostName, port)))
 
   /**
    * Creates a resolved socket address from a hostname and port number.
@@ -130,7 +130,7 @@ object InetSocketAddress {
    * This method will attempt to resolve the hostname; if this fails, the returned
    * socket address will be ''unresolved''.
    */
-  def hostnameEphemeral(hostname: String): UIO[InetSocketAddress] = this.hostname(hostname, 0)
+  def hostnameEphemeral(hostname: String): UIO[InetSocketAddress] = this.hostName(hostname, 0)
 
   /**
    * Creates a resolved socket address from a hostname, with an ephemeral port.

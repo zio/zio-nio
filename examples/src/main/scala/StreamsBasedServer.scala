@@ -16,7 +16,7 @@ object StreamsBasedServer extends App {
     AsynchronousServerSocketChannel()
       .use(socket =>
         for {
-          _ <- InetSocketAddress.hostname("localhost", port).flatMap(socket.bindTo(_))
+          _ <- InetSocketAddress.hostName("localhost", port).flatMap(socket.bindTo(_))
           _ <- ZStream
                  .repeatEffect(socket.accept.preallocate)
                  .map(_.withEarlyRelease)
