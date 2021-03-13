@@ -3,7 +3,7 @@ import zio.clock.Clock
 import zio.console.Console
 import zio.duration._
 import zio.nio.channels._
-import zio.nio.core.SocketAddress
+import zio.nio.core.InetSocketAddress
 import zio.stream._
 
 object StreamsBasedServer extends App {
@@ -16,7 +16,7 @@ object StreamsBasedServer extends App {
     AsynchronousServerSocketChannel()
       .use(socket =>
         for {
-          _ <- SocketAddress.inetSocketAddress("localhost", port) >>= socket.bind
+          _ <- InetSocketAddress.hostName("localhost", port).flatMap(socket.bindTo(_))
           _ <- ZStream
                  .repeatEffect(socket.accept.preallocate)
                  .map(_.withEarlyRelease)

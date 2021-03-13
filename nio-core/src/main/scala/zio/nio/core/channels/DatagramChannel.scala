@@ -15,6 +15,10 @@ final class DatagramChannel private[channels] (override protected[channels] val 
     with SelectableChannel
     with ScatteringByteChannel {
 
+  def bindTo(local: SocketAddress): IO[IOException, Unit] = bind(Some(local))
+
+  def bindAuto: IO[IOException, Unit] = bind(None)
+
   /**
    * Binds this channel's underlying socket to the given local address. Passing `None` binds to an
    * automatically assigned local address.
@@ -57,7 +61,7 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    * @return the local address if the socket is bound, otherwise `None`
    */
   def localAddress: IO[IOException, Option[SocketAddress]] =
-    IO.effect(channel.getLocalAddress()).refineToOrDie[IOException].map(a => Option(a).map(new SocketAddress(_)))
+    IO.effect(channel.getLocalAddress()).refineToOrDie[IOException].map(a => Option(a).map(SocketAddress.fromJava))
 
   /**
    * Receives a datagram via this channel into the given [[zio.nio.core.ByteBuffer]].
@@ -66,7 +70,9 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    * @return the socket address of the datagram's source, if available.
    */
   def receive(dst: ByteBuffer): IO[IOException, Option[SocketAddress]] =
-    IO.effect(channel.receive(dst.byteBuffer)).refineToOrDie[IOException].map(a => Option(a).map(new SocketAddress(_)))
+    IO.effect(channel.receive(dst.byteBuffer))
+      .refineToOrDie[IOException]
+      .map(a => Option(a).map(SocketAddress.fromJava))
 
   /**
    * Optionally returns the remote socket address that this channel's underlying socket is connected to.
@@ -74,7 +80,7 @@ final class DatagramChannel private[channels] (override protected[channels] val 
    * @return the remote address if the socket is connected, otherwise `None`
    */
   def remoteAddress: IO[IOException, Option[SocketAddress]] =
-    IO.effect(channel.getRemoteAddress()).refineToOrDie[IOException].map(a => Option(a).map(new SocketAddress(_)))
+    IO.effect(channel.getRemoteAddress()).refineToOrDie[IOException].map(a => Option(a).map(SocketAddress.fromJava))
 
   /**
    * Sends a datagram via this channel to the given target [[zio.nio.core.SocketAddress]].
