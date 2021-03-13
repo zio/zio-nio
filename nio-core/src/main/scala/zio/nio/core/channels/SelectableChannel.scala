@@ -104,7 +104,7 @@ final class SocketChannel(override protected[channels] val channel: JSocketChann
   final class BlockingSocketOps private[SocketChannel] () extends Ops {
 
     def connect(remote: SocketAddress): IO[IOException, Unit] =
-      IO.effect(channel.connect(remote.jSocketAddress)).refineToOrDie[IOException].unit
+      IO.effect(self.channel.connect(remote.jSocketAddress)).refineToOrDie[IOException].unit
 
   }
 
@@ -112,12 +112,12 @@ final class SocketChannel(override protected[channels] val channel: JSocketChann
 
   final class NonBlockingSocketOps private[SocketChannel] () extends Ops {
 
-    val isConnectionPending: UIO[Boolean] = IO.effectTotal(channel.isConnectionPending)
+    val isConnectionPending: UIO[Boolean] = IO.effectTotal(self.channel.isConnectionPending)
 
     def connect(remote: SocketAddress): IO[IOException, Boolean] =
-      IO.effect(channel.connect(remote.jSocketAddress)).refineToOrDie[IOException]
+      IO.effect(self.channel.connect(remote.jSocketAddress)).refineToOrDie[IOException]
 
-    val finishConnect: IO[IOException, Boolean] = IO.effect(channel.finishConnect()).refineToOrDie[IOException]
+    val finishConnect: IO[IOException, Boolean] = IO.effect(self.channel.finishConnect()).refineToOrDie[IOException]
 
   }
 
