@@ -1,11 +1,11 @@
 package zio.nio.core.channels
 
-import java.io.IOException
-
+import zio.{ IO, _ }
 import zio.nio.core._
 import zio.test.Assertion._
 import zio.test._
-import zio.{ IO, _ }
+
+import java.io.IOException
 
 object DatagramChannelSpec extends BaseSpec {
 
@@ -14,19 +14,18 @@ object DatagramChannelSpec extends BaseSpec {
       testM("read/write") {
         def echoServer(started: Promise[Nothing, SocketAddress]): IO[IOException, Unit] =
           for {
-            address <- SocketAddress.inetSocketAddress(0)
-            sink    <- Buffer.byte(3)
-            _       <- DatagramChannel.open.use { server =>
-                         for {
-                           _          <- server.bind(Some(address))
-                           addr       <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
-                           _          <- started.succeed(addr)
-                           retAddress <- server.receive(sink)
-                           addr       <- IO.fromOption(retAddress)
-                           _          <- sink.flip
-                           _          <- server.send(sink, addr)
-                         } yield ()
-                       }.fork
+            sink <- Buffer.byte(3)
+            _    <- DatagramChannel.open.use { server =>
+                      for {
+                        _          <- server.bindAuto
+                        addr       <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                        _          <- started.succeed(addr)
+                        retAddress <- server.receive(sink)
+                        addr       <- IO.fromOption(retAddress)
+                        _          <- sink.flip
+                        _          <- server.send(sink, addr)
+                      } yield ()
+                    }.fork
           } yield ()
 
         def echoClient(address: SocketAddress): IO[IOException, Boolean] =
@@ -56,28 +55,27 @@ object DatagramChannelSpec extends BaseSpec {
         def client(address: SocketAddress): IO[IOException, Unit] = DatagramChannel.open.use(_.connect(address).unit)
 
         def server(
-          address: SocketAddress,
+          address: Option[SocketAddress],
           started: Promise[Nothing, SocketAddress]
         ): IO[Nothing, Fiber[IOException, Unit]] =
           for {
             worker <- DatagramChannel.open.use { server =>
                         for {
-                          _    <- server.bind(Some(address))
-                          addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                          _    <- server.bind(address)
+                          addr <- server.localAddress.someOrElseM(ZIO.dieMessage("Local address must be bound"))
                           _    <- started.succeed(addr)
                         } yield ()
                       }.fork
           } yield worker
 
         for {
-          address        <- SocketAddress.inetSocketAddress(0)
           serverStarted  <- Promise.make[Nothing, SocketAddress]
-          s1             <- server(address, serverStarted)
+          s1             <- server(None, serverStarted)
           addr           <- serverStarted.await
           _              <- client(addr)
           _              <- s1.join
           serverStarted2 <- Promise.make[Nothing, SocketAddress]
-          s2             <- server(addr, serverStarted2)
+          s2             <- server(Some(addr), serverStarted2)
           _              <- serverStarted2.await
           _              <- client(addr)
           _              <- s2.join

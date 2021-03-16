@@ -56,8 +56,7 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
    * {{{
    *   for {
    *     _ <- selector.select
-   *     selectedKeys <- selector.selectedKeys
-   *     _ <- IO.foreach_(selectedKeys) { key =>
+   *     _ <- selector.foreachSelectedKey { key =>
    *       key.matchChannel { readyOps => {
    *         case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
    *           // use `channel` to accept connection
@@ -68,7 +67,7 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
    *             IO.when(readyOps(Operation.Write)) {
    *               // use `channel` to write
    *             }
-   *       } } *> selector.removeKey(key)
+   *       } }
    *     }
    *   } yield ()
    * }}}
@@ -126,6 +125,14 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
 
   final def attachment: UIO[Option[AnyRef]] = IO.effectTotal(selectionKey.attachment()).map(Option(_))
 
-  override def toString: String = selectionKey.toString()
+  override def toString: String = selectionKey.toString
+
+  override def hashCode(): Int = selectionKey.hashCode()
+
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case other: SelectionKey => selectionKey.equals(other.selectionKey)
+      case _                   => false
+    }
 
 }
