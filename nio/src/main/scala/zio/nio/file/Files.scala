@@ -15,10 +15,9 @@ import java.nio.file.{
 }
 import java.util.function.BiPredicate
 import java.util.{ Iterator => JIterator }
-
 import zio.blocking._
 import zio.nio.core.file.Path
-import zio.stream.ZStream
+import zio.stream.{ ZSink, ZStream }
 import zio.{ Chunk, UIO, ZIO, ZManaged }
 
 import scala.jdk.CollectionConverters._
@@ -66,6 +65,14 @@ object Files {
     effectBlocking(Path.fromJava(JFiles.createTempFile(dir.javaPath, prefix.orNull, suffix, fileAttributes.toSeq: _*)))
       .refineToOrDie[IOException]
 
+  def createTempFileInManaged(
+    dir: Path,
+    suffix: String = ".tmp",
+    prefix: Option[String],
+    fileAttributes: Iterable[FileAttribute[_]]
+  ): ZManaged[Blocking, IOException, Path] =
+    ZManaged.make(createTempFileIn(dir, suffix, prefix, fileAttributes))(release = deleteIfExists(_).ignore)
+
   def createTempFile(
     suffix: String = ".tmp",
     prefix: Option[String],
@@ -73,6 +80,13 @@ object Files {
   ): ZIO[Blocking, IOException, Path] =
     effectBlocking(Path.fromJava(JFiles.createTempFile(prefix.orNull, suffix, fileAttributes.toSeq: _*)))
       .refineToOrDie[IOException]
+
+  def createTempFileManaged(
+    suffix: String = ".tmp",
+    prefix: Option[String],
+    fileAttributes: Iterable[FileAttribute[_]]
+  ): ZManaged[Blocking, IOException, Path] =
+    ZManaged.make(createTempFile(suffix, prefix, fileAttributes))(release = deleteIfExists(_).ignore)
 
   def createTempDirectory(
     dir: Path,
@@ -82,12 +96,25 @@ object Files {
     effectBlocking(Path.fromJava(JFiles.createTempDirectory(dir.javaPath, prefix.orNull, fileAttributes.toSeq: _*)))
       .refineToOrDie[IOException]
 
+  def createTempDirectoryManaged(
+    dir: Path,
+    prefix: Option[String],
+    fileAttributes: Iterable[FileAttribute[_]]
+  ): ZManaged[Blocking, IOException, Path] =
+    ZManaged.make(createTempDirectory(dir, prefix, fileAttributes))(release = deleteRecursive(_).ignore)
+
   def createTempDirectory(
     prefix: Option[String],
     fileAttributes: Iterable[FileAttribute[_]]
   ): ZIO[Blocking, IOException, Path] =
     effectBlocking(Path.fromJava(JFiles.createTempDirectory(prefix.orNull, fileAttributes.toSeq: _*)))
       .refineToOrDie[IOException]
+
+  def createTempDirectoryManaged(
+    prefix: Option[String],
+    fileAttributes: Iterable[FileAttribute[_]]
+  ): ZManaged[Blocking, IOException, Path] =
+    ZManaged.make(createTempDirectory(prefix, fileAttributes))(release = deleteRecursive(_).ignore)
 
   def createSymbolicLink(
     link: Path,
@@ -105,6 +132,9 @@ object Files {
 
   def deleteIfExists(path: Path): ZIO[Blocking, IOException, Boolean] =
     effectBlocking(JFiles.deleteIfExists(path.javaPath)).refineToOrDie[IOException]
+
+  def deleteRecursive(path: Path): ZIO[Blocking, IOException, Long] =
+    newDirectoryStream(path).mapM(delete).run(ZSink.count) <* delete(path)
 
   def copy(source: Path, target: Path, copyOptions: CopyOption*): ZIO[Blocking, IOException, Unit] =
     effectBlocking(JFiles.copy(source.javaPath, target.javaPath, copyOptions: _*)).unit
