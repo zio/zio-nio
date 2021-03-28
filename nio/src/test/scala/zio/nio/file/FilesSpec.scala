@@ -15,11 +15,7 @@ object FilesSpec extends BaseSpec {
         for {
           pathRef                 <- Ref.make[Option[Path]](None)
           readBytes               <- Files
-                                       .createTempFileInManaged(
-                                         dir = Path("."),
-                                         prefix = None,
-                                         fileAttributes = Nil
-                                       )
+                                       .createTempFileInManaged(dir = Path("."))
                                        .use { tmpFile =>
                                          pathRef.set(Some(tmpFile)) *> writeAndThenRead(tmpFile)(sampleFileContent)
                                        }
@@ -33,10 +29,7 @@ object FilesSpec extends BaseSpec {
         for {
           pathRef                 <- Ref.make[Option[Path]](None)
           readBytes               <- Files
-                                       .createTempFileManaged(
-                                         prefix = None,
-                                         fileAttributes = Nil
-                                       )
+                                       .createTempFileManaged()
                                        .use { tmpFile =>
                                          pathRef.set(Some(tmpFile)) *> writeAndThenRead(tmpFile)(sampleFileContent)
                                        }

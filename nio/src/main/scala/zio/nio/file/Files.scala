@@ -68,8 +68,8 @@ object Files {
   def createTempFileInManaged(
     dir: Path,
     suffix: String = ".tmp",
-    prefix: Option[String],
-    fileAttributes: Iterable[FileAttribute[_]]
+    prefix: Option[String] = None,
+    fileAttributes: Iterable[FileAttribute[_]] = Nil
   ): ZManaged[Blocking, IOException, Path] =
     ZManaged.make(createTempFileIn(dir, suffix, prefix, fileAttributes))(release = deleteIfExists(_).ignore)
 
@@ -83,8 +83,8 @@ object Files {
 
   def createTempFileManaged(
     suffix: String = ".tmp",
-    prefix: Option[String],
-    fileAttributes: Iterable[FileAttribute[_]]
+    prefix: Option[String] = None,
+    fileAttributes: Iterable[FileAttribute[_]] = Nil
   ): ZManaged[Blocking, IOException, Path] =
     ZManaged.make(createTempFile(suffix, prefix, fileAttributes))(release = deleteIfExists(_).ignore)
 
