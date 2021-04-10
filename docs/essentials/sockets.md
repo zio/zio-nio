@@ -1,6 +1,6 @@
 ---
 id: essentials_sockets
-title:  "Socket Channel"
+title: "Socket Channel"
 ---
 
 `AsynchronousSocketChannel` and `AsynchronousServerSocketChannel` provide methods for communicating with remote clients.
@@ -23,7 +23,7 @@ Creating a server socket:
 val server = AsynchronousServerSocketChannel()
   .mapM { socket =>
     for {
-      sockAddr <- InetSocketAddress.hostNameResolved("127.0.0.1", 1337) 
+      sockAddr <- SocketAddress.inetSocketAddress("127.0.0.1", 1337)
       _ <- socket.bindTo(sockAddr)
       _ <- socket.accept.preallocate.flatMap(_.use(channel => doWork(channel).catchAll(ex => putStrLn(ex.getMessage))).fork).forever.fork
     } yield ()
@@ -32,7 +32,7 @@ val server = AsynchronousServerSocketChannel()
 def doWork(channel: AsynchronousSocketChannel): ZIO[Console with Clock, Throwable, Unit] = {
   val process =
     for {
-      chunk <- channel.readChunk(3)
+      chunk <- channel.read(3)
       str = chunk.toArray.map(_.toChar).mkString
       _ <- putStrLn(s"received: [$str] [${chunk.length}]")
     } yield ()
@@ -47,7 +47,7 @@ Creating a client socket:
 val clientM: Managed[Exception, AsynchronousSocketChannel] = AsynchronousSocketChannel()
   .mapM { client =>
     for {
-      address <- InetSocketAddress.localHost(2552)
+      address <- SocketAddress.inetSocketAddress(2552)
       _       <- client.connect(address)
     } yield client
   }
@@ -58,7 +58,7 @@ Reading and writing to a socket:
 ```scala mdoc:silent
 for {
   serverFiber <- server.fork
-  clientFiber <- clientM.use(_.writeChunk(Chunk.fromArray(Array(1, 2, 3).map(_.toByte)))).fork
+  clientFiber <- clientM.use(_.write(Chunk.fromArray(Array(1, 2, 3).map(_.toByte)))).fork
   _           <- clientFiber.join
   _           <- serverFiber.join
 } yield ()

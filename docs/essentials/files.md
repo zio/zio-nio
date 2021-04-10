@@ -1,6 +1,6 @@
 ---
 id: essentials_files
-title:  "File Channel"
+title: "File Channel"
 ---
 
 An `AsynchronousFileChannel` provides an API for handling files in a non-blocking way.
@@ -14,7 +14,7 @@ import zio.nio.core.file._
 import zio.console._
 ```
 
-## Basic operations 
+## Basic operations
 
 Opening a file for a given path (with no additional open attributes) returns a `ZManaged` instance on which we're running the intended operations. `ZManaged` makes sure that the channel gets closed afterwards:
 
@@ -23,7 +23,7 @@ import java.nio.file.StandardOpenOption
 
 val path = Path("file.txt")
 val channelM = AsynchronousFileChannel.open(
-  path, 
+  path,
   StandardOpenOption.READ,
   StandardOpenOption.WRITE
 ).use { channel =>
@@ -36,12 +36,12 @@ Reading and writing is performed as effects where raw `Byte` content is wrapped 
 ```scala mdoc:silent
 val readWriteOp = (channel: AsynchronousFileChannel) =>
   for {
-    chunk <- channel.readChunk(20, 0L)
+    chunk <- channel.read(20, 0L)
     text  = chunk.map(_.toChar).mkString
     _     <- putStrLn(text)
-  
+
     input = Chunk.fromArray("message".toArray.map(_.toByte))
-    _     <- channel.writeChunk(input, 0L)
+    _     <- channel.write(input, 0L)
   } yield ()
 ```
 
@@ -60,5 +60,5 @@ val lockOp = (channel: AsynchronousFileChannel) =>
   } yield ()
 ```
 
-Also it's worth mentioning that we are treating `FileLock` as a resource here. 
+Also it's worth mentioning that we are treating `FileLock` as a resource here.
 For demonstration purposes we handled it in two different ways: using `bracket` and creating `Managed` for this.
