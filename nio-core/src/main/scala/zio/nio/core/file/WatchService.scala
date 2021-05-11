@@ -1,20 +1,19 @@
 package zio.nio.core.file
 
-import java.io.IOException
-import java.nio.file.{
-  WatchEvent,
-  Path => JPath,
-  WatchKey => JWatchKey,
-  WatchService => JWatchService,
-  Watchable => JWatchable
-}
-import java.util.concurrent.TimeUnit
-
 import zio.blocking.Blocking
 import zio.duration.Duration
 import zio.nio.core.IOCloseable
 import zio.{ IO, UIO, ZIO, ZManaged }
 
+import java.io.IOException
+import java.nio.file.{
+  Path => JPath,
+  WatchEvent,
+  WatchKey => JWatchKey,
+  WatchService => JWatchService,
+  Watchable => JWatchable
+}
+import java.util.concurrent.TimeUnit
 import scala.jdk.CollectionConverters._
 
 trait Watchable {

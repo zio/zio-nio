@@ -1,5 +1,11 @@
 package zio.nio.channels
 
+import zio._
+import zio.duration._
+import zio.interop.javaz._
+import zio.nio.core.channels.AsynchronousChannelGroup
+import zio.nio.core.{ Buffer, ByteBuffer, SocketAddress, eofCheck }
+
 import java.io.IOException
 import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
 import java.net.SocketOption
@@ -9,12 +15,6 @@ import java.nio.channels.{
   AsynchronousSocketChannel => JAsynchronousSocketChannel
 }
 import java.util.concurrent.TimeUnit
-
-import zio._
-import zio.duration._
-import zio.interop.javaz._
-import zio.nio.core.{ Buffer, ByteBuffer, SocketAddress, eofCheck }
-import zio.nio.core.channels.AsynchronousChannelGroup
 
 class AsynchronousByteChannel(private val channel: JAsynchronousByteChannel) {
 

@@ -6,7 +6,7 @@ import zio.test._
 
 object PathSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: ZSpec[Environment, Failure] =
     suite("PathSpec")(
       test("Path construction") {
         val p        = Path("a", "b") / "c/d"

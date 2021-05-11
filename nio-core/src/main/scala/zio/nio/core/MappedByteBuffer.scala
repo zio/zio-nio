@@ -1,9 +1,9 @@
 package zio.nio.core
 
-import java.nio.{ MappedByteBuffer => JMappedByteBuffer }
-
-import zio.{ IO, UIO, ZIO }
 import zio.blocking.Blocking
+import zio.{ IO, UIO, ZIO }
+
+import java.nio.{ MappedByteBuffer => JMappedByteBuffer }
 
 final class MappedByteBuffer private[nio] (javaBuffer: JMappedByteBuffer) extends ByteBuffer(javaBuffer) {
   def isLoaded: UIO[Boolean] = IO.effectTotal(javaBuffer.isLoaded)

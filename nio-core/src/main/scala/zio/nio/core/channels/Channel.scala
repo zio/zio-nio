@@ -1,10 +1,10 @@
 package zio.nio.core.channels
 
-import java.io.IOException
-import java.nio.channels.{ Channel => JChannel }
-
 import zio.nio.core.IOCloseable
 import zio.{ IO, UIO }
+
+import java.io.IOException
+import java.nio.channels.{ Channel => JChannel }
 
 trait Channel extends IOCloseable {
 

@@ -1,17 +1,16 @@
 package zio.nio.channels
 
+import com.github.ghik.silencer.silent
+import zio.blocking.{ Blocking, _ }
+import zio.nio.core.channels.FileLock
+import zio.nio.core.file.Path
+import zio.nio.core.{ ByteBuffer, MappedByteBuffer }
+import zio.{ IO, Managed, ZIO, ZManaged }
+
 import java.io.IOException
 import java.nio.channels.{ FileChannel => JFileChannel }
 import java.nio.file.OpenOption
 import java.nio.file.attribute.FileAttribute
-
-import com.github.ghik.silencer.silent
-import zio.blocking.{ Blocking, _ }
-import zio.nio.core.{ ByteBuffer, MappedByteBuffer }
-import zio.nio.core.channels.FileLock
-import zio.nio.core.file.Path
-import zio.{ IO, Managed, ZIO, ZManaged }
-
 import scala.collection.JavaConverters._
 
 final class FileChannel private[channels] (override protected[channels] val channel: JFileChannel)

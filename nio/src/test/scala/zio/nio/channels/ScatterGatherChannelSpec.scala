@@ -1,18 +1,27 @@
 package zio.nio.channels
 
-import java.io.{ File, RandomAccessFile }
-
-import zio.nio.core.Buffer
+import zio.blocking.Blocking
+import zio.clock.Clock
 import zio.nio.BaseSpec
+import zio.nio.core.Buffer
+import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.{ Chunk, IO, ZIO }
+import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem }
+import zio.{ Chunk, Has, IO, ZIO }
 
+import java.io.{ File, RandomAccessFile }
 import scala.io.Source
 
 object ScatterGatherChannelSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
+    TestClock.Service
+  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
+    TestSystem.Service
+  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
+    Random.Service
+  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
     suite("ScatterGatherChannelSpec")(
       testM("scattering read") {
         for {

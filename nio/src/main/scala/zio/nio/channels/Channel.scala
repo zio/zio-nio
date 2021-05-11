@@ -1,9 +1,9 @@
 package zio.nio.channels
 
+import zio.{ IO, UIO }
+
 import java.io.IOException
 import java.nio.channels.{ Channel => JChannel }
-
-import zio.{ IO, UIO }
 
 trait Channel {
 

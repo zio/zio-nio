@@ -1,9 +1,9 @@
 package zio.nio
 
-import java.io.EOFException
-
 import com.github.ghik.silencer.silent
 import zio.{ IO, ZIO, ZManaged }
+
+import java.io.EOFException
 
 package object core {
 
@@ -23,7 +23,7 @@ package object core {
   private[nio] def eofCheck(value: Long): IO[EOFException, Long] =
     if (value < 0L) IO.fail(new EOFException("Channel has reached the end of stream")) else IO.succeed(value)
 
-  implicit final class EffectOps[-R, +E, +A](val effect: ZIO[R, E, A]) extends AnyVal {
+  implicit final class EffectOps[-R, +E, +A](private val effect: ZIO[R, E, A]) extends AnyVal {
 
     /**
      * Explicitly represent end-of-stream in the error channel.
@@ -40,7 +40,7 @@ package object core {
   }
 
   implicit final private[nio] class IOCloseableManagement[-R, +E, +A <: IOCloseable { type Env >: R }](
-    val acquire: ZIO[R, E, A]
+    private val acquire: ZIO[R, E, A]
   ) extends AnyVal {
 
     def toNioManaged: ZManaged[R, E, A] = acquire.toManaged[R](_.close.ignore)

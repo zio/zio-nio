@@ -1,5 +1,10 @@
 package zio.nio.file
 
+import zio.blocking._
+import zio.nio.core.file.Path
+import zio.stream.{ ZSink, ZStream }
+import zio.{ Chunk, UIO, ZIO, ZManaged }
+
 import java.io.IOException
 import java.nio.charset.{ Charset, StandardCharsets }
 import java.nio.file.attribute._
@@ -8,18 +13,13 @@ import java.nio.file.{
   DirectoryStream,
   FileStore,
   FileVisitOption,
+  Files => JFiles,
   LinkOption,
   OpenOption,
-  Files => JFiles,
   Path => JPath
 }
 import java.util.function.BiPredicate
 import java.util.{ Iterator => JIterator }
-import zio.blocking._
-import zio.nio.core.file.Path
-import zio.stream.{ ZSink, ZStream }
-import zio.{ Chunk, UIO, ZIO, ZManaged }
-
 import scala.jdk.CollectionConverters._
 import scala.reflect._
 
