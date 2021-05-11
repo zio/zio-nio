@@ -1,10 +1,9 @@
 package zio.nio.core
 
-import java.net.{ SocketException, NetworkInterface => JNetworkInterface }
-
 import com.github.ghik.silencer.silent
 import zio.IO
 
+import java.net.{ NetworkInterface => JNetworkInterface, SocketException }
 import scala.collection.JavaConverters._
 
 class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetworkInterface) {

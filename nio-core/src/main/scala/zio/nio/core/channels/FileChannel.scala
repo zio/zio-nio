@@ -1,16 +1,15 @@
 package zio.nio.core.channels
 
-import java.io.IOException
-import java.nio.channels.{ FileChannel => JFileChannel }
-import java.nio.file.OpenOption
-import java.nio.file.attribute.FileAttribute
-
 import com.github.ghik.silencer.silent
 import zio.blocking.{ Blocking, _ }
 import zio.nio.core.file.Path
 import zio.nio.core.{ ByteBuffer, IOCloseableManagement, MappedByteBuffer }
 import zio.{ IO, ZIO, ZManaged }
 
+import java.io.IOException
+import java.nio.channels.{ FileChannel => JFileChannel }
+import java.nio.file.OpenOption
+import java.nio.file.attribute.FileAttribute
 import scala.collection.JavaConverters._
 
 /**

@@ -1,10 +1,10 @@
 package zio.nio.channels
 
-import java.nio.channels.{ GatheringByteChannel => JGatheringByteChannel }
-import java.nio.{ ByteBuffer => JByteBuffer }
-
 import zio.nio.core.{ Buffer, ByteBuffer }
 import zio.{ Chunk, IO }
+
+import java.nio.channels.{ GatheringByteChannel => JGatheringByteChannel }
+import java.nio.{ ByteBuffer => JByteBuffer }
 
 trait GatheringByteChannel extends Channel {
   override protected[channels] val channel: JGatheringByteChannel

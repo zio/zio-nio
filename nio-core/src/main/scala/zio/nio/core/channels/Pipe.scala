@@ -1,10 +1,10 @@
 package zio.nio.core
 package channels
 
+import zio.{ IO, Managed }
+
 import java.io.IOException
 import java.nio.channels.{ Pipe => JPipe }
-
-import zio.{ IO, Managed }
 
 final class Pipe private (private val pipe: JPipe) {
 

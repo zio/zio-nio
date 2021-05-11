@@ -1,19 +1,17 @@
 package zio.nio.channels
 
-import java.io.IOException
-import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock }
-import java.nio.file.attribute.FileAttribute
-import java.nio.file.OpenOption
-
 import zio.interop.javaz._
-import zio.nio.core.{ Buffer, ByteBuffer }
 import zio.nio.core.channels.FileLock
 import zio.nio.core.file.Path
+import zio.nio.core.{ Buffer, ByteBuffer, eofCheck }
 import zio.{ Chunk, IO, Managed, ZIO }
-import zio.nio.core.eofCheck
 
-import scala.jdk.CollectionConverters._
+import java.io.IOException
+import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock }
+import java.nio.file.OpenOption
+import java.nio.file.attribute.FileAttribute
 import scala.concurrent.ExecutionContextExecutorService
+import scala.jdk.CollectionConverters._
 
 class AsynchronousFileChannel(protected val channel: JAsynchronousFileChannel) extends Channel {
 

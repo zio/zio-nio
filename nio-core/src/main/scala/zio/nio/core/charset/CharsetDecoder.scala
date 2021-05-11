@@ -3,10 +3,10 @@ package nio
 package core
 package charset
 
-import java.nio.{ charset => j }
-import java.nio.charset.{ MalformedInputException, UnmappableCharacterException }
-
 import zio.stream.{ Transducer, ZTransducer }
+
+import java.nio.charset.{ MalformedInputException, UnmappableCharacterException }
+import java.nio.{ charset => j }
 
 final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends AnyVal {
 

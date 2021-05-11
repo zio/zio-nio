@@ -1,7 +1,5 @@
 package zio.nio.core.channels
 
-import java.nio.channels.CancelledKeyException
-
 import zio._
 import zio.blocking.Blocking
 import zio.clock.Clock
@@ -10,9 +8,11 @@ import zio.nio.core.{ BaseSpec, Buffer, ByteBuffer, SocketAddress }
 import zio.test.Assertion._
 import zio.test._
 
+import java.nio.channels.CancelledKeyException
+
 object SelectorSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: Spec[Environment, TestFailure[Any], TestSuccess] =
     suite("SelectorSpec")(
       testM("read/write") {
         for {

@@ -1,6 +1,11 @@
 package zio.nio.core
 package channels
 
+import zio.clock.Clock
+import zio.duration._
+import zio.interop.javaz._
+import zio.{ Chunk, IO, Managed, Schedule, ZIO }
+
 import java.io.IOException
 import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
 import java.net.SocketOption
@@ -10,11 +15,6 @@ import java.nio.channels.{
   AsynchronousSocketChannel => JAsynchronousSocketChannel
 }
 import java.util.concurrent.TimeUnit
-
-import zio.{ Chunk, IO, Managed, Schedule, ZIO }
-import zio.clock.Clock
-import zio.duration._
-import zio.interop.javaz._
 
 /**
  * A byte channel that reads and writes asynchronously.

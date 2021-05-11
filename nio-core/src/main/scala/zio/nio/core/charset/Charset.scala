@@ -3,12 +3,11 @@ package nio
 package core
 package charset
 
-import java.nio.{ charset => j }
-import java.{ util => ju }
-import java.nio.charset.IllegalCharsetNameException
-
 import com.github.ghik.silencer.silent
 
+import java.nio.charset.IllegalCharsetNameException
+import java.nio.{ charset => j }
+import java.{ util => ju }
 import scala.collection.JavaConverters._
 
 final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset] {

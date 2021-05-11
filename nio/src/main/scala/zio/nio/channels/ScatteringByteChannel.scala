@@ -2,12 +2,12 @@ package zio.nio
 
 package channels
 
-import java.io.IOException
-import java.nio.{ ByteBuffer => JByteBuffer }
-import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
-
-import zio.{ Chunk, IO }
 import zio.nio.core.{ Buffer, ByteBuffer, eofCheck }
+import zio.{ Chunk, IO }
+
+import java.io.IOException
+import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
+import java.nio.{ ByteBuffer => JByteBuffer }
 
 trait ScatteringByteChannel extends Channel {
   override protected[channels] val channel: JScatteringByteChannel

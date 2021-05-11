@@ -2,11 +2,11 @@ package zio.nio.core
 
 package channels
 
-import java.io.IOException
-import java.nio.{ ByteBuffer => JByteBuffer }
-import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
-
 import zio.{ Chunk, IO }
+
+import java.io.IOException
+import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
+import java.nio.{ ByteBuffer => JByteBuffer }
 
 /**
  * A channel that can read bytes into a sequence of buffers.

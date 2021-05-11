@@ -1,11 +1,11 @@
 package zio.nio.core.channels
 
+import zio.nio.core.{ Buffer, ByteBuffer }
+import zio.{ Chunk, IO }
+
 import java.io.IOException
 import java.nio.channels.{ GatheringByteChannel => JGatheringByteChannel }
 import java.nio.{ ByteBuffer => JByteBuffer }
-
-import zio.nio.core.{ Buffer, ByteBuffer }
-import zio.{ Chunk, IO }
 
 /**
  * A channel that can write bytes from a sequence of buffers.
