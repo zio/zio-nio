@@ -1,19 +1,19 @@
 package zio.nio
 package channels
 
+import zio.blocking.Blocking
+import zio.nio.channels.SelectionKey.Operation
+import zio.nio.channels.spi.SelectorProvider
+import zio.{ Fiber, IO, Managed, UIO, ZIO, ZManaged }
+
 import java.io.IOException
-import java.net.{ SocketOption, ServerSocket => JServerSocket, Socket => JSocket }
+import java.net.{ ServerSocket => JServerSocket, Socket => JSocket, SocketOption }
 import java.nio.channels.{
   ClosedChannelException,
   SelectableChannel => JSelectableChannel,
   ServerSocketChannel => JServerSocketChannel,
   SocketChannel => JSocketChannel
 }
-
-import zio.blocking.Blocking
-import zio.{ Fiber, IO, Managed, UIO, ZIO, ZManaged }
-import zio.nio.channels.SelectionKey.Operation
-import zio.nio.channels.spi.SelectorProvider
 
 /**
  * A channel that can be multiplexed via a [[zio.nio.channels.Selector]].

@@ -2,15 +2,15 @@ package zio
 package nio
 package charset
 
-import java.nio.charset.{ MalformedInputException, UnmappableCharacterException }
-
-import zio.test._
-import zio.test.Assertion._
 import zio.stream.Stream
+import zio.test.Assertion._
+import zio.test.{ ZSpec, _ }
+
+import java.nio.charset.{ CharacterCodingException, MalformedInputException, UnmappableCharacterException }
 
 object CharsetSpec extends DefaultRunnableSpec {
 
-  override def spec =
+  override def spec: Spec[Any, TestFailure[CharacterCodingException], TestSuccess] =
     suite("CharsetSpec")(
       chunkEncodeDecode(Charset.Standard.utf8),
       chunkEncodeDecode(Charset.Standard.utf16),
@@ -53,13 +53,13 @@ object CharsetSpec extends DefaultRunnableSpec {
 
   val arabic = "إزَّي حضرتك؟"
 
-  val arabicChunk = Chunk.fromIterable(arabic)
+  val arabicChunk: Chunk[Char] = Chunk.fromIterable(arabic)
 
-  val arabicUtf8 = Chunk(0xd8, 0xa5, 0xd8, 0xb2, 0xd9, 0x91, 0xd9, 0x8e, 0xd9, 0x8a, 0x20, 0xd8, 0xad, 0xd8, 0xb6, 0xd8,
-    0xb1, 0xd8, 0xaa, 0xd9, 0x83, 0xd8, 0x9f)
+  val arabicUtf8: Chunk[Byte] = Chunk(0xd8, 0xa5, 0xd8, 0xb2, 0xd9, 0x91, 0xd9, 0x8e, 0xd9, 0x8a, 0x20, 0xd8, 0xad,
+    0xd8, 0xb6, 0xd8, 0xb1, 0xd8, 0xaa, 0xd9, 0x83, 0xd8, 0x9f)
     .map(_.toByte)
 
-  def chunkEncodeDecode(charset: Charset) =
+  def chunkEncodeDecode(charset: Charset): ZSpec[Any, Nothing] =
     testM(s"chunk encode/decode ${charset.displayName}") {
       for {
         encoded <- charset.encodeChunk(arabicChunk)
@@ -67,7 +67,7 @@ object CharsetSpec extends DefaultRunnableSpec {
       } yield assert(decoded)(equalTo(arabicChunk))
     }
 
-  def bufferEncodeDecode(charset: Charset) =
+  def bufferEncodeDecode(charset: Charset): ZSpec[Any, Nothing] =
     testM(s"buffer encode/decode ${charset.displayName}") {
       for {
         chars             <- Buffer.char(100)
@@ -80,7 +80,7 @@ object CharsetSpec extends DefaultRunnableSpec {
       } yield assert(charsHasRemaining)(isFalse) && assert(chunk)(equalTo(arabicChunk))
     }
 
-  def streamEncodeDecode(charset: Charset) =
+  def streamEncodeDecode(charset: Charset): ZSpec[Any, CharacterCodingException] =
     testM(s"stream encode/decode ${charset.displayName}") {
       val charStream = Stream.fromIterable(arabic)
       for {

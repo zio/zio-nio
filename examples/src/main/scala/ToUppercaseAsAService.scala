@@ -2,8 +2,6 @@ package zio
 package nio
 package examples
 
-import java.io.IOException
-
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.console.Console
@@ -12,6 +10,7 @@ import zio.nio.channels.{ ServerSocketChannel, SocketChannel }
 import zio.nio.charset.Charset
 import zio.stream.ZTransducer
 
+import java.io.IOException
 import scala.util.control.Exception._
 
 /**

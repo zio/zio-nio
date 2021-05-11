@@ -1,14 +1,13 @@
 package zio.nio
 package channels
 
-import java.io.IOException
-import java.nio.channels.{ SelectionKey => JSelectionKey, Selector => JSelector }
-
 import com.github.ghik.silencer.silent
 import zio.duration.Duration
 import zio.nio.channels.spi.SelectorProvider
 import zio.{ IO, Managed, UIO, ZIO }
 
+import java.io.IOException
+import java.nio.channels.{ SelectionKey => JSelectionKey, Selector => JSelector }
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 

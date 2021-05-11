@@ -2,10 +2,10 @@ package zio
 package nio
 package charset
 
-import java.nio.{ charset => j }
-import java.nio.charset.{ MalformedInputException, UnmappableCharacterException }
-
 import zio.stream.{ Transducer, ZTransducer }
+
+import java.nio.charset.{ MalformedInputException, UnmappableCharacterException }
+import java.nio.{ charset => j }
 
 /**
  * An engine that can transform a sequence of bytes in a specific charset into a sequence of sixteen-bit Unicode characters.

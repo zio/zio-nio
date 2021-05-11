@@ -1,8 +1,8 @@
 package zio.nio.channels
 
-import java.nio.{ channels => jc }
-
 import zio.{ IO, UIO, ZIO }
+
+import java.nio.{ channels => jc }
 
 object SelectionKey {
 

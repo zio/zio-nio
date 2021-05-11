@@ -1,10 +1,10 @@
 package zio.nio.channels
 
+import zio.{ IO, UIO }
+
 import java.io.IOException
 import java.nio.channels.{ FileLock => JFileLock }
 import java.nio.{ channels => jc }
-
-import zio.{ IO, UIO }
 
 /**
  * A token representing a lock on a region of a file.

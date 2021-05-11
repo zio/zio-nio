@@ -2,12 +2,12 @@ package zio.nio
 
 package channels
 
+import zio.stream.{ Stream, ZStream }
+import zio.{ Chunk, IO, UIO }
+
 import java.io.{ EOFException, IOException }
 import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
 import java.nio.{ ByteBuffer => JByteBuffer }
-
-import zio.stream.{ Stream, ZStream }
-import zio.{ Chunk, IO, UIO }
 
 /**
  * A channel that can read bytes into a sequence of buffers.

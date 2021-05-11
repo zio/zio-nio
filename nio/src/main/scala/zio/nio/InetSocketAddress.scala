@@ -1,8 +1,8 @@
 package zio.nio
 
-import java.net.{ UnknownHostException, InetSocketAddress => JInetSocketAddress, SocketAddress => JSocketAddress }
-
 import zio.{ IO, UIO }
+
+import java.net.{ InetSocketAddress => JInetSocketAddress, SocketAddress => JSocketAddress, UnknownHostException }
 
 /**
  * Representation of a socket address without a specific protocol.

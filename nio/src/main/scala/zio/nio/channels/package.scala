@@ -1,13 +1,13 @@
 package zio.nio
 
-import java.io.IOException
-
 import zio.blocking.Blocking
 import zio.{ ZIO, ZManaged }
 
+import java.io.IOException
+
 package object channels {
 
-  implicit final class ManagedBlockingNioOps[-R, +C <: BlockingChannel](val underlying: ZManaged[R, IOException, C])
+  implicit final class ManagedBlockingNioOps[-R, +C <: BlockingChannel](private val underlying: ZManaged[R, IOException, C])
       extends AnyVal {
 
     def useNioBlocking[R1, E >: IOException, A](
@@ -21,7 +21,7 @@ package object channels {
   }
 
   implicit final class ManagedNonBlockingNioOps[-R, +C <: SelectableChannel](
-    val underlying: ZManaged[R, IOException, C]
+    private val underlying: ZManaged[R, IOException, C]
   ) extends AnyVal {
 
     def useNioNonBlocking[R1, E >: IOException, A](f: (C, C#NonBlockingOps) => ZIO[R1, E, A]): ZIO[R with R1, E, A] =

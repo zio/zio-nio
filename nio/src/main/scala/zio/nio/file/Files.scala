@@ -7,16 +7,7 @@ import zio.{ Chunk, ZIO, ZManaged }
 
 import java.io.IOException
 import java.nio.file.attribute._
-import java.nio.file.{
-  CopyOption,
-  DirectoryStream,
-  FileStore,
-  FileVisitOption,
-  LinkOption,
-  OpenOption,
-  Files => JFiles,
-  Path => JPath
-}
+import java.nio.file.{CopyOption, DirectoryStream, FileStore, FileVisitOption, Files => JFiles, LinkOption, OpenOption, Path => JPath}
 import java.util.function.BiPredicate
 import scala.jdk.CollectionConverters._
 import scala.reflect._

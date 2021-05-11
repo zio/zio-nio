@@ -1,7 +1,8 @@
 package zio.nio
 
 import zio.{ Chunk, UIO, ZIO }
-import java.nio.{ ByteOrder, ByteBuffer => JByteBuffer }
+
+import java.nio.{ ByteBuffer => JByteBuffer, ByteOrder }
 
 /**
  * A mutable buffer of bytes.

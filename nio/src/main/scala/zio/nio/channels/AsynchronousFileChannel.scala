@@ -1,16 +1,15 @@
 package zio.nio
 package channels
 
+import zio._
+import zio.clock.Clock
+import zio.nio.file.Path
+import zio.stream.{ Stream, ZSink, ZStream }
+
 import java.io.{ EOFException, IOException }
 import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock }
 import java.nio.file.OpenOption
 import java.nio.file.attribute.FileAttribute
-
-import zio.clock.Clock
-import zio.nio.file.Path
-import zio.stream.{ Stream, ZSink, ZStream }
-import zio._
-
 import scala.concurrent.ExecutionContextExecutorService
 import scala.jdk.CollectionConverters._
 

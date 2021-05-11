@@ -1,28 +1,27 @@
 package zio.nio
 
+import zio.test.Assertion._
+import zio.test._
+import zio.test.environment.TestEnvironment
+import zio.{ Chunk, IO }
+
 import java.nio.{
   Buffer => JBuffer,
+  BufferOverflowException,
   ByteBuffer => JByteBuffer,
   CharBuffer => JCharBuffer,
   DoubleBuffer => JDoubleBuffer,
   FloatBuffer => JFloatBuffer,
   IntBuffer => JIntBuffer,
   LongBuffer => JLongBuffer,
-  ShortBuffer => JShortBuffer,
-  BufferOverflowException,
-  ReadOnlyBufferException
+  ReadOnlyBufferException,
+  ShortBuffer => JShortBuffer
 }
-
 import scala.reflect.ClassTag
-
-import zio.{ Chunk, IO }
-import zio.test._
-import zio.test.Assertion._
-import zio.test.environment.TestEnvironment
 
 object BufferSpec extends BaseSpec {
 
-  def spec =
+  def spec: Spec[TestEnvironment, TestFailure[Exception], TestSuccess] =
     suite("BufferSpec")(
       commonBufferTests(
         "ByteBuffer",

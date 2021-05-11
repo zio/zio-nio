@@ -1,8 +1,8 @@
 package zio.nio
 
-import java.nio.{ ByteOrder, LongBuffer => JLongBuffer }
-
 import zio.{ Chunk, UIO, ZIO }
+
+import java.nio.{ ByteOrder, LongBuffer => JLongBuffer }
 
 /**
  * A mutable buffer of longs.

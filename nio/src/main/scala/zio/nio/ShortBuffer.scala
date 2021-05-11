@@ -1,8 +1,8 @@
 package zio.nio
 
-import java.nio.{ ByteOrder, ShortBuffer => JShortBuffer }
-
 import zio.{ Chunk, UIO, ZIO }
+
+import java.nio.{ ByteOrder, ShortBuffer => JShortBuffer }
 
 /**
  * A mutable buffer of shorts.

@@ -1,14 +1,13 @@
 package zio.nio
 package file
 
+import zio.blocking.{ Blocking, effectBlockingIO }
+import zio.{ IO, UIO, ZIO, ZManaged }
+
 import java.io.IOException
 import java.net.URI
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.{ file => jf }
-
-import zio.blocking.{ Blocking, effectBlockingIO }
-import zio.{ IO, UIO, ZIO, ZManaged }
-
 import scala.jdk.CollectionConverters._
 
 final class FileSystem private (private val javaFileSystem: jf.FileSystem) extends IOCloseable {

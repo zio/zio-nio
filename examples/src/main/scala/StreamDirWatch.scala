@@ -2,9 +2,9 @@ package zio
 package nio
 package examples
 
-import java.nio.file.{ StandardWatchEventKinds, WatchEvent }
-
 import zio.nio.file.{ Path, WatchService }
+
+import java.nio.file.{ StandardWatchEventKinds, WatchEvent }
 
 /**
  * Example of using the `ZStream` API for watching a file system directory for events.

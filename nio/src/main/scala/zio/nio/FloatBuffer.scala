@@ -1,8 +1,8 @@
 package zio.nio
 
-import java.nio.{ ByteOrder, FloatBuffer => JFloatBuffer }
-
 import zio.{ Chunk, UIO, ZIO }
+
+import java.nio.{ ByteOrder, FloatBuffer => JFloatBuffer }
 
 /**
  * A mutable buffer of floats.

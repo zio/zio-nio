@@ -1,10 +1,10 @@
 package zio.nio
 
-import java.nio.file.{ WatchEvent, Path => JPath }
+import java.nio.file.{Path => JPath, WatchEvent}
 
 package object file {
 
-  implicit final class WatchEventOps[A](val javaEvent: WatchEvent[A]) extends AnyVal {
+  implicit final class WatchEventOps[A](private val javaEvent: WatchEvent[A]) extends AnyVal {
 
     /**
      * Returns the context of this `WatchEvent` as a path.

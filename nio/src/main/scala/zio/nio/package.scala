@@ -1,9 +1,9 @@
 package zio
 
-import java.io.EOFException
-
 import com.github.ghik.silencer.silent
 import zio.ZManaged.ReleaseMap
+
+import java.io.EOFException
 
 /**
  * ZIO-NIO, the API for using Java's NIO API in ZIO programs.
@@ -26,7 +26,7 @@ package object nio {
   private[nio] def eofCheck(value: Long): IO[EOFException, Long] =
     if (value < 0L) IO.fail(new EOFException("Channel has reached the end of stream")) else IO.succeed(value)
 
-  implicit final class EffectOps[-R, +E, +A](val effect: ZIO[R, E, A]) extends AnyVal {
+  implicit final class EffectOps[-R, +E, +A](private val effect: ZIO[R, E, A]) extends AnyVal {
 
     /**
      * Explicitly represent end-of-stream in the error channel.
@@ -43,7 +43,7 @@ package object nio {
   }
 
   implicit final private[nio] class IOCloseableManagement[-R, +E, +A <: IOCloseable](
-    val acquire: ZIO[R, E, A]
+    private val acquire: ZIO[R, E, A]
   ) extends AnyVal {
 
     def toNioManaged: ZManaged[R, E, A] = ZManaged.makeInterruptible(acquire)(_.close.ignore)

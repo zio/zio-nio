@@ -1,8 +1,8 @@
 package zio.nio
 
-import java.nio.{ ByteOrder, CharBuffer => JCharBuffer }
-
 import zio.{ Chunk, UIO, ZIO }
+
+import java.nio.{ ByteOrder, CharBuffer => JCharBuffer }
 
 /**
  * A mutable buffer of characters.

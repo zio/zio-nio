@@ -1,13 +1,13 @@
 package zio.nio.channels
 
-import java.io.IOException
-import java.nio.channels.{ GatheringByteChannel => JGatheringByteChannel }
-import java.nio.{ ByteBuffer => JByteBuffer }
-
 import zio._
 import zio.clock.Clock
 import zio.nio.{ Buffer, ByteBuffer }
 import zio.stream.{ ZSink, ZStream }
+
+import java.io.IOException
+import java.nio.channels.{ GatheringByteChannel => JGatheringByteChannel }
+import java.nio.{ ByteBuffer => JByteBuffer }
 
 /**
  * A channel that can write bytes from a sequence of buffers.

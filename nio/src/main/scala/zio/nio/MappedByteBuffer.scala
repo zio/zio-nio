@@ -1,9 +1,9 @@
 package zio.nio
 
-import java.nio.{ MappedByteBuffer => JMappedByteBuffer }
-
-import zio.{ IO, UIO, ZIO }
 import zio.blocking.Blocking
+import zio.{ IO, UIO, ZIO }
+
+import java.nio.{ MappedByteBuffer => JMappedByteBuffer }
 
 /**
  * A direct byte buffer whose content is a memory-mapped region of a file.

@@ -5,10 +5,11 @@ import zio.duration._
 import zio.nio.InetSocketAddress
 import zio.nio.channels.AsynchronousServerSocketChannel
 import zio.stream._
+import zio.clock.Clock
 
 object StreamsBasedServer extends App {
 
-  def run(args: List[String]) =
+  def run(args: List[String]): URIO[zio.console.Console with Clock with zio.console.Console,ExitCode] =
     ZStream
       .managed(server(8080))
       .flatMap(handleConnections(_) { chunk =>
