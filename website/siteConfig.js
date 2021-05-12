@@ -34,7 +34,11 @@ const siteConfig = {
   headerLinks: [
     {doc: 'essentials/essentials_index', label: 'Essentials'},
     {doc: 'usecases/usecases_index', label: 'Use Cases'},
+    {href: 'api', label: 'API'},
   ],
+
+  // by default Docusaurus combines CSS files in a way that doesn't play nicely with Scaladoc
+  separateCss: ["api"],
 
   // If you have users set above, you add it here:
   users,
@@ -80,6 +84,8 @@ const siteConfig = {
   scrollToTopOptions: {
     cornerOffset: 100,
   },
+
+  customDocsPath: 'zio-nio-docs/target/mdoc',
 };
 
 module.exports = siteConfig;
