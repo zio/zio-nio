@@ -13,7 +13,7 @@ addSbtPlugin("org.scala-js"                      % "sbt-scalajs"                
 addSbtPlugin("org.scala-native"                  % "sbt-scala-native"              % "0.4.0")
 addSbtPlugin("org.scalameta"                     % "sbt-mdoc"                      % "2.2.21")
 addSbtPlugin("org.scalameta"                     % "sbt-scalafmt"                  % "2.4.2")
-addSbtPlugin("org.scoverage"                     % "sbt-scoverage"                 % "1.6.1")
+addSbtPlugin("org.scoverage"                     % "sbt-scoverage"                 % "1.8.1")
 addSbtPlugin("pl.project13.scala"                % "sbt-jcstress"                  % "0.2.0")
 addSbtPlugin("pl.project13.scala"                % "sbt-jmh"                       % "0.4.1")
 
