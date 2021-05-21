@@ -1,8 +1,8 @@
 # ZIO-NIO
 
-| CI | Release | Snapshot | Discord |
-| --- | --- | --- | --- |
-| ![CI][Badge-CI] | [![Release Artifacts][badge-releases]][link-releases] | [![Snapshot Artifacts][badge-snapshots]][link-snapshots] | [![badge-discord]][link-discord] |
+| Project Stage | CI | Release | Snapshot | Discord |
+| --- | --- | --- | --- | --- |
+| [![Project stage][Stage]][Stage-Page] | ![CI][Badge-CI] | [![Release Artifacts][badge-releases]][link-releases] | [![Snapshot Artifacts][badge-snapshots]][link-snapshots] | [![badge-discord]][link-discord] |
 
 ZIO interface to Java NIO.
 
@@ -35,3 +35,5 @@ Learn more about ZIO-NIO at:
 [link-discord]: https://discord.gg/2ccFBr4 "Discord"
 [link-releases]: https://oss.sonatype.org/content/repositories/releases/dev/zio/zio-nio_2.12/ "Sonatype Releases"
 [link-snapshots]: https://oss.sonatype.org/content/repositories/snapshots/dev/zio/zio-nio_2.12/ "Sonatype Snapshots"
+[Stage]: https://img.shields.io/badge/Project%20Stage-Development-yellowgreen.svg
+[Stage-Page]: https://github.com/zio/zio/wiki/Project-Stages

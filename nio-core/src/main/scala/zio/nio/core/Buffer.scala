@@ -1,9 +1,11 @@
 package zio.nio.core
 
+import zio.{ Chunk, UIO, ZIO }
+
 import java.nio.{
-  ByteOrder,
   Buffer => JBuffer,
   ByteBuffer => JByteBuffer,
+  ByteOrder,
   CharBuffer => JCharBuffer,
   DoubleBuffer => JDoubleBuffer,
   FloatBuffer => JFloatBuffer,
@@ -11,9 +13,6 @@ import java.nio.{
   LongBuffer => JLongBuffer,
   ShortBuffer => JShortBuffer
 }
-
-import zio.{ Chunk, UIO, ZIO }
-
 import scala.reflect.ClassTag
 
 /**

@@ -1,15 +1,25 @@
 package zio.nio.core.channels
 
-import zio.{ IO, _ }
+import zio.blocking.Blocking
+import zio.clock.Clock
 import zio.nio.core._
+import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
+import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem }
+import zio.{ IO, _ }
 
 import java.io.IOException
 
 object DatagramChannelSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
+    TestClock.Service
+  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
+    TestSystem.Service
+  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
+    Random.Service
+  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
     suite("DatagramChannelSpec")(
       testM("read/write") {
         def echoServer(started: Promise[Nothing, SocketAddress]): IO[IOException, Unit] =

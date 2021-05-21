@@ -1,8 +1,8 @@
 package zio.nio.core
 
-import java.nio.{ ByteOrder, DoubleBuffer => JDoubleBuffer }
-
 import zio.{ Chunk, UIO, ZIO }
+
+import java.nio.{ ByteOrder, DoubleBuffer => JDoubleBuffer }
 
 /**
  * A mutable buffer of doubles.

@@ -1,11 +1,11 @@
 package zio.nio.core.channels
 
-import java.nio
-import java.nio.{ channels => jc }
-
 import zio.nio.core
 import zio.nio.core.channels
 import zio.{ IO, UIO, ZIO }
+
+import java.nio
+import java.nio.{ channels => jc }
 
 object SelectionKey {
 
