@@ -8,8 +8,7 @@ import zio.stream._
 
 object StreamsBasedServer extends App {
 
-  override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] =
-    server(8080, 16).orDie.exitCode
+  override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] = server(8080, 16).orDie.exitCode
 
   def server(port: Int, parallelism: Int): ZIO[ZEnv, Exception, Unit] =
     AsynchronousServerSocketChannel()
