@@ -9,13 +9,13 @@ import zio.clock.Clock
 
 object StreamsBasedServer extends App {
 
-  def run(args: List[String]): URIO[zio.console.Console with Clock with zio.console.Console,ExitCode] =
+  def run(args: List[String]): URIO[zio.console.Console with Clock with zio.console.Console, ExitCode] =
     ZStream
       .managed(server(8080))
       .flatMap(handleConnections(_) { chunk =>
         console.putStrLn(s"Read data: ${chunk.mkString}") *>
           clock.sleep(2.seconds) *>
-          console.putStrLn("Done")
+          console.putStrLn("Done").ignore
       })
       .runDrain
       .orDie
@@ -33,7 +33,7 @@ object StreamsBasedServer extends App {
   )(f: String => RIO[R, Unit]): ZStream[R, Throwable, Unit] =
     ZStream
       .repeatEffect(server.accept.preallocate)
-      .map(conn => ZStream.managed(conn.ensuring(console.putStrLn("Connection closed")).withEarlyRelease))
+      .map(conn => ZStream.managed(conn.ensuring(console.putStrLn("Connection closed").ignore).withEarlyRelease))
       .flatMapPar[R, Throwable, Unit](16) { connection =>
         connection
           .mapM { case (closeConn, channel) =>

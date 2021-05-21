@@ -48,6 +48,6 @@ object StreamDirWatch extends App {
   override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] =
     args.headOption
       .map(dirString => watch(Path(dirString)).exitCode)
-      .getOrElse(console.putStrLn("A directory argument is required").as(ExitCode.failure))
+      .getOrElse(console.putStrLn("A directory argument is required").exitCode)
 
 }
