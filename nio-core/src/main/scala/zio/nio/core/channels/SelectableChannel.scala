@@ -1,17 +1,17 @@
 package zio.nio.core
 package channels
 
+import zio.nio.core.channels.SelectionKey.Operation
+import zio.nio.core.channels.spi.SelectorProvider
+import zio.{ IO, Managed, UIO }
+
 import java.io.IOException
-import java.net.{ SocketOption, ServerSocket => JServerSocket, Socket => JSocket }
+import java.net.{ ServerSocket => JServerSocket, Socket => JSocket, SocketOption }
 import java.nio.channels.{
   SelectableChannel => JSelectableChannel,
   ServerSocketChannel => JServerSocketChannel,
   SocketChannel => JSocketChannel
 }
-
-import zio.{ IO, Managed, UIO }
-import zio.nio.core.channels.SelectionKey.Operation
-import zio.nio.core.channels.spi.SelectorProvider
 
 /**
  * A channel that can be multiplexed via a [[zio.nio.core.channels.Selector]].

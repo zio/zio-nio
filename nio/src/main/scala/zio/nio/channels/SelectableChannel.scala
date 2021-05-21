@@ -7,7 +7,7 @@ import zio.nio.core.channels.SelectionKey.Operation
 import zio.{ IO, Managed, UIO }
 
 import java.io.IOException
-import java.net.{ SocketOption, ServerSocket => JServerSocket, Socket => JSocket }
+import java.net.{ ServerSocket => JServerSocket, Socket => JSocket, SocketOption }
 import java.nio.channels.{
   SelectableChannel => JSelectableChannel,
   ServerSocketChannel => JServerSocketChannel,

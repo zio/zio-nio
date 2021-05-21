@@ -1,11 +1,11 @@
 package zio.nio.channels
 
-import java.io.IOException
-import java.net.{ SocketOption, DatagramSocket => JDatagramSocket, SocketAddress => JSocketAddress }
-import java.nio.channels.{ DatagramChannel => JDatagramChannel }
-
-import zio.{ IO, Managed, UIO }
 import zio.nio.core.{ ByteBuffer, SocketAddress }
+import zio.{ IO, Managed, UIO }
+
+import java.io.IOException
+import java.net.{ DatagramSocket => JDatagramSocket, SocketAddress => JSocketAddress, SocketOption }
+import java.nio.channels.{ DatagramChannel => JDatagramChannel }
 
 /**
  * A [[java.nio.channels.DatagramChannel]] wrapper allowing for idiomatic [[zio.ZIO]] interoperability.

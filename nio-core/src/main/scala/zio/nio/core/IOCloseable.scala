@@ -1,8 +1,8 @@
 package zio.nio.core
 
-import java.io.IOException
-
 import zio.ZIO
+
+import java.io.IOException
 
 /**
  * A resource with an effect to close or release the resource.

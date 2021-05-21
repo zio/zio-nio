@@ -1,15 +1,14 @@
 package zio.nio.core
 package channels
 
-import java.io.IOException
-import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock }
-import java.nio.file.attribute.FileAttribute
-import java.nio.file.OpenOption
-
-import zio.{ Chunk, IO, Managed }
 import zio.interop.javaz._
 import zio.nio.core.file.Path
+import zio.{ Chunk, IO, Managed }
 
+import java.io.IOException
+import java.nio.channels.{ AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock }
+import java.nio.file.OpenOption
+import java.nio.file.attribute.FileAttribute
 import scala.concurrent.ExecutionContextExecutorService
 import scala.jdk.CollectionConverters._
 

@@ -8,9 +8,7 @@ import zio.stream._
 
 object StreamsBasedServer extends App {
 
-  override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] =
-    server(8080, 16).orDie
-      .as(ExitCode.success)
+  override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] = server(8080, 16).orDie.exitCode
 
   def server(port: Int, parallelism: Int): ZIO[ZEnv, Exception, Unit] =
     AsynchronousServerSocketChannel()
@@ -30,18 +28,19 @@ object StreamsBasedServer extends App {
     channel: AsynchronousSocketChannel
   ): ZIO[Clock with Console, Nothing, Unit] =
     for {
-      _    <- console.putStrLn("Received connection")
+      _    <- console.putStrLn("Received connection").ignore
       data <- ZStream
                 .fromEffectOption(
-                  channel.readChunk(64).tap(_ => console.putStrLn("Read chunk")).orElse(ZIO.fail(None))
+                  (channel.readChunk(64) <* console.putStrLn("Read chunk").ignore)
+                    .orElseFail(None)
                 )
                 .flattenChunks
                 .take(4)
                 .transduce(ZTransducer.utf8Decode)
                 .run(Sink.foldLeft("")(_ + (_: String)))
       _    <- closeConn
-      _    <- console.putStrLn(s"Read data: ${data.mkString}") *>
+      _    <- console.putStrLn(s"Read data: ${data.mkString}").ignore *>
                 clock.sleep(3.seconds) *>
-                console.putStrLn("Done")
+                console.putStrLn("Done").ignore
     } yield ()
 }

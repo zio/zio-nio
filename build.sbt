@@ -7,34 +7,26 @@ inThisBuild(
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net"))
-    ),
-    pgpPassphrase := sys.env.get("PGP_PASSWORD").map(_.toArray),
-    pgpPublicRing := file("/tmp/public.asc"),
-    pgpSecretRing := file("/tmp/secret.asc"),
-    scmInfo := Some(
-      ScmInfo(
-        url("https://github.com/zio/zio-nio/"),
-        "scm:git:git@github.com:zio/zio-nio.git"
-      )
     )
   )
 )
 
-ThisBuild / publishTo := sonatypePublishToBundle.value
-
-addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
-addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")
+addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
+addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
 addCommandAlias("coverageReport", "clean coverage test coverageReport coverageAggregate")
+
+val zioVersion = "1.0.8"
 
 lazy val zioNioCore = project
   .in(file("nio-core"))
   .settings(stdSettings("zio-nio-core"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"          % ZioCoreVersion,
-      "dev.zio" %% "zio-streams"  % ZioCoreVersion,
-      "dev.zio" %% "zio-test"     % ZioCoreVersion % Test,
-      "dev.zio" %% "zio-test-sbt" % ZioCoreVersion % Test
+      "dev.zio"                 %% "zio"                     % zioVersion,
+      "dev.zio"                 %% "zio-streams"             % zioVersion,
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.4.4").cross(CrossVersion.for3Use2_13),
+      "dev.zio"                 %% "zio-test"                % zioVersion % Test,
+      "dev.zio"                 %% "zio-test-sbt"            % zioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -46,10 +38,10 @@ lazy val zioNio = project
   .settings(stdSettings("zio-nio"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"          % ZioCoreVersion,
-      "dev.zio" %% "zio-streams"  % ZioCoreVersion,
-      "dev.zio" %% "zio-test"     % ZioCoreVersion % Test,
-      "dev.zio" %% "zio-test-sbt" % ZioCoreVersion % Test
+      "dev.zio" %% "zio"          % zioVersion,
+      "dev.zio" %% "zio-streams"  % zioVersion,
+      "dev.zio" %% "zio-test"     % zioVersion % Test,
+      "dev.zio" %% "zio-test-sbt" % zioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -58,21 +50,24 @@ lazy val zioNio = project
 lazy val docs = project
   .in(file("zio-nio-docs"))
   .settings(
-    skip.in(publish) := true,
+    publish / skip := true,
     moduleName := "zio-nio-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % ZioCoreVersion
-    )
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(zioNioCore, zioNio),
+    ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
+    cleanFiles += (ScalaUnidoc / unidoc / target).value,
+    docusaurusCreateSite := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
+    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
   )
-  .dependsOn(zioNio)
-  .enablePlugins(MdocPlugin, DocusaurusPlugin)
+  .dependsOn(zioNioCore, zioNio)
+  .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
 
 lazy val examples = project
   .in(file("examples"))
+  .settings(stdSettings("examples"))
   .settings(
-    skip in publish := true,
+    publish / skip := true,
     moduleName := "examples"
   )
   .settings(dottySettings)

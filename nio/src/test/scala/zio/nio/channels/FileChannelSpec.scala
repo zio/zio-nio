@@ -1,21 +1,30 @@
 package zio.nio.channels
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.StandardOpenOption
-
-import zio.{ Chunk, ZIO }
+import zio.blocking.Blocking
+import zio.clock.Clock
 import zio.nio.BaseSpec
 import zio.nio.core.Buffer
 import zio.nio.core.file.Path
 import zio.nio.file.Files
-import zio.test._
+import zio.random.Random
 import zio.test.Assertion._
+import zio.test._
+import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem }
+import zio.{ Chunk, Has, ZIO }
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.StandardOpenOption
 import scala.io.Source
 
 object FileChannelSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
+    TestClock.Service
+  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
+    TestSystem.Service
+  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
+    Random.Service
+  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
     suite("FileChannelSpec")(
       testM("asynchronous file buffer read") {
         val path = Path("nio/src/test/resources/async_file_read_test.txt")
