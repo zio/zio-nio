@@ -23,8 +23,8 @@ Creating a server socket:
 val server = AsynchronousServerSocketChannel()
   .mapM { socket =>
     for {
-      sockAddr <- InetSocketAddress.hostNameResolved("127.0.0.1", 1337) 
-      _ <- socket.bindTo(sockAddr)
+      socketAddress <- SocketAddress.inetSocketAddress("127.0.0.1", 1337)
+      _ <- socket.bind(socketAddress)
       _ <- socket.accept.preallocate.flatMap(_.use(channel => doWork(channel).catchAll(ex => putStrLn(ex.getMessage))).fork).forever.fork
     } yield ()
   }.useForever
