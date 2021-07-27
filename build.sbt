@@ -16,7 +16,7 @@ addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt sc
 addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
 addCommandAlias("coverageReport", "clean coverage test coverageReport coverageAggregate")
 
-val zioVersion = "1.0.9"
+val zioVersion = "1.0.10"
 
 lazy val zioNio = project
   .in(file("nio"))
