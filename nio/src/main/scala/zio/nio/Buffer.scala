@@ -2,6 +2,8 @@ package zio.nio
 
 import zio.{ Chunk, UIO, ZIO }
 
+import zio.{ Chunk, UIO, ZIO }
+
 import java.nio.{
   Buffer => JBuffer,
   ByteBuffer => JByteBuffer,

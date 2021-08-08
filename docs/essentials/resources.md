@@ -51,7 +51,7 @@ ZManaged.scope.use { scope =>
 
 Note that `scope` returns both the resource and an "early release" effect. This allows you to release the resource before the scope exits, if you know it is no longer needed. This allows efficient use of the resource while still having the safety net of the scope to ensure the release happens even if there are failures, defects or interruptions.
 
-The `zio.nio.core.channels.SelectorSpec` test demonstrates the use of scoping to ensure nothing leaks if an error occurs.
+The `zio.nio.channels.SelectorSpec` test demonstrates the use of scoping to ensure nothing leaks if an error occurs.
 
 ### Using `close` for Early Release
 

@@ -3,7 +3,7 @@ id: essentials_charsets
 title:  "Character Sets"
 ---
 
-The `zio.nio.core.charset` package offers an API for ZIO programs to work with character sets, using the Java NIO support for character sets. Any character set supported by your JVM can be used.
+The `zio.nio.charset` package offers an API for ZIO programs to work with character sets, using the Java NIO support for character sets. Any character set supported by your JVM can be used.
 
 ## `Charset`
 
@@ -59,7 +59,7 @@ import zio.ZIO
 
 // dump a file encoded in ISO8859 to the console
 
-FileChannel.open(Path("iso8859.txt")).useNioBlockingOps { fileOps =>
+FileChannel.open(Path("iso8859.txt")).use { fileChan =>
   val inStream: ZStream[Blocking, Exception, Byte] = ZStream.repeatEffectChunkOption {
     fileOps.readChunk(1000).asSomeError.flatMap { chunk =>
       if (chunk.isEmpty) ZIO.fail(None) else ZIO.succeed(chunk)
