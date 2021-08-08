@@ -2,12 +2,10 @@ package zio.nio
 
 import zio.{ Chunk, UIO, ZIO }
 
-import zio.{ Chunk, UIO, ZIO }
-
 import java.nio.{
+  ByteOrder,
   Buffer => JBuffer,
   ByteBuffer => JByteBuffer,
-  ByteOrder,
   CharBuffer => JCharBuffer,
   DoubleBuffer => JDoubleBuffer,
   FloatBuffer => JFloatBuffer,
