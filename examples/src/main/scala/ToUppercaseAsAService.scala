@@ -5,8 +5,8 @@ package examples
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.console.Console
-import zio.nio._
 import zio.nio.channels.{ ServerSocketChannel, SocketChannel }
+import zio.nio.channels.ManagedBlockingNioOps
 import zio.nio.charset.Charset
 import zio.stream.ZTransducer
 

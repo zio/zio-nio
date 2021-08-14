@@ -7,8 +7,9 @@ import java.io.IOException
 
 package object channels {
 
-  implicit final class ManagedBlockingNioOps[-R, +C <: BlockingChannel](private val underlying: ZManaged[R, IOException, C])
-      extends AnyVal {
+  implicit final class ManagedBlockingNioOps[-R, +C <: BlockingChannel](
+    private val underlying: ZManaged[R, IOException, C]
+  ) extends AnyVal {
 
     def useNioBlocking[R1, E >: IOException, A](
       f: (C, C#BlockingOps) => ZIO[R1, E, A]
