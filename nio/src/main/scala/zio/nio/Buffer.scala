@@ -2,7 +2,17 @@ package zio.nio
 
 import zio.{ Chunk, UIO, ZIO }
 
-import java.nio.{Buffer => JBuffer, ByteBuffer => JByteBuffer, ByteOrder, CharBuffer => JCharBuffer, DoubleBuffer => JDoubleBuffer, FloatBuffer => JFloatBuffer, IntBuffer => JIntBuffer, LongBuffer => JLongBuffer, ShortBuffer => JShortBuffer}
+import java.nio.{
+  Buffer => JBuffer,
+  ByteBuffer => JByteBuffer,
+  ByteOrder,
+  CharBuffer => JCharBuffer,
+  DoubleBuffer => JDoubleBuffer,
+  FloatBuffer => JFloatBuffer,
+  IntBuffer => JIntBuffer,
+  LongBuffer => JLongBuffer,
+  ShortBuffer => JShortBuffer
+}
 import scala.reflect.ClassTag
 
 /**

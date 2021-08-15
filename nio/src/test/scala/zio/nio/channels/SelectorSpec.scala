@@ -1,21 +1,28 @@
 package zio.nio.channels
 
-import java.io.IOException
-import java.nio.channels.CancelledKeyException
-
 import zio._
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.duration.durationInt
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.{ BaseSpec, Buffer, ByteBuffer, SocketAddress }
+import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.live
+import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem, live }
+
+import java.io.IOException
+import java.nio.channels.CancelledKeyException
 
 object SelectorSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
+    TestClock.Service
+  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
+    TestSystem.Service
+  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
+    Random.Service
+  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
     suite("SelectorSpec")(
       testM("read/write") {
         for {

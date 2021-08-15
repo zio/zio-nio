@@ -6,15 +6,15 @@ import zio.test.environment.TestEnvironment
 import zio.{ Chunk, IO }
 
 import java.nio.{
-  BufferOverflowException,
-  ReadOnlyBufferException,
   Buffer => JBuffer,
+  BufferOverflowException,
   ByteBuffer => JByteBuffer,
   CharBuffer => JCharBuffer,
   DoubleBuffer => JDoubleBuffer,
   FloatBuffer => JFloatBuffer,
   IntBuffer => JIntBuffer,
   LongBuffer => JLongBuffer,
+  ReadOnlyBufferException,
   ShortBuffer => JShortBuffer
 }
 import scala.reflect.ClassTag

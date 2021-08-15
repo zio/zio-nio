@@ -1,11 +1,13 @@
 package zio.nio.channels
 
 import zio.blocking.Blocking
+import zio.clock.Clock
 import zio.duration._
 import zio.nio.{ BaseSpec, Buffer, EffectOps, InetSocketAddress, SocketAddress }
+import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.live
+import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem, live }
 import zio.{ IO, _ }
 
 import java.io.{ EOFException, FileNotFoundException, IOException }
@@ -14,7 +16,13 @@ import java.{ nio => jnio }
 
 object ChannelSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
+    TestClock.Service
+  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
+    TestSystem.Service
+  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
+    Random.Service
+  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
     suite("Channel")(
       testM("localAddress") {
         SocketChannel.open.use { con =>

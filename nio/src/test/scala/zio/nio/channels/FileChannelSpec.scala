@@ -1,17 +1,19 @@
 package zio.nio.channels
 
+import zio.blocking.Blocking
+import zio.clock.Clock
+import zio.nio.charset.Charset
+import zio.nio.file.{ Files, Path }
+import zio.nio.{ BaseSpec, Buffer }
+import zio.random.Random
+import zio.stream.Stream
+import zio.test.Assertion._
+import zio.test._
+import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem }
+import zio.{ Chunk, Has, URIO, ZIO, blocking }
+
 import java.io.EOFException
 import java.nio.file.StandardOpenOption
-
-import zio.blocking.Blocking
-import zio.nio.charset.Charset
-import zio.{ Chunk, URIO, ZIO, blocking }
-import zio.nio.{ BaseSpec, Buffer }
-import zio.nio.file.{ Files, Path }
-import zio.test._
-import zio.test.Assertion._
-import zio.stream.Stream
-
 import scala.io.Source
 
 object FileChannelSpec extends BaseSpec {
@@ -26,7 +28,13 @@ object FileChannelSpec extends BaseSpec {
       .bracket(s => ZIO.effectTotal(s.close()))(s => blocking.effectBlocking(s.getLines().toList))
       .orDie
 
-  override def spec =
+  override def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
+    TestClock.Service
+  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
+    TestSystem.Service
+  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
+    Random.Service
+  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
     suite("FileChannelSpec")(
       testM("asynchronous file buffer read") {
         AsynchronousFileChannel.open(readFile, StandardOpenOption.READ).use { channel =>

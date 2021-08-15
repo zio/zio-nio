@@ -1,19 +1,18 @@
 package zio.nio.channels
 
-import java.nio.channels.{ AsynchronousChannelGroup => JAsynchronousChannelGroup }
-import java.util.concurrent.{ Executors, TimeUnit, ExecutorService => JExecutorService }
-
 import zio.ZIO
 import zio.duration.Duration
 import zio.nio.BaseSpec
-import zio.test._
 import zio.test.Assertion._
+import zio.test._
 
+import java.nio.channels.{ AsynchronousChannelGroup => JAsynchronousChannelGroup }
+import java.util.concurrent.{ ExecutorService => JExecutorService, Executors, TimeUnit }
 import scala.concurrent.ExecutionContext
 
 object AsynchronousChannelGroupSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: Spec[Any, TestFailure[Throwable], TestSuccess] =
     suite("AsynchronousChannelGroupSpec")(
       testM("awaitTermination") {
         ClassFixture.providedFixture { fixture =>
