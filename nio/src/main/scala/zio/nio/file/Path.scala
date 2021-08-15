@@ -5,7 +5,7 @@ import zio.{ Chunk, ZIO }
 
 import java.io.{ File, IOError, IOException }
 import java.net.URI
-import java.nio.file.{LinkOption, Path => JPath, Paths, WatchEvent, Watchable => JWatchable}
+import java.nio.file.{ LinkOption, Path => JPath, Paths, WatchEvent, Watchable => JWatchable }
 import scala.jdk.CollectionConverters._
 
 final class Path private (private[nio] val javaPath: JPath) extends Watchable {

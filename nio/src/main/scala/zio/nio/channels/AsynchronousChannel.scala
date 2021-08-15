@@ -9,7 +9,13 @@ import zio.stream.{ Stream, ZSink, ZStream }
 import java.io.{ EOFException, IOException }
 import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
 import java.net.SocketOption
-import java.nio.channels.{AsynchronousByteChannel => JAsynchronousByteChannel, AsynchronousServerSocketChannel => JAsynchronousServerSocketChannel, AsynchronousSocketChannel => JAsynchronousSocketChannel, Channel => JChannel, CompletionHandler}
+import java.nio.channels.{
+  AsynchronousByteChannel => JAsynchronousByteChannel,
+  AsynchronousServerSocketChannel => JAsynchronousServerSocketChannel,
+  AsynchronousSocketChannel => JAsynchronousSocketChannel,
+  Channel => JChannel,
+  CompletionHandler
+}
 import java.util.concurrent.TimeUnit
 
 /**

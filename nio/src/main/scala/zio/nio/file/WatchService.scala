@@ -7,7 +7,13 @@ import zio.nio.IOCloseable
 import zio.stream.ZStream
 
 import java.io.IOException
-import java.nio.file.{Path => JPath, WatchEvent, WatchKey => JWatchKey, WatchService => JWatchService, Watchable => JWatchable}
+import java.nio.file.{
+  Path => JPath,
+  WatchEvent,
+  WatchKey => JWatchKey,
+  WatchService => JWatchService,
+  Watchable => JWatchable
+}
 import java.util.concurrent.TimeUnit
 import scala.jdk.CollectionConverters._
 
