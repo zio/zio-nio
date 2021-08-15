@@ -2,12 +2,11 @@ import BuildHelper._
 
 inThisBuild(
   List(
-    organization := "com.github.quelgar",
-    homepage := Some(url("https://github.com/quelgar/zio-nio/")),
+    organization := "dev.zio",
+    homepage := Some(url("https://github.com/zio/zio-nio/")),
     licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
-      Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net")),
-      Developer("quelgar", "Lachlan O'Dea", "lodea@mac.com", url("https://github.com/quelgar"))
+      Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net"))
     )
   )
 )
