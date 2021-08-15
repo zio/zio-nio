@@ -1,11 +1,11 @@
 package zio.nio.examples
 
 import zio._
+import zio.clock.Clock
 import zio.duration._
 import zio.nio.InetSocketAddress
 import zio.nio.channels.AsynchronousServerSocketChannel
 import zio.stream._
-import zio.clock.Clock
 
 object StreamsBasedServer extends App {
 
