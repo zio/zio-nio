@@ -80,7 +80,7 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
      */
     def read(dst: ByteBuffer, position: Long): IO[IOException, Int] =
       dst
-        .withJavaBuffer(buffer => IO.effect(channel.read(buffer, position)))
+        .withJavaBuffer[Any, Throwable, Int](buffer => IO.effect(channel.read(buffer, position)))
         .refineToOrDie[IOException]
 
     /**
@@ -97,7 +97,7 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
      */
     def write(src: ByteBuffer, position: Long): IO[IOException, Int] =
       src
-        .withJavaBuffer(buffer => IO.effect(channel.write(buffer, position)))
+        .withJavaBuffer[Any, Throwable, Int](buffer => IO.effect(channel.write(buffer, position)))
         .refineToOrDie[IOException]
 
     /**
