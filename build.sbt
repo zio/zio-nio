@@ -11,6 +11,14 @@ inThisBuild(
   )
 )
 
+scalacOptions ++= {
+  if (scalaVersion.value == Scala211) {
+    Seq.empty
+  } else {
+    Seq("-target:jvm-1.6")
+  }
+}
+
 addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
 addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
 addCommandAlias("coverageReport", "clean coverage test coverageReport coverageAggregate")
