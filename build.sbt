@@ -15,7 +15,7 @@ addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt sc
 addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
 addCommandAlias("coverageReport", "clean coverage test coverageReport coverageAggregate")
 
-val zioVersion = "1.0.9"
+val zioVersion = "1.0.11"
 
 lazy val zioNioCore = project
   .in(file("nio-core"))
@@ -24,7 +24,7 @@ lazy val zioNioCore = project
     libraryDependencies ++= Seq(
       "dev.zio"                 %% "zio"                     % zioVersion,
       "dev.zio"                 %% "zio-streams"             % zioVersion,
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0").cross(CrossVersion.for3Use2_13),
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0",
       "dev.zio"                 %% "zio-test"                % zioVersion % Test,
       "dev.zio"                 %% "zio-test-sbt"            % zioVersion % Test
     ),
