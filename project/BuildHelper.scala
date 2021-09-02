@@ -98,31 +98,6 @@ object BuildHelper {
     }
   )
 
-  val scalaReflectSettings = Seq(
-    libraryDependencies ++= Seq("dev.zio" %%% "izumi-reflect" % "1.1.2")
-  )
-
-  // Keep this consistent with the version in .core-tests/shared/src/test/scala/REPLSpec.scala
-  val replSettings = makeReplSettings {
-    """|import zio._
-       |import zio.console._
-       |import zio.duration._
-       |import zio.Runtime.default._
-       |implicit class RunSyntax[A](io: ZIO[ZEnv, Any, A]){ def unsafeRun: A = Runtime.default.unsafeRun(io.provideLayer(ZEnv.live)) }
-    """.stripMargin
-  }
-
-  // Keep this consistent with the version in .streams-tests/shared/src/test/scala/StreamREPLSpec.scala
-  val streamReplSettings = makeReplSettings {
-    """|import zio._
-       |import zio.console._
-       |import zio.duration._
-       |import zio.stream._
-       |import zio.Runtime.default._
-       |implicit class RunSyntax[A](io: ZIO[ZEnv, Any, A]){ def unsafeRun: A = Runtime.default.unsafeRun(io.provideLayer(ZEnv.live)) }
-    """.stripMargin
-  }
-
   def makeReplSettings(initialCommandsStr: String) =
     Seq(
       // In the repl most warnings are useless or worse.
@@ -213,25 +188,6 @@ object BuildHelper {
     platformSpecificSources(platform, conf, baseDir)(versions: _*)
   }
 
-  lazy val crossProjectSettings = Seq(
-    Compile / unmanagedSourceDirectories ++= {
-      crossPlatformSources(
-        scalaVersion.value,
-        crossProjectPlatform.value.identifier,
-        "main",
-        baseDirectory.value
-      )
-    },
-    Test / unmanagedSourceDirectories ++= {
-      crossPlatformSources(
-        scalaVersion.value,
-        crossProjectPlatform.value.identifier,
-        "test",
-        baseDirectory.value
-      )
-    }
-  )
-
   def stdSettings(prjName: String) =
     Seq(
       name := s"$prjName",
@@ -263,58 +219,6 @@ object BuildHelper {
       autoAPIMappings := true,
       unusedCompileDependenciesFilter -= moduleFilter("org.scala-js", "scalajs-library")
     )
-
-  def macroExpansionSettings =
-    Seq(
-      scalacOptions ++= {
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, 13)) => Seq("-Ymacro-annotations")
-          case _             => Seq.empty
-        }
-      },
-      libraryDependencies ++= {
-        CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, x)) if x <= 12 =>
-            Seq(compilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.full)))
-          case _                       => Seq.empty
-        }
-      }
-    )
-
-  def macroDefinitionSettings =
-    Seq(
-      scalacOptions += "-language:experimental.macros",
-      libraryDependencies ++= {
-        if (scalaVersion.value == ScalaDotty) Seq()
-        else
-          Seq(
-            "org.scala-lang" % "scala-reflect"  % scalaVersion.value % "provided",
-            "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
-          )
-      }
-    )
-
-  def jsSettings =
-    Seq(
-      libraryDependencies += "io.github.cquiroz" %%% "scala-java-time"      % "2.3.0",
-      libraryDependencies += "io.github.cquiroz" %%% "scala-java-time-tzdb" % "2.3.0"
-    )
-
-  def nativeSettings =
-    Seq(
-      Test / skip := true,
-      doc / skip := true,
-      Compile / doc / sources := Seq.empty
-    )
-
-  val scalaReflectTestSettings: List[Setting[_]] = List(
-    libraryDependencies ++= {
-      if (scalaVersion.value == ScalaDotty)
-        Seq("org.scala-lang" % "scala-reflect" % Scala213           % Test)
-      else
-        Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value % Test)
-    }
-  )
 
   def welcomeMessage =
     onLoadMessage := {
