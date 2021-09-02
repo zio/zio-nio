@@ -13,9 +13,9 @@ inThisBuild(
 
 scalacOptions ++= {
   if (scalaVersion.value == Scala211) {
-    Seq.empty
+    Seq("-target:jvm-1.8")
   } else {
-    Seq("-target:jvm-1.6")
+    Seq.empty
   }
 }
 
