@@ -16,7 +16,7 @@ addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix
 addCommandAlias("coverageReport", "clean coverage test coverageReport coverageAggregate")
 addCommandAlias(
   "testDotty",
-  ";zioNioCore/test;zioNio/test;examples/test"
+  ";zioNio/test;examples/test"
 )
 
 val zioVersion = "1.0.11"
