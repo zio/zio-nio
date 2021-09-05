@@ -14,19 +14,23 @@ inThisBuild(
 addCommandAlias("fix", "; all compile:scalafix test:scalafix; all scalafmtSbt scalafmtAll")
 addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix --check; test:scalafix --check")
 addCommandAlias("coverageReport", "clean coverage test coverageReport coverageAggregate")
+addCommandAlias(
+  "testDotty",
+  ";zioNioCore/test;zioNio/test;examples/test"
+)
 
-val zioVersion = "1.0.10"
+val zioVersion = "1.0.11"
 
 lazy val zioNio = project
   .in(file("nio"))
   .settings(stdSettings("zio-nio"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio"                 %% "zio"                     % zioVersion,
-      "dev.zio"                 %% "zio-streams"             % zioVersion,
-      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0").cross(CrossVersion.for3Use2_13),
-      "dev.zio"                 %% "zio-test"                % zioVersion % Test,
-      "dev.zio"                 %% "zio-test-sbt"            % zioVersion % Test
+      "dev.zio"                %% "zio"                     % zioVersion,
+      "dev.zio"                %% "zio-streams"             % zioVersion,
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0",
+      "dev.zio"                %% "zio-test"                % zioVersion % Test,
+      "dev.zio"                %% "zio-test-sbt"            % zioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
