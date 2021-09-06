@@ -3,7 +3,7 @@ id: essentials_charsets
 title:  "Character Sets"
 ---
 
-The `zio.nio.core.charset` package offers an API for ZIO programs to work with character sets, using the Java NIO support for character sets. Any character set supported by your JVM can be used.
+The `zio.nio.charset` package offers an API for ZIO programs to work with character sets, using the Java NIO support for character sets. Any character set supported by your JVM can be used.
 
 ## `Charset`
 
@@ -31,9 +31,9 @@ JVMs typically support many more charsets than these; use `Charset.availableChar
 ### Example
 
 ```scala mdoc:silent
-import zio.nio.core.charset._
+import zio.nio.charset._
 import zio.nio.file.Files
-import zio.nio.core.file.Path
+import zio.nio.file.Path
 
 val s = "Hello, world!"
 for {
@@ -49,9 +49,10 @@ Using streams instead of buffers or chunks is great for bigger jobs. ZIO Streams
 Stream-based encoding and decoding are provided by the `transducer` method of the `CharsetEncoder` and `CharsetDecoder` classes respectively.
 
 ```scala mdoc:silent
-import zio.nio.core.charset._
-import zio.nio.core.channels.FileChannel
-import zio.nio.core.file.Path
+import zio.nio.charset._
+import zio.nio.channels.FileChannel
+import zio.nio.channels._
+import zio.nio.file.Path
 import zio.stream.ZStream
 import zio.blocking.Blocking
 import zio.console
@@ -59,9 +60,9 @@ import zio.ZIO
 
 // dump a file encoded in ISO8859 to the console
 
-FileChannel.open(Path("iso8859.txt")).use { fileChan =>
+FileChannel.open(Path("iso8859.txt")).useNioBlockingOps { fileOps =>
   val inStream: ZStream[Blocking, Exception, Byte] = ZStream.repeatEffectChunkOption {
-    fileChan.readChunk(1000).asSomeError.flatMap { chunk =>
+    fileOps.readChunk(1000).asSomeError.flatMap { chunk =>
       if (chunk.isEmpty) ZIO.fail(None) else ZIO.succeed(chunk)
     }
   }

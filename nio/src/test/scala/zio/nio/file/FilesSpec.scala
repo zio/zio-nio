@@ -3,11 +3,10 @@ package zio.nio.file
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.nio.BaseSpec
-import zio.nio.core.file.Path
 import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem }
+import zio.test.environment._
 import zio.{ Chunk, Has, Ref }
 
 object FilesSpec extends BaseSpec {
