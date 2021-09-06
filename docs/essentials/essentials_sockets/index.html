@@ -4,7 +4,7 @@
             {"zIndex":100,"cornerOffset":100}
           )
         });
-        </script><script src="/zio-nio/js/scrollSpy.js"></script><link rel="stylesheet" href="/zio-nio/css/main.css"/><script src="/zio-nio/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/zio-nio/"><img class="logo" src="/zio-nio/img/navbar_brand2x.png" alt="ZIO NIO"/><h2 class="headerTitleWithLogo">ZIO NIO</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/zio-nio/docs/essentials/essentials_index" target="_self">Essentials</a></li><li class=""><a href="/zio-nio/docs/usecases/usecases_index" target="_self">Use Cases</a></li><li class=""><a href="api" target="_self">API</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Essentials</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Essentials</h3><ul class=""><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_index">Overview</a></li><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_files">File Channel</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/zio-nio/docs/essentials/essentials_sockets">Socket Channel</a></li><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_resources">Resource Management</a></li><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_charsets">Character Sets</a></li></ul></div></div></section></div><script>
+        </script><script src="/zio-nio/js/scrollSpy.js"></script><link rel="stylesheet" href="/zio-nio/css/main.css"/><script src="/zio-nio/js/codetabs.js"></script></head><body class="sideNavVisible separateOnPageNav"><div class="fixedHeaderContainer"><div class="headerWrapper wrapper"><header><a href="/zio-nio/"><img class="logo" src="/zio-nio/img/navbar_brand2x.png" alt="ZIO NIO"/><h2 class="headerTitleWithLogo">ZIO NIO</h2></a><div class="navigationWrapper navigationSlider"><nav class="slidingNav"><ul class="nav-site nav-site-internal"><li class="siteNavGroupActive"><a href="/zio-nio/docs/essentials/essentials_index" target="_self">Essentials</a></li><li class=""><a href="/zio-nio/docs/usecases/usecases_index" target="_self">Use Cases</a></li><li class=""><a href="api" target="_self">API</a></li></ul></nav></div></header></div></div><div class="navPusher"><div class="docMainWrapper wrapper"><div class="docsNavContainer" id="docsNav"><nav class="toc"><div class="toggleNav"><section class="navWrapper wrapper"><div class="navBreadcrumb wrapper"><div class="navToggle" id="navToggler"><div class="hamburger-menu"><div class="line1"></div><div class="line2"></div><div class="line3"></div></div></div><h2><i>›</i><span>Essentials</span></h2><div class="tocToggler" id="tocToggler"><i class="icon-toc"></i></div></div><div class="navGroups"><div class="navGroup"><h3 class="navGroupCategoryTitle">Essentials</h3><ul class=""><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_index">Overview</a></li><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_blocking">Blocking I/O</a></li><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_files">File Channel</a></li><li class="navListItem navListItemActive"><a class="navItem" href="/zio-nio/docs/essentials/essentials_sockets">Socket Channel</a></li><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_resources">Resource Management</a></li><li class="navListItem"><a class="navItem" href="/zio-nio/docs/essentials/essentials_charsets">Character Sets</a></li></ul></div></div></section></div><script>
             var coll = document.getElementsByClassName('collapsible');
             var checkActiveCategory = true;
             for (var i = 0; i < coll.length; i++) {
@@ -66,15 +66,15 @@
 <span class="hljs-keyword">import</span> zio.clock._
 <span class="hljs-keyword">import</span> zio.console._
 <span class="hljs-keyword">import</span> zio.nio.channels._
-<span class="hljs-keyword">import</span> zio.nio.core._
+<span class="hljs-keyword">import</span> zio.nio._
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="creating-sockets"></a><a href="#creating-sockets" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Creating sockets</h2>
 <p>Creating a server socket:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> server = <span class="hljs-type">AsynchronousServerSocketChannel</span>()
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> server = <span class="hljs-type">AsynchronousServerSocketChannel</span>.open
   .mapM { socket =&gt;
     <span class="hljs-keyword">for</span> {
-      sockAddr &lt;- <span class="hljs-type">InetSocketAddress</span>.hostNameResolved(<span class="hljs-string">"127.0.0.1"</span>, <span class="hljs-number">1337</span>) 
-      _ &lt;- socket.bindTo(sockAddr)
+      address &lt;- <span class="hljs-type">InetSocketAddress</span>.hostName(<span class="hljs-string">"127.0.0.1"</span>, <span class="hljs-number">1337</span>)
+      _ &lt;- socket.bindTo(address)
       _ &lt;- socket.accept.preallocate.flatMap(_.use(channel =&gt; doWork(channel).catchAll(ex =&gt; putStrLn(ex.getMessage))).fork).forever.fork
     } <span class="hljs-keyword">yield</span> ()
   }.useForever
@@ -91,10 +91,11 @@
 }
 </code></pre>
 <p>Creating a client socket:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> clientM: <span class="hljs-type">Managed</span>[<span class="hljs-type">Exception</span>, <span class="hljs-type">AsynchronousSocketChannel</span>] = <span class="hljs-type">AsynchronousSocketChannel</span>()
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> clientM: <span class="hljs-type">Managed</span>[<span class="hljs-type">Exception</span>, <span class="hljs-type">AsynchronousSocketChannel</span>] = <span class="hljs-type">AsynchronousSocketChannel</span>.open
   .mapM { client =&gt;
     <span class="hljs-keyword">for</span> {
-      address &lt;- <span class="hljs-type">InetSocketAddress</span>.localHost(<span class="hljs-number">2552</span>)
+      host    &lt;- <span class="hljs-type">InetAddress</span>.localHost
+      address &lt;- <span class="hljs-type">InetSocketAddress</span>.inetAddress(host, <span class="hljs-number">2552</span>)
       _       &lt;- client.connect(address)
     } <span class="hljs-keyword">yield</span> client
   }
@@ -102,8 +103,7 @@
 <p>Reading and writing to a socket:</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">for</span> {
   serverFiber &lt;- server.fork
-  clientFiber &lt;- clientM.use(_.writeChunk(<span class="hljs-type">Chunk</span>.fromArray(<span class="hljs-type">Array</span>(<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>).map(_.toByte)))).fork
-  _           &lt;- clientFiber.join
+  _ &lt;- clientM.use(_.writeChunk(<span class="hljs-type">Chunk</span>.fromArray(<span class="hljs-type">Array</span>(<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>).map(_.toByte))))
   _           &lt;- serverFiber.join
 } <span class="hljs-keyword">yield</span> ()
 </code></pre>
