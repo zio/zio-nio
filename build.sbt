@@ -16,14 +16,14 @@ addCommandAlias("check", "; scalafmtSbtCheck; scalafmtCheckAll; compile:scalafix
 addCommandAlias("coverageReport", "clean coverage test coverageReport coverageAggregate")
 addCommandAlias(
   "testDotty",
-  ";zioNioCore/test;zioNio/test;examples/test"
+  ";zioNio/test;examples/test"
 )
 
 val zioVersion = "1.0.11"
 
-lazy val zioNioCore = project
-  .in(file("nio-core"))
-  .settings(stdSettings("zio-nio-core"))
+lazy val zioNio = project
+  .in(file("nio"))
+  .settings(stdSettings("zio-nio"))
   .settings(
     libraryDependencies ++= Seq(
       "dev.zio"                %% "zio"                     % zioVersion,
@@ -36,21 +36,6 @@ lazy val zioNioCore = project
   )
   .settings(dottySettings)
 
-lazy val zioNio = project
-  .in(file("nio"))
-  .dependsOn(zioNioCore)
-  .settings(stdSettings("zio-nio"))
-  .settings(
-    libraryDependencies ++= Seq(
-      "dev.zio" %% "zio"          % zioVersion,
-      "dev.zio" %% "zio-streams"  % zioVersion,
-      "dev.zio" %% "zio-test"     % zioVersion % Test,
-      "dev.zio" %% "zio-test-sbt" % zioVersion % Test
-    ),
-    testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
-  )
-  .settings(dottySettings)
-
 lazy val docs = project
   .in(file("zio-nio-docs"))
   .settings(
@@ -58,13 +43,13 @@ lazy val docs = project
     moduleName := "zio-nio-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(zioNioCore, zioNio),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(zioNio),
     ScalaUnidoc / unidoc / target := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
     cleanFiles += (ScalaUnidoc / unidoc / target).value,
     docusaurusCreateSite := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
     docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
   )
-  .dependsOn(zioNioCore, zioNio)
+  .dependsOn(zioNio)
   .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
 
 lazy val examples = project

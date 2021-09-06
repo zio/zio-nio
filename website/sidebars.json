@@ -2,6 +2,7 @@
   "essentials-sidebar": {
     "Essentials": [
       "essentials/essentials_index",
+      "essentials/essentials_blocking",
       "essentials/essentials_files",
       "essentials/essentials_sockets",
       "essentials/essentials_resources",

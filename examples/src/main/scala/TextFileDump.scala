@@ -4,9 +4,9 @@ package examples
 
 import zio.blocking.Blocking
 import zio.console.Console
-import zio.nio.core.channels.FileChannel
-import zio.nio.core.charset.Charset
-import zio.nio.core.file.Path
+import zio.nio.channels.{ FileChannel, ManagedBlockingNioOps }
+import zio.nio.charset.Charset
+import zio.nio.file.Path
 import zio.stream.ZStream
 
 /**
@@ -33,9 +33,9 @@ object TextFileDump extends App {
   }
 
   private def dump(charset: Charset, file: Path): ZIO[Console with Blocking, Exception, Unit] =
-    FileChannel.open(file).use { fileChan =>
+    FileChannel.open(file).useNioBlockingOps { fileOps =>
       val inStream: ZStream[Blocking, Exception, Byte] = ZStream.repeatEffectChunkOption {
-        fileChan.readChunk(1000).asSomeError.flatMap { chunk =>
+        fileOps.readChunk(1000).asSomeError.flatMap { chunk =>
           if (chunk.isEmpty) ZIO.fail(None) else ZIO.succeed(chunk)
         }
       }
