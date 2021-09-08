@@ -1,8 +1,8 @@
-package zio.nio.file
+package zio.nio
+package file
 
-import zio.blocking.{ Blocking, effectBlocking }
-import zio.nio.core.file.{ Path, WatchService }
-import zio.{ UIO, ZIO, ZManaged }
+import zio.blocking.{ Blocking, effectBlockingIO }
+import zio.{ IO, UIO, ZIO, ZManaged }
 
 import java.io.IOException
 import java.net.URI
@@ -10,11 +10,11 @@ import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.{ file => jf }
 import scala.jdk.CollectionConverters._
 
-final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
+final class FileSystem private (private val javaFileSystem: jf.FileSystem) extends IOCloseable {
+
   def provider: jf.spi.FileSystemProvider = javaFileSystem.provider()
 
-  private def close: ZIO[Blocking, IOException, Unit] =
-    effectBlocking(javaFileSystem.close()).refineToOrDie[IOException]
+  def close: IO[IOException, Unit] = IO.effect(javaFileSystem.close()).refineToOrDie[IOException]
 
   def isOpen: UIO[Boolean] = UIO.effectTotal(javaFileSystem.isOpen())
 
@@ -22,9 +22,10 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
 
   def getSeparator: String = javaFileSystem.getSeparator
 
-  def getRootDirectories: List[Path] = javaFileSystem.getRootDirectories.asScala.map(Path.fromJava).toList
+  def getRootDirectories: UIO[List[Path]] =
+    UIO.effectTotal(javaFileSystem.getRootDirectories.asScala.map(Path.fromJava).toList)
 
-  def getFileStores: List[jf.FileStore] = javaFileSystem.getFileStores.asScala.toList
+  def getFileStores: UIO[List[jf.FileStore]] = UIO.effectTotal(javaFileSystem.getFileStores.asScala.toList)
 
   def supportedFileAttributeViews: Set[String] = javaFileSystem.supportedFileAttributeViews().asScala.toSet
 
@@ -34,32 +35,34 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) {
 
   def getUserPrincipalLookupService: UserPrincipalLookupService = javaFileSystem.getUserPrincipalLookupService
 
-  def newWatchService: ZIO[Blocking, IOException, WatchService] =
-    effectBlocking(WatchService.fromJava(javaFileSystem.newWatchService())).refineToOrDie[IOException]
+  def newWatchService: ZManaged[Blocking, IOException, WatchService] =
+    effectBlockingIO(WatchService.fromJava(javaFileSystem.newWatchService())).toNioManaged
 }
 
 object FileSystem {
-  private val close: FileSystem => ZIO[Blocking, Nothing, Unit] = _.close.orDie
-
   def fromJava(javaFileSystem: jf.FileSystem): FileSystem = new FileSystem(javaFileSystem)
 
+  /**
+   * The default filesystem.
+   *
+   * The default file system creates objects that provide access to the file systems accessible to the
+   * Java virtual machine. The working directory of the file system is the current user directory,
+   * named by the system property user.dir.
+   *
+   * '''Note:''' The default filesystem cannot be closed, and if its `close` is called it will die with
+   * `UnsupportedOperationException`. Therefore, do not use resource management with the default filesystem.
+   */
   def default: FileSystem = new FileSystem(jf.FileSystems.getDefault)
 
-  def getFileSystem(uri: URI): ZManaged[Blocking, Exception, FileSystem] =
-    effectBlocking(new FileSystem(jf.FileSystems.getFileSystem(uri))).refineToOrDie[Exception].toManaged(close)
+  def getFileSystem(uri: URI): ZIO[Blocking, Exception, FileSystem] =
+    effectBlockingIO(new FileSystem(jf.FileSystems.getFileSystem(uri)))
 
-  def newFileSystem(uri: URI, env: (String, Any)*): ZManaged[Blocking, Exception, FileSystem] =
-    effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(uri, env.toMap.asJava)))
-      .refineToOrDie[Exception]
-      .toManaged(close)
+  def newFileSystem(uri: URI, env: (String, Any)*): ZManaged[Blocking, IOException, FileSystem] =
+    effectBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(uri, env.toMap.asJava))).toNioManaged
 
   def newFileSystem(uri: URI, env: Map[String, _], loader: ClassLoader): ZManaged[Blocking, Exception, FileSystem] =
-    effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(uri, env.asJava, loader)))
-      .refineToOrDie[Exception]
-      .toManaged(close)
+    effectBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(uri, env.asJava, loader))).toNioManaged
 
-  def newFileSystem(path: Path, loader: ClassLoader): ZManaged[Blocking, Exception, FileSystem] =
-    effectBlocking(new FileSystem(jf.FileSystems.newFileSystem(path.javaPath, loader)))
-      .refineToOrDie[Exception]
-      .toManaged(close)
+  def newFileSystem(path: Path, loader: ClassLoader): ZManaged[Blocking, IOException, FileSystem] =
+    effectBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(path.javaPath, loader))).toNioManaged
 }

@@ -14,8 +14,8 @@ The most straight-forward way to use a managed resource is with the `use` method
 ```scala mdoc:silent
 import zio._
 import zio.blocking.Blocking
-import zio.nio.core.channels._
-import zio.nio.core.file.Path
+import zio.nio.channels._
+import zio.nio.file.Path
 import java.io.IOException
 
 def useChannel(f: FileChannel): ZIO[Blocking, IOException, Unit] = ???
@@ -43,7 +43,7 @@ ZManaged.scope.use { scope =>
   }
 
   // use channel, perhaps with a Selector
-  channel.flatMap(_.readChunk(10))
+  channel.flatMap(_.useNonBlocking(_.readChunk(10)))
 
 }
 // the scope has now been released, as have all the resources attached to it
@@ -51,7 +51,7 @@ ZManaged.scope.use { scope =>
 
 Note that `scope` returns both the resource and an "early release" effect. This allows you to release the resource before the scope exits, if you know it is no longer needed. This allows efficient use of the resource while still having the safety net of the scope to ensure the release happens even if there are failures, defects or interruptions.
 
-The `zio.nio.core.channels.SelectorSpec` test demonstrates the use of scoping to ensure nothing leaks if an error occurs.
+The `zio.nio.channels.SelectorSpec` test demonstrates the use of scoping to ensure nothing leaks if an error occurs.
 
 ### Using `close` for Early Release
 

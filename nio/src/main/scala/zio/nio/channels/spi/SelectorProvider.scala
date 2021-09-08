@@ -1,43 +1,52 @@
 package zio.nio.channels.spi
 
-import zio.nio.channels.{ Selector, ServerSocketChannel, SocketChannel }
-import zio.nio.core.channels.{ Pipe }
-import zio.{ IO, Managed }
+import zio.IO
+import zio.nio.channels._
 
 import java.io.IOException
 import java.net.ProtocolFamily
 import java.nio.channels.spi.{ SelectorProvider => JSelectorProvider }
-import java.nio.channels.{ Channel => JChannel, DatagramChannel => JDatagramChannel }
+import java.nio.{ channels => jc }
 
-class SelectorProvider(private val selectorProvider: JSelectorProvider) {
+final class SelectorProvider(private val selectorProvider: JSelectorProvider) {
 
-  final val openDatagramChannel: IO[IOException, JDatagramChannel] = // TODO: wrapper for DatagramChannel
-    IO.effect(selectorProvider.openDatagramChannel()).refineToOrDie[IOException]
+  val openDatagramChannel: IO[IOException, DatagramChannel] =
+    IO.effect(DatagramChannel.fromJava(selectorProvider.openDatagramChannel())).refineToOrDie[IOException]
 
   // this can throw UnsupportedOperationException - doesn't seem like a recoverable exception
-  final def openDatagramChannel(
+  def openDatagramChannel(
     family: ProtocolFamily
-  ): IO[IOException, JDatagramChannel] = // TODO: wrapper for DatagramChannel
-    IO.effect(selectorProvider.openDatagramChannel(family)).refineToOrDie[IOException]
+  ): IO[IOException, DatagramChannel] =
+    IO.effect(DatagramChannel.fromJava(selectorProvider.openDatagramChannel(family))).refineToOrDie[IOException]
 
-  final val openPipe: IO[IOException, Pipe] =
+  val openPipe: IO[IOException, Pipe] =
     IO.effect(Pipe.fromJava(selectorProvider.openPipe())).refineToOrDie[IOException]
 
-  final val openSelector: IO[IOException, Selector] =
+  val openSelector: IO[IOException, Selector] =
     IO.effect(new Selector(selectorProvider.openSelector())).refineToOrDie[IOException]
 
-  final val openServerSocketChannel: Managed[IOException, ServerSocketChannel] =
-    ServerSocketChannel.fromJava(selectorProvider.openServerSocketChannel())
+  val openServerSocketChannel: IO[IOException, ServerSocketChannel] =
+    IO.effect(ServerSocketChannel.fromJava(selectorProvider.openServerSocketChannel())).refineToOrDie[IOException]
 
-  final val openSocketChannel: IO[IOException, SocketChannel] =
+  val openSocketChannel: IO[IOException, SocketChannel] =
     IO.effect(new SocketChannel(selectorProvider.openSocketChannel())).refineToOrDie[IOException]
 
-  final val inheritedChannel: IO[IOException, Option[JChannel]] = // TODO: wrapper for Channel
-    IO.effect(Option(selectorProvider.inheritedChannel())).refineToOrDie[IOException]
+  val inheritedChannel: IO[IOException, Option[Channel]] =
+    IO.effect(Option(selectorProvider.inheritedChannel()))
+      .map {
+        _.collect {
+          case c: jc.SocketChannel       => SocketChannel.fromJava(c)
+          case c: jc.ServerSocketChannel => ServerSocketChannel.fromJava(c)
+          case c: jc.DatagramChannel     => DatagramChannel.fromJava(c)
+          case c: jc.FileChannel         => FileChannel.fromJava(c)
+        }
+      }
+      .refineToOrDie[IOException]
 }
 
 object SelectorProvider {
 
-  final val make: IO[Nothing, SelectorProvider] =
+  final def default: IO[Nothing, SelectorProvider] =
     IO.effectTotal(JSelectorProvider.provider()).map(new SelectorProvider(_))
+
 }

@@ -1,12 +1,11 @@
 package zio.nio.file
 
 import zio.blocking._
-import zio.nio.core.file.Path
+import zio.nio.charset.Charset
 import zio.stream.{ ZSink, ZStream }
-import zio.{ Chunk, UIO, ZIO, ZManaged }
+import zio.{ Chunk, ZIO, ZManaged }
 
 import java.io.IOException
-import java.nio.charset.{ Charset, StandardCharsets }
 import java.nio.file.attribute._
 import java.nio.file.{
   CopyOption,
@@ -19,32 +18,25 @@ import java.nio.file.{
   Path => JPath
 }
 import java.util.function.BiPredicate
-import java.util.{ Comparator, Iterator => JIterator }
+import java.util.Comparator
 import scala.jdk.CollectionConverters._
 import scala.reflect._
 
 object Files {
 
-  def fromJavaIterator[A](iterator: JIterator[A]): ZStream[Blocking, Nothing, A] =
-    ZStream.unfoldM(()) { _ =>
-      effectBlocking {
-        if (iterator.hasNext) Some((iterator.next(), ())) else None
-      }.orDie
-    }
-
   def newDirectoryStream(dir: Path, glob: String = "*"): ZStream[Blocking, IOException, Path] = {
-    val managed = ZManaged.fromAutoCloseable(
-      effectBlocking(JFiles.newDirectoryStream(dir.javaPath, glob)).refineToOrDie[IOException]
-    )
-    ZStream.managed(managed).mapM(dirStream => UIO(dirStream.iterator())).flatMap(fromJavaIterator).map(Path.fromJava)
+    val managed = ZManaged
+      .fromAutoCloseable(effectBlocking(JFiles.newDirectoryStream(dir.javaPath, glob)))
+      .map(_.iterator())
+    ZStream.fromJavaIteratorManaged(managed).map(Path.fromJava).refineToOrDie[IOException]
   }
 
   def newDirectoryStream(dir: Path, filter: Path => Boolean): ZStream[Blocking, IOException, Path] = {
     val javaFilter: DirectoryStream.Filter[_ >: JPath] = javaPath => filter(Path.fromJava(javaPath))
-    val managed                                        = ZManaged.fromAutoCloseable(
-      effectBlocking(JFiles.newDirectoryStream(dir.javaPath, javaFilter)).refineToOrDie[IOException]
-    )
-    ZStream.managed(managed).mapM(dirStream => UIO(dirStream.iterator())).flatMap(fromJavaIterator).map(Path.fromJava)
+    val managed                                        = ZManaged
+      .fromAutoCloseable(effectBlocking(JFiles.newDirectoryStream(dir.javaPath, javaFilter)))
+      .map(_.iterator())
+    ZStream.fromJavaIteratorManaged(managed).map(Path.fromJava).refineToOrDie[IOException]
   }
 
   def createFile(path: Path, attrs: FileAttribute[_]*): ZIO[Blocking, IOException, Unit] =
@@ -306,8 +298,8 @@ object Files {
   def readAllBytes(path: Path): ZIO[Blocking, IOException, Chunk[Byte]] =
     effectBlocking(Chunk.fromArray(JFiles.readAllBytes(path.javaPath))).refineToOrDie[IOException]
 
-  def readAllLines(path: Path, charset: Charset = StandardCharsets.UTF_8): ZIO[Blocking, IOException, List[String]] =
-    effectBlocking(JFiles.readAllLines(path.javaPath, charset).asScala.toList).refineToOrDie[IOException]
+  def readAllLines(path: Path, charset: Charset = Charset.Standard.utf8): ZIO[Blocking, IOException, List[String]] =
+    effectBlocking(JFiles.readAllLines(path.javaPath, charset.javaCharset).asScala.toList).refineToOrDie[IOException]
 
   def writeBytes(path: Path, bytes: Chunk[Byte], openOptions: OpenOption*): ZIO[Blocking, IOException, Unit] =
     effectBlocking(JFiles.write(path.javaPath, bytes.toArray, openOptions: _*)).unit.refineToOrDie[IOException]
@@ -315,23 +307,26 @@ object Files {
   def writeLines(
     path: Path,
     lines: Iterable[CharSequence],
-    charset: Charset = StandardCharsets.UTF_8,
+    charset: Charset = Charset.Standard.utf8,
     openOptions: Set[OpenOption] = Set.empty
   ): ZIO[Blocking, IOException, Unit] =
-    effectBlocking(JFiles.write(path.javaPath, lines.asJava, charset, openOptions.toSeq: _*)).unit
+    effectBlocking(JFiles.write(path.javaPath, lines.asJava, charset.javaCharset, openOptions.toSeq: _*)).unit
+      .refineToOrDie[IOException]
+
+  def lines(path: Path, charset: Charset = Charset.Standard.utf8): ZStream[Blocking, IOException, String] =
+    ZStream
+      .fromJavaStreamManaged(
+        ZManaged.fromAutoCloseable(effectBlocking(JFiles.lines(path.javaPath, charset.javaCharset)))
+      )
       .refineToOrDie[IOException]
 
   def list(path: Path): ZStream[Blocking, IOException, Path] =
     ZStream
-      .fromJavaIteratorManaged(
-        ZManaged
-          .make(effectBlocking(JFiles.list(path.javaPath)))(stream => ZIO.effectTotal(stream.close()))
-          .map(_.iterator())
+      .fromJavaStreamManaged(
+        ZManaged.fromAutoCloseable(effectBlocking(JFiles.list(path.javaPath)))
       )
       .map(Path.fromJava)
-      .refineOrDie { case io: IOException =>
-        io
-      }
+      .refineToOrDie[IOException]
 
   def walk(
     path: Path,
@@ -339,36 +334,33 @@ object Files {
     visitOptions: Set[FileVisitOption] = Set.empty
   ): ZStream[Blocking, IOException, Path] =
     ZStream
-      .fromEffect(
-        effectBlocking(JFiles.walk(path.javaPath, maxDepth, visitOptions.toSeq: _*).iterator())
-          .refineToOrDie[IOException]
+      .fromJavaStreamManaged(
+        ZManaged.fromAutoCloseable(effectBlocking(JFiles.walk(path.javaPath, maxDepth, visitOptions.toSeq: _*)))
       )
-      .flatMap(fromJavaIterator)
       .map(Path.fromJava)
+      .refineToOrDie[IOException]
 
   def find(path: Path, maxDepth: Int = Int.MaxValue, visitOptions: Set[FileVisitOption] = Set.empty)(
     test: (Path, BasicFileAttributes) => Boolean
   ): ZStream[Blocking, IOException, Path] = {
     val matcher: BiPredicate[JPath, BasicFileAttributes] = (path, attr) => test(Path.fromJava(path), attr)
     ZStream
-      .fromEffect(
-        effectBlocking(JFiles.find(path.javaPath, maxDepth, matcher, visitOptions.toSeq: _*).iterator())
-          .refineToOrDie[IOException]
+      .fromJavaStreamManaged(
+        ZManaged.fromAutoCloseable(
+          effectBlocking(JFiles.find(path.javaPath, maxDepth, matcher, visitOptions.toSeq: _*))
+        )
       )
-      .flatMap(fromJavaIterator)
       .map(Path.fromJava)
+      .refineToOrDie[IOException]
   }
 
-//
-//  def copy(in: ZStream[Blocking, Exception, Chunk[Byte]], target: Path, options: CopyOption*): ZIO[Blocking, Exception, Long] = {
-//
-//    FileChannel.open(target).flatMap { channel =>
-//      in.fold[Blocking, Exception, Chunk[Byte], Long].flatMap { startFold =>
-//        val f = (count: Long, chunk: Chunk[Byte]) => {
-//          channel.write(chunk).map(_ + count)
-//        }
-//        startFold(0L, Function.const(true), f)
-//      }
-//    }.use(ZIO.succeed)
-//  }
+  def copy(
+    in: ZStream[Blocking, IOException, Byte],
+    target: Path,
+    options: CopyOption*
+  ): ZIO[Blocking, IOException, Long] =
+    in.toInputStream
+      .use(inputStream => effectBlocking(JFiles.copy(inputStream, target.javaPath, options: _*)))
+      .refineToOrDie[IOException]
+
 }
