@@ -2,15 +2,15 @@ package zio
 package nio
 package examples
 
-import zio.nio.file.{ Path, WatchService }
+import zio.nio.file.{Path, WatchService}
 
-import java.nio.file.{ StandardWatchEventKinds, WatchEvent }
+import java.nio.file.{StandardWatchEventKinds, WatchEvent}
 
 /**
  * Example of using the `ZStream` API for watching a file system directory for events.
  *
- * Note that on macOS the standard Java `WatchService` uses polling and so is a bit slow,
- * and only registers at most one type of event for each directory member since the last poll.
+ * Note that on macOS the standard Java `WatchService` uses polling and so is a bit slow, and only registers at most one
+ * type of event for each directory member since the last poll.
  */
 object StreamDirWatch extends App {
 

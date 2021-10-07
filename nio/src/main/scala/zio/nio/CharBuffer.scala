@@ -1,8 +1,8 @@
 package zio.nio
 
-import zio.{ Chunk, UIO, ZIO }
+import zio.{Chunk, UIO, ZIO}
 
-import java.nio.{ ByteOrder, CharBuffer => JCharBuffer }
+import java.nio.{ByteOrder, CharBuffer => JCharBuffer}
 
 /**
  * A mutable buffer of characters.
@@ -24,7 +24,8 @@ final class CharBuffer(protected[nio] val buffer: JCharBuffer) extends Buffer[Ch
    *
    * This is useful when using Java APIs that require a Java character buffer to be provided.
    *
-   * @return The effect value constructed by `f` using the underlying buffer.
+   * @return
+   *   The effect value constructed by `f` using the underlying buffer.
    */
   def withJavaBuffer[R, E, A](f: JCharBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(buffer)
 

@@ -5,7 +5,7 @@ package examples
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.console.Console
-import zio.nio.channels.{ ManagedBlockingNioOps, ServerSocketChannel, SocketChannel }
+import zio.nio.channels.{ManagedBlockingNioOps, ServerSocketChannel, SocketChannel}
 import zio.nio.charset.Charset
 import zio.stream.ZTransducer
 
@@ -15,8 +15,7 @@ import scala.util.control.Exception._
 /**
  * `toUpperCase` as a service.
  *
- * Using ZIO-NIO and ZIO streams to build a very silly TCP service.
- * Listens on port 7777 by default.
+ * Using ZIO-NIO and ZIO streams to build a very silly TCP service. Listens on port 7777 by default.
  *
  * Send it UTF-8 text and it will send back the uppercase version. Amazing!
  */
