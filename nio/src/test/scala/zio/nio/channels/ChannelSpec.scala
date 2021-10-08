@@ -3,16 +3,16 @@ package zio.nio.channels
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.duration._
-import zio.nio.{ BaseSpec, Buffer, EffectOps, InetSocketAddress, SocketAddress }
+import zio.nio.{BaseSpec, Buffer, EffectOps, InetSocketAddress, SocketAddress}
 import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem, live }
-import zio.{ IO, _ }
+import zio.test.environment.{Live, TestClock, TestConsole, TestRandom, TestSystem, live}
+import zio.{IO, _}
 
-import java.io.{ EOFException, FileNotFoundException, IOException }
+import java.io.{EOFException, FileNotFoundException, IOException}
 import java.nio.channels
-import java.{ nio => jnio }
+import java.{nio => jnio}
 
 object ChannelSpec extends BaseSpec {
 
@@ -37,23 +37,23 @@ object ChannelSpec extends BaseSpec {
           def echoServer(started: Promise[Nothing, SocketAddress]): IO[Exception, Unit] =
             for {
               sink <- Buffer.byte(3)
-              _    <- AsynchronousServerSocketChannel.open.use { server =>
-                        for {
-                          _    <- server.bindAuto()
-                          addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
-                          _    <- started.succeed(addr)
-                          _    <- server.accept.use { worker =>
-                                    worker.read(sink) *>
-                                      sink.flip *>
-                                      worker.write(sink)
-                                  }
-                        } yield ()
-                      }.fork
+              _ <- AsynchronousServerSocketChannel.open.use { server =>
+                     for {
+                       _    <- server.bindAuto()
+                       addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                       _    <- started.succeed(addr)
+                       _ <- server.accept.use { worker =>
+                              worker.read(sink) *>
+                                sink.flip *>
+                                worker.write(sink)
+                            }
+                     } yield ()
+                   }.fork
             } yield ()
 
           def echoClient(address: SocketAddress): IO[Exception, Boolean] =
             for {
-              src    <- Buffer.byte(3)
+              src <- Buffer.byte(3)
               result <- AsynchronousSocketChannel.open.use { client =>
                           for {
                             _        <- client.connect(address)
@@ -79,9 +79,9 @@ object ChannelSpec extends BaseSpec {
             for {
               result <- AsynchronousServerSocketChannel.open.use { server =>
                           for {
-                            _      <- server.bindAuto()
-                            addr   <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
-                            _      <- started.succeed(addr)
+                            _    <- server.bindAuto()
+                            addr <- server.localAddress.flatMap(opt => IO.effect(opt.get).orDie)
+                            _    <- started.succeed(addr)
                             result <- server.accept
                                         .use(worker => worker.readChunk(3) *> worker.readChunk(3) *> ZIO.succeed(false))
                                         .catchSome { case _: java.io.EOFException =>
@@ -128,13 +128,13 @@ object ChannelSpec extends BaseSpec {
 
           for {
             serverStarted1 <- Promise.make[Nothing, SocketAddress]
-            _              <- server(serverStarted1).use { s1 =>
-                                serverStarted1.await.flatMap(client).zipRight(s1.join)
-                              }
+            _ <- server(serverStarted1).use { s1 =>
+                   serverStarted1.await.flatMap(client).zipRight(s1.join)
+                 }
             serverStarted2 <- Promise.make[Nothing, SocketAddress]
-            _              <- server(serverStarted2).use { s2 =>
-                                serverStarted2.await.flatMap(client).zipRight(s2.join)
-                              }
+            _ <- server(serverStarted2).use { s2 =>
+                   serverStarted2.await.flatMap(client).zipRight(s2.join)
+                 }
           } yield assertCompletes
         },
         testM("read can be interrupted") {
@@ -145,13 +145,13 @@ object ChannelSpec extends BaseSpec {
                 for {
                   serverAddress <- serverChannel.localAddress.someOrElseM(ZIO.dieMessage("Local address must be bound"))
                   promise       <- Promise.make[Nothing, Unit]
-                  fiber         <- AsynchronousSocketChannel.open
-                                     .tapM(_.connect(serverAddress))
-                                     .use(channel => promise.succeed(()) *> channel.readChunk(1))
-                                     .fork
-                  _             <- promise.await
-                  _             <- ZIO.sleep(500.milliseconds)
-                  exit          <- fiber.interrupt
+                  fiber <- AsynchronousSocketChannel.open
+                             .tapM(_.connect(serverAddress))
+                             .use(channel => promise.succeed(()) *> channel.readChunk(1))
+                             .fork
+                  _    <- promise.await
+                  _    <- ZIO.sleep(500.milliseconds)
+                  exit <- fiber.interrupt
                 } yield assert(exit)(isInterrupted)
 
               }
@@ -186,13 +186,13 @@ object ChannelSpec extends BaseSpec {
           live {
             for {
               promise <- Promise.make[Nothing, Unit]
-              fiber   <- Pipe.open.toManaged_
-                           .flatMap(_.source)
-                           .useNioBlockingOps(ops => promise.succeed(()) *> ops.readChunk(1))
-                           .fork
-              _       <- promise.await
-              _       <- ZIO.sleep(500.milliseconds)
-              exit    <- fiber.interrupt
+              fiber <- Pipe.open.toManaged_
+                         .flatMap(_.source)
+                         .useNioBlockingOps(ops => promise.succeed(()) *> ops.readChunk(1))
+                         .fork
+              _    <- promise.await
+              _    <- ZIO.sleep(500.milliseconds)
+              exit <- fiber.interrupt
             } yield assert(exit)(isInterrupted)
           }
         },
@@ -219,7 +219,7 @@ object ChannelSpec extends BaseSpec {
               override def close(): Unit = _closed = true
             }
           }
-          val hangingChannel               = new BlockingChannel {
+          val hangingChannel = new BlockingChannel {
             override type BlockingOps = GatheringByteOps
 
             override def useBlocking[R, E >: IOException, A](
@@ -232,11 +232,11 @@ object ChannelSpec extends BaseSpec {
           live {
             for {
               promise <- Promise.make[Nothing, Unit]
-              fiber   <-
+              fiber <-
                 hangingChannel.useBlocking(ops => promise.succeed(()) *> ops.writeChunk(Chunk.single(42.toByte))).fork
-              _       <- promise.await
-              _       <- ZIO.sleep(500.milliseconds)
-              exit    <- fiber.interrupt
+              _    <- promise.await
+              _    <- ZIO.sleep(500.milliseconds)
+              exit <- fiber.interrupt
             } yield assert(exit)(isInterrupted)
           }
         },

@@ -3,7 +3,7 @@ package zio.nio
 import com.github.ghik.silencer.silent
 import zio.IO
 
-import java.net.{ NetworkInterface => JNetworkInterface, SocketException }
+import java.net.{NetworkInterface => JNetworkInterface, SocketException}
 import scala.collection.JavaConverters._
 
 class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetworkInterface) {
@@ -70,4 +70,5 @@ object NetworkInterface {
     IO.effect(JNetworkInterface.getNetworkInterfaces.asScala)
       .refineToOrDie[SocketException]
       .map(_.map(new NetworkInterface(_)))
+
 }

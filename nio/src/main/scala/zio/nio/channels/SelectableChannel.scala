@@ -4,10 +4,10 @@ package channels
 import zio.blocking.Blocking
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.channels.spi.SelectorProvider
-import zio.{ Fiber, IO, Managed, UIO, ZIO, ZManaged }
+import zio.{Fiber, IO, Managed, UIO, ZIO, ZManaged}
 
 import java.io.IOException
-import java.net.{ ServerSocket => JServerSocket, Socket => JSocket, SocketOption }
+import java.net.{ServerSocket => JServerSocket, Socket => JSocket, SocketOption}
 import java.nio.channels.{
   ClosedChannelException,
   SelectableChannel => JSelectableChannel,
@@ -43,10 +43,14 @@ trait SelectableChannel extends BlockingChannel {
   /**
    * Registers this channel with the given selector, returning a selection key.
    *
-   * @param selector The selector to register with.
-   * @param ops The key's interest set will be created with these operations.
-   * @param attachment The object to attach to the key, if any.
-   * @return The new `SelectionKey`.
+   * @param selector
+   *   The selector to register with.
+   * @param ops
+   *   The key's interest set will be created with these operations.
+   * @param attachment
+   *   The object to attach to the key, if any.
+   * @return
+   *   The new `SelectionKey`.
    */
   final def register(
     selector: Selector,
@@ -75,7 +79,8 @@ trait SelectableChannel extends BlockingChannel {
   /**
    * Puts this channel into non-blocking mode and performs a set of non-blocking operations.
    *
-   * @param f Uses the `NonBlockingOps` appropriate for this channel type to produce non-blocking effects.
+   * @param f
+   *   Uses the `NonBlockingOps` appropriate for this channel type to produce non-blocking effects.
    */
   final def useNonBlocking[R, E >: IOException, A](f: NonBlockingOps => ZIO[R, E, A]): ZIO[R, E, A] =
     configureBlocking(false) *> f(makeNonBlockingOps)
@@ -83,7 +88,8 @@ trait SelectableChannel extends BlockingChannel {
   /**
    * Puts this channel into non-blocking mode and performs a set of non-blocking operations as a managed resource.
    *
-   * @param f Uses the `NonBlockingOps` appropriate for this channel type to produce non-blocking effects.
+   * @param f
+   *   Uses the `NonBlockingOps` appropriate for this channel type to produce non-blocking effects.
    */
   final def useNonBlockingManaged[R, E >: IOException, A](f: NonBlockingOps => ZManaged[R, E, A]): ZManaged[R, E, A] =
     configureBlocking(false).toManaged_ *> f(makeNonBlockingOps)
@@ -148,6 +154,7 @@ final class SocketChannel(override protected[channels] val channel: JSocketChann
   def localAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(Option(channel.getLocalAddress()).map(SocketAddress.fromJava))
       .refineToOrDie[IOException]
+
 }
 
 object SocketChannel {
@@ -159,6 +166,7 @@ object SocketChannel {
 
   def open(remote: SocketAddress): Managed[IOException, SocketChannel] =
     IO.effect(new SocketChannel(JSocketChannel.open(remote.jSocketAddress))).refineToOrDie[IOException].toNioManaged
+
 }
 
 final class ServerSocketChannel(override protected val channel: JServerSocketChannel) extends SelectableChannel {
@@ -172,10 +180,11 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
     /**
      * Accepts a socket connection.
      *
-     * Note that the accept operation is not performed until the returned managed resource is
-     * actually used. `Managed.preallocate` can be used to preform the accept immediately.
+     * Note that the accept operation is not performed until the returned managed resource is actually used.
+     * `Managed.preallocate` can be used to preform the accept immediately.
      *
-     * @return The channel for the accepted socket connection.
+     * @return
+     *   The channel for the accepted socket connection.
      */
     def accept: Managed[IOException, SocketChannel] =
       IO.effect(new SocketChannel(channel.accept())).refineToOrDie[IOException].toNioManaged
@@ -183,8 +192,10 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
     /**
      * Accepts a connection and uses it to perform an effect on a forked fiber.
      *
-     * @param use Uses the accepted socket channel to produce an effect value, which will be run on a forked fiber.
-     * @return The fiber running the effect.
+     * @param use
+     *   Uses the accepted socket channel to produce an effect value, which will be run on a forked fiber.
+     * @return
+     *   The fiber running the effect.
      */
     def acceptAndFork[R, A](
       use: SocketChannel => ZIO[R, IOException, A]
@@ -199,10 +210,11 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
     /**
      * Accepts a socket connection.
      *
-     * Note that the accept operation is not performed until the returned managed resource is
-     * actually used. `Managed.preallocate` can be used to preform the accept immediately.
+     * Note that the accept operation is not performed until the returned managed resource is actually used.
+     * `Managed.preallocate` can be used to preform the accept immediately.
      *
-     * @return None if no connection is currently available to be accepted.
+     * @return
+     *   None if no connection is currently available to be accepted.
      */
     def accept: Managed[IOException, Option[SocketChannel]] =
       IO.effect(Option(channel.accept()).map(new SocketChannel(_)))
@@ -230,6 +242,7 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
 
   val localAddress: IO[IOException, SocketAddress] =
     IO.effect(SocketAddress.fromJava(channel.getLocalAddress())).refineToOrDie[IOException]
+
 }
 
 object ServerSocketChannel {

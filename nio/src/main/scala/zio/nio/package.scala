@@ -31,8 +31,8 @@ package object nio {
     /**
      * Explicitly represent end-of-stream in the error channel.
      *
-     * This will catch an `EOFException` failure from the effect and translate it to a failure of `None`.
-     * Other exception types are wrapped in `Some`.
+     * This will catch an `EOFException` failure from the effect and translate it to a failure of `None`. Other
+     * exception types are wrapped in `Some`.
      */
     @silent("parameter value ev in method .* is never used")
     def eofCheck[E2 >: E](implicit ev: EOFException <:< E2): ZIO[R, Option[E2], A] =
@@ -40,6 +40,7 @@ package object nio {
         case _: EOFException => ZIO.fail(None)
         case e               => ZIO.fail(Some(e))
       }
+
   }
 
   implicit final private[nio] class IOCloseableManagement[-R, +E, +A <: IOCloseable](
@@ -53,11 +54,11 @@ package object nio {
   implicit final class ManagedOps[-R, +E, +A](private val managed: ZManaged[R, E, A]) extends AnyVal {
 
     /**
-     * Use this managed resource in an effect running in a forked fiber.
-     * The resource will be released on the forked fiber after the effect exits,
-     * whether it succeeds, fails or is interrupted.
+     * Use this managed resource in an effect running in a forked fiber. The resource will be released on the forked
+     * fiber after the effect exits, whether it succeeds, fails or is interrupted.
      *
-     * @param f The effect to run in a forked fiber. The resource is only valid within this effect.
+     * @param f
+     *   The effect to run in a forked fiber. The resource is only valid within this effect.
      */
     def useForked[R2 <: R, E2 >: E, B](f: A => ZIO[R2, E2, B]): ZIO[R2, E, Fiber[E2, B]] =
       ReleaseMap.make.flatMap { releaseMap =>

@@ -1,9 +1,9 @@
 package zio.nio
 
-import zio.{ Chunk, IO }
+import zio.{Chunk, IO}
 
 import java.io.IOException
-import java.net.{ InetAddress => JInetAddress, UnknownHostException }
+import java.net.{InetAddress => JInetAddress, UnknownHostException}
 
 /**
  * Representation of an Internet Protocol (IP) address.

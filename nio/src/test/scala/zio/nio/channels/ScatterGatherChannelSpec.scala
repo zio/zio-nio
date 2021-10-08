@@ -3,14 +3,14 @@ package zio.nio.channels
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.nio.file.Path
-import zio.nio.{ BaseSpec, Buffer }
+import zio.nio.{BaseSpec, Buffer}
 import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem }
-import zio.{ Chunk, Has, IO, ZIO }
+import zio.test.environment.{Live, TestClock, TestConsole, TestRandom, TestSystem}
+import zio.{Chunk, Has, IO, ZIO}
 
-import java.nio.file.{ Files, StandardOpenOption }
+import java.nio.file.{Files, StandardOpenOption}
 import scala.io.Source
 
 object ScatterGatherChannelSpec extends BaseSpec {
@@ -30,14 +30,14 @@ object ScatterGatherChannelSpec extends BaseSpec {
             for {
               buffs <- IO.collectAll(List(Buffer.byte(5), Buffer.byte(5)))
               _     <- ops.read(buffs)
-              list  <- ZIO.foreach(buffs) { (buffer: Buffer[Byte]) =>
-                         for {
-                           _     <- buffer.flip
-                           array <- buffer.array
-                           text   = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
-                         } yield text
+              list <- ZIO.foreach(buffs) { (buffer: Buffer[Byte]) =>
+                        for {
+                          _     <- buffer.flip
+                          array <- buffer.array
+                          text   = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
+                        } yield text
 
-                       }
+                      }
             } yield assert(list)(equalTo("Hello" :: "World" :: Nil))
           }
       },

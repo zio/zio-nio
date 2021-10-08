@@ -1,11 +1,11 @@
 package zio.nio.file
 
 import zio.blocking.Blocking
-import zio.{ Chunk, ZIO }
+import zio.{Chunk, ZIO}
 
-import java.io.{ File, IOError, IOException }
+import java.io.{File, IOError, IOException}
 import java.net.URI
-import java.nio.file.{ LinkOption, Path => JPath, Paths, WatchEvent, Watchable => JWatchable }
+import java.nio.file.{LinkOption, Path => JPath, Paths, WatchEvent, Watchable => JWatchable}
 import scala.jdk.CollectionConverters._
 
 final class Path private (private[nio] val javaPath: JPath) extends Watchable {
@@ -36,12 +36,12 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
   /**
    * Resolves the given path against this path.
    */
-  def / (other: Path): Path = fromJava(javaPath.resolve(other.javaPath))
+  def /(other: Path): Path = fromJava(javaPath.resolve(other.javaPath))
 
   /**
    * Resolves the given path against this path.
    */
-  def / (other: String): Path = fromJava(javaPath.resolve(other))
+  def /(other: String): Path = fromJava(javaPath.resolve(other))
 
   def resolveSibling(other: Path): Path = fromJava(javaPath.resolveSibling(other.javaPath))
 
@@ -67,16 +67,21 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
   /**
    * Convenience method to register all directories in a tree with a `WatchService`.
    *
-   * Traverses the directory tree under this directory (including this), and calls
-   * `register` on each one. Specify `maxDepth` to limit how deep the traversal will go.
+   * Traverses the directory tree under this directory (including this), and calls `register` on each one. Specify
+   * `maxDepth` to limit how deep the traversal will go.
    *
    * Note that directories created after registration will ''not'' be watched.
    *
-   * @param watcher The watch service that all directories will be registered with.
-   * @param events All directories found will be registered for these events.
-   * @param maxDepth The maximum directory depth the traversal will go, unlimited by default.
-   * @param modifiers All directories found will be registered with these modifiers.
-   * @return A `WatchKey` for each directory registered.
+   * @param watcher
+   *   The watch service that all directories will be registered with.
+   * @param events
+   *   All directories found will be registered for these events.
+   * @param maxDepth
+   *   The maximum directory depth the traversal will go, unlimited by default.
+   * @param modifiers
+   *   All directories found will be registered with these modifiers.
+   * @return
+   *   A `WatchKey` for each directory registered.
    */
   def registerTree(
     watcher: WatchService,

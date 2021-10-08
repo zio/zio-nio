@@ -1,8 +1,8 @@
 package zio.nio
 
-import zio.{ Chunk, UIO, ZIO }
+import zio.{Chunk, UIO, ZIO}
 
-import java.nio.{ ByteOrder, LongBuffer => JLongBuffer }
+import java.nio.{ByteOrder, LongBuffer => JLongBuffer}
 
 /**
  * A mutable buffer of longs.
@@ -24,7 +24,8 @@ final class LongBuffer(protected[nio] val buffer: JLongBuffer) extends Buffer[Lo
    *
    * This is useful when using Java APIs that require a Java long buffer to be provided.
    *
-   * @return The effect value constructed by `f` using the underlying buffer.
+   * @return
+   *   The effect value constructed by `f` using the underlying buffer.
    */
   def withJavaBuffer[R, E, A](f: JLongBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(buffer)
 

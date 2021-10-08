@@ -5,11 +5,11 @@ import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.duration.durationInt
 import zio.nio.channels.SelectionKey.Operation
-import zio.nio.{ BaseSpec, Buffer, ByteBuffer, SocketAddress }
+import zio.nio.{BaseSpec, Buffer, ByteBuffer, SocketAddress}
 import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem, live }
+import zio.test.environment.{Live, TestClock, TestConsole, TestRandom, TestSystem, live}
 
 import java.io.IOException
 import java.nio.channels.CancelledKeyException
@@ -61,29 +61,28 @@ object SelectorSpec extends BaseSpec {
       for {
         _ <- selector.select
         _ <- selector.foreachSelectedKey { key =>
-               key
-                 .matchChannel { readyOps =>
-                   {
-                     case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
+               key.matchChannel { readyOps =>
+                 {
+                   case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
+                     for {
+                       scopeResult     <- scope(channel.useNonBlockingManaged(_.accept))
+                       (_, maybeClient) = scopeResult
+                       _ <- IO.whenCase(maybeClient) { case Some(client) =>
+                              client.configureBlocking(false) *> client.register(selector, Set(Operation.Read))
+                            }
+                     } yield ()
+                   case channel: SocketChannel if readyOps(Operation.Read) =>
+                     channel.useNonBlocking { client =>
                        for {
-                         scopeResult     <- scope(channel.useNonBlockingManaged(_.accept))
-                         (_, maybeClient) = scopeResult
-                         _               <- IO.whenCase(maybeClient) { case Some(client) =>
-                                              client.configureBlocking(false) *> client.register(selector, Set(Operation.Read))
-                                            }
+                         _ <- client.read(buffer)
+                         _ <- buffer.flip
+                         _ <- client.write(buffer)
+                         _ <- buffer.clear
+                         _ <- channel.close
                        } yield ()
-                     case channel: SocketChannel if readyOps(Operation.Read)         =>
-                       channel.useNonBlocking { client =>
-                         for {
-                           _ <- client.read(buffer)
-                           _ <- buffer.flip
-                           _ <- client.write(buffer)
-                           _ <- buffer.clear
-                           _ <- channel.close
-                         } yield ()
-                       }
-                   }
+                     }
                  }
+               }
                  .as(true)
              }
         _ <- selector.selectedKeys.filterOrDieMessage(_.isEmpty)("Selected key set should be empty")
@@ -93,23 +92,23 @@ object SelectorSpec extends BaseSpec {
       scope    <- Managed.scope
       selector <- Selector.open
       channel  <- ServerSocketChannel.open
-      _        <- Managed.fromEffect {
-                    for {
-                      _      <- channel.bindAuto()
-                      _      <- channel.configureBlocking(false)
-                      _      <- channel.register(selector, Set(Operation.Accept))
-                      buffer <- Buffer.byte(256)
-                      addr   <- channel.localAddress
-                      _      <- started.succeed(addr)
+      _ <- Managed.fromEffect {
+             for {
+               _      <- channel.bindAuto()
+               _      <- channel.configureBlocking(false)
+               _      <- channel.register(selector, Set(Operation.Accept))
+               buffer <- Buffer.byte(256)
+               addr   <- channel.localAddress
+               _      <- started.succeed(addr)
 
-                      /*
+               /*
                 *  we need to run the server loop twice:
                 *  1. to accept the client request
                 *  2. to read from the client channel
                 */
-                      _ <- serverLoop(scope, selector, buffer).repeat(Schedule.once)
-                    } yield ()
-                  }
+               _ <- serverLoop(scope, selector, buffer).repeat(Schedule.once)
+             } yield ()
+           }
     } yield ()
   }
 
@@ -117,16 +116,16 @@ object SelectorSpec extends BaseSpec {
     val bytes = Chunk.fromArray("Hello world".getBytes)
     for {
       buffer <- Buffer.byte(bytes)
-      text   <- SocketChannel.open(address).useNioBlockingOps { client =>
-                  for {
-                    _     <- client.write(buffer)
-                    _     <- buffer.clear
-                    _     <- client.read(buffer)
-                    array <- buffer.array
-                    text   = byteArrayToString(array)
-                    _     <- buffer.clear
-                  } yield text
-                }
+      text <- SocketChannel.open(address).useNioBlockingOps { client =>
+                for {
+                  _     <- client.write(buffer)
+                  _     <- buffer.clear
+                  _     <- client.read(buffer)
+                  array <- buffer.array
+                  text   = byteArrayToString(array)
+                  _     <- buffer.clear
+                } yield text
+              }
     } yield text
   }
 }

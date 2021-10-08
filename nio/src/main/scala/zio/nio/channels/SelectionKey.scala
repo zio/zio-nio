@@ -1,8 +1,8 @@
 package zio.nio.channels
 
-import zio.{ IO, UIO, ZIO }
+import zio.{IO, UIO, ZIO}
 
-import java.nio.{ channels => jc }
+import java.nio.{channels => jc}
 
 object SelectionKey {
 
@@ -33,7 +33,7 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
       case c: jc.DatagramChannel     => new DatagramChannel(c)
       case c: jc.Pipe.SinkChannel    => new Pipe.SinkChannel(c)
       case c: jc.Pipe.SourceChannel  => new Pipe.SourceChannel(c)
-      case other                     =>
+      case other =>
         new SelectableChannel {
           override protected val channel: jc.SelectableChannel = other
 
@@ -51,11 +51,9 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
   /**
    * Convenience method for processing keys from the selected key set.
    *
-   * Pattern matching on the channel type avoids the need for potentially
-   * unsafe casting to the channel type you expect.
+   * Pattern matching on the channel type avoids the need for potentially unsafe casting to the channel type you expect.
    *
-   * If a channel type is selected that does not match the pattern match
-   * supplied then a defect is raised.
+   * If a channel type is selected that does not match the pattern match supplied then a defect is raised.
    *
    * Usage:
    *
@@ -78,11 +76,11 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
    *   } yield ()
    * }}}
    *
-   * @param matcher Function that is passed the ready operations set, and
-   *                must return a partial function that handles whatever
-   *                channel types are registered with the selector.
-   * @return The effect value returned by `matcher`, or a defect value if
-   *         `matcher` did not match the selected channel.
+   * @param matcher
+   *   Function that is passed the ready operations set, and must return a partial function that handles whatever
+   *   channel types are registered with the selector.
+   * @return
+   *   The effect value returned by `matcher`, or a defect value if `matcher` did not match the selected channel.
    */
   def matchChannel[R, E, A](
     matcher: Set[Operation] => PartialFunction[SelectableChannel, ZIO[R, E, A]]
