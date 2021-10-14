@@ -2,12 +2,12 @@ package zio.nio
 
 package channels
 
-import zio.stream.{ Stream, ZStream }
-import zio.{ Chunk, IO, UIO }
+import zio.stream.{Stream, ZStream}
+import zio.{Chunk, IO, UIO}
 
-import java.io.{ EOFException, IOException }
-import java.nio.channels.{ ScatteringByteChannel => JScatteringByteChannel }
-import java.nio.{ ByteBuffer => JByteBuffer }
+import java.io.{EOFException, IOException}
+import java.nio.channels.{ScatteringByteChannel => JScatteringByteChannel}
+import java.nio.{ByteBuffer => JByteBuffer}
 
 /**
  * A channel that can read bytes into a sequence of buffers.
@@ -23,7 +23,8 @@ trait ScatteringByteOps {
    *
    * Fails with `java.io.EOFException` if end-of-stream is reached.
    *
-   * @return The number of bytes read in total, possibly 0
+   * @return
+   *   The number of bytes read in total, possibly 0
    */
   final def read(dsts: Seq[ByteBuffer]): IO[IOException, Long] =
     IO.effect(channel.read(unwrap(dsts))).refineToOrDie[IOException].flatMap(eofCheck)
@@ -33,7 +34,8 @@ trait ScatteringByteOps {
    *
    * Fails with `java.io.EOFException` if end-of-stream is reached.
    *
-   * @return The number of bytes read, possibly 0
+   * @return
+   *   The number of bytes read, possibly 0
    */
   final def read(dst: ByteBuffer): IO[IOException, Int] =
     IO.effect(channel.read(dst.buffer)).refineToOrDie[IOException].flatMap(eofCheck)
@@ -43,8 +45,10 @@ trait ScatteringByteOps {
    *
    * Fails with `java.io.EOFException` if end-of-stream is reached.
    *
-   * @param capacity The maximum number of bytes to be read.
-   * @return The bytes read, between 0 and `capacity` in size, inclusive
+   * @param capacity
+   *   The maximum number of bytes to be read.
+   * @return
+   *   The bytes read, between 0 and `capacity` in size, inclusive
    */
   final def readChunk(capacity: Int): IO[IOException, Chunk[Byte]] =
     for {
@@ -59,9 +63,11 @@ trait ScatteringByteOps {
    *
    * Fails with `java.io.EOFException` if end-of-stream is reached.
    *
-   * @param capacities For each int in this sequence, a chunk of that size is produced, if there is enough data in the channel.
-   * @return A list with one `Chunk` per input size. Some chunks may be less than the requested size if the channel
-   *         does not have enough data
+   * @param capacities
+   *   For each int in this sequence, a chunk of that size is produced, if there is enough data in the channel.
+   * @return
+   *   A list with one `Chunk` per input size. Some chunks may be less than the requested size if the channel does not
+   *   have enough data
    */
   final def readChunks(capacities: Seq[Int]): IO[IOException, List[Chunk[Byte]]] =
     for {
@@ -71,34 +77,32 @@ trait ScatteringByteOps {
     } yield chunks.toList
 
   /**
-   * A `ZStream` that reads from this channel.
-   * '''Note:''' This method does not work well with a channel in non-blocking mode, as it will busy-wait whenever
-   * the channel is not ready for reads. The returned stream should be run within the context of a `useBlocking`
-   * call for correct blocking and interruption support.
+   * A `ZStream` that reads from this channel. '''Note:''' This method does not work well with a channel in non-blocking
+   * mode, as it will busy-wait whenever the channel is not ready for reads. The returned stream should be run within
+   * the context of a `useBlocking` call for correct blocking and interruption support.
    *
    * The stream terminates without error if the channel reaches end-of-stream.
    *
-   * @param bufferConstruct Optional, overrides how to construct the buffer used to transfer bytes read from
-   *                        this channel into the stream. By default a heap buffer is used, but a direct buffer will
-   *                        usually perform better.
+   * @param bufferConstruct
+   *   Optional, overrides how to construct the buffer used to transfer bytes read from this channel into the stream. By
+   *   default a heap buffer is used, but a direct buffer will usually perform better.
    */
   def stream(
     bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
   ): Stream[IOException, Byte] =
     ZStream {
-      bufferConstruct.toManaged_
-        .map { buffer =>
-          val doRead = for {
-            _     <- read(buffer)
-            _     <- buffer.flip
-            chunk <- buffer.getChunk()
-            _     <- buffer.clear
-          } yield chunk
-          doRead.mapError {
-            case _: EOFException => None
-            case e               => Some(e)
-          }
+      bufferConstruct.toManaged_.map { buffer =>
+        val doRead = for {
+          _     <- read(buffer)
+          _     <- buffer.flip
+          chunk <- buffer.getChunk()
+          _     <- buffer.clear
+        } yield chunk
+        doRead.mapError {
+          case _: EOFException => None
+          case e               => Some(e)
         }
+      }
     }
 
 }

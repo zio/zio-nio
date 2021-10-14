@@ -1,6 +1,6 @@
 package zio.nio
 
-import java.net.{ InterfaceAddress => JInterfaceAddress }
+import java.net.{InterfaceAddress => JInterfaceAddress}
 
 final class InterfaceAddress private[nio] (private val jInterfaceAddress: JInterfaceAddress) {
   def address: InetAddress = new InetAddress(jInterfaceAddress.getAddress)

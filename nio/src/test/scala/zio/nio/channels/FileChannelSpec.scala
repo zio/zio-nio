@@ -3,14 +3,14 @@ package zio.nio.channels
 import zio.blocking.Blocking
 import zio.clock.Clock
 import zio.nio.charset.Charset
-import zio.nio.file.{ Files, Path }
-import zio.nio.{ BaseSpec, Buffer }
+import zio.nio.file.{Files, Path}
+import zio.nio.{BaseSpec, Buffer}
 import zio.random.Random
 import zio.stream.Stream
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem }
-import zio.{ Chunk, Has, URIO, ZIO, blocking }
+import zio.test.environment.{Live, TestClock, TestConsole, TestRandom, TestSystem}
+import zio.{Chunk, Has, URIO, ZIO, blocking}
 
 import java.io.EOFException
 import java.nio.file.StandardOpenOption
@@ -111,8 +111,8 @@ object FileChannelSpec extends BaseSpec {
         val testData =
           """Yet such is oft the course of deeds that move the wheels of the world:
             | small hands do them because they must, while the eyes of the great are elsewhere.""".stripMargin
-        val stream   = Stream.fromIterable(testData).transduce(Charset.Standard.utf8.newEncoder.transducer())
-        val file     = Path("nio/src/test/resources/sink_write_test.txt")
+        val stream = Stream.fromIterable(testData).transduce(Charset.Standard.utf8.newEncoder.transducer())
+        val file   = Path("nio/src/test/resources/sink_write_test.txt")
         FileChannel
           .open(file, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW)
           .useNioBlockingOps(channel => stream.run(channel.sink()))

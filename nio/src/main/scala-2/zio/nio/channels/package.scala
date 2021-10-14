@@ -1,7 +1,7 @@
 package zio.nio
 
 import zio.blocking.Blocking
-import zio.{ ZIO, ZManaged }
+import zio.{ZIO, ZManaged}
 
 import java.io.IOException
 

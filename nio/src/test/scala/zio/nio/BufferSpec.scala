@@ -3,7 +3,7 @@ package zio.nio
 import zio.test.Assertion._
 import zio.test._
 import zio.test.environment.TestEnvironment
-import zio.{ Chunk, IO }
+import zio.{Chunk, IO}
 
 import java.nio.{
   Buffer => JBuffer,
@@ -241,10 +241,11 @@ object BufferSpec extends BaseSpec {
               _    <- b.position(position)
               _    <- b.reset
               mark <- b.position
-            } yield assert(mark)(isWithin(0, position)) && assert(limit)(isWithin(position, capacity)))
-              .catchSomeDefect { case _: IllegalArgumentException | _: IllegalStateException =>
-                IO.effectTotal(assertCompletes)
-              }
+            } yield assert(mark)(isWithin(0, position)) && assert(limit)(
+              isWithin(position, capacity)
+            )).catchSomeDefect { case _: IllegalArgumentException | _: IllegalStateException =>
+              IO.effectTotal(assertCompletes)
+            }
         }
       }
     )

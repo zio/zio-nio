@@ -1,13 +1,13 @@
 package zio.nio
 package file
 
-import zio.blocking.{ Blocking, effectBlockingIO }
-import zio.{ IO, UIO, ZIO, ZManaged }
+import zio.blocking.{Blocking, effectBlockingIO}
+import zio.{IO, UIO, ZIO, ZManaged}
 
 import java.io.IOException
 import java.net.URI
 import java.nio.file.attribute.UserPrincipalLookupService
-import java.nio.{ file => jf }
+import java.nio.{file => jf}
 import scala.jdk.CollectionConverters._
 
 final class FileSystem private (private val javaFileSystem: jf.FileSystem) extends IOCloseable {
@@ -37,6 +37,7 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) exten
 
   def newWatchService: ZManaged[Blocking, IOException, WatchService] =
     effectBlockingIO(WatchService.fromJava(javaFileSystem.newWatchService())).toNioManaged
+
 }
 
 object FileSystem {
@@ -45,9 +46,9 @@ object FileSystem {
   /**
    * The default filesystem.
    *
-   * The default file system creates objects that provide access to the file systems accessible to the
-   * Java virtual machine. The working directory of the file system is the current user directory,
-   * named by the system property user.dir.
+   * The default file system creates objects that provide access to the file systems accessible to the Java virtual
+   * machine. The working directory of the file system is the current user directory, named by the system property
+   * user.dir.
    *
    * '''Note:''' The default filesystem cannot be closed, and if its `close` is called it will die with
    * `UnsupportedOperationException`. Therefore, do not use resource management with the default filesystem.
@@ -65,4 +66,5 @@ object FileSystem {
 
   def newFileSystem(path: Path, loader: ClassLoader): ZManaged[Blocking, IOException, FileSystem] =
     effectBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(path.javaPath, loader))).toNioManaged
+
 }

@@ -4,9 +4,9 @@ package charset
 
 import zio.stream.Stream
 import zio.test.Assertion._
-import zio.test.{ ZSpec, _ }
+import zio.test.{ZSpec, _}
 
-import java.nio.charset.{ CharacterCodingException, MalformedInputException, UnmappableCharacterException }
+import java.nio.charset.{CharacterCodingException, MalformedInputException, UnmappableCharacterException}
 
 object CharsetSpec extends DefaultRunnableSpec {
 

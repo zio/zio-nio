@@ -30,6 +30,7 @@ trait Watchable {
   ): IO[IOException, WatchKey] =
     IO.effect(new WatchKey(javaWatchable.register(watcher.javaWatchService, events.toArray, modifiers: _*)))
       .refineToOrDie[IOException]
+
 }
 
 object Watchable {
@@ -38,6 +39,7 @@ object Watchable {
     new Watchable {
       override protected val javaWatchable = jWatchable
     }
+
 }
 
 /**
@@ -52,33 +54,33 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
   /**
    * Retrieves and removes all pending events for this watch key.
    *
-   * This does not block, it will immediately return an empty list if there are no events pending.
-   * Typically, this key should be reset after processing the returned events, the
-   * `pollEventsManaged` method can be used to do this automatically and reliably.
+   * This does not block, it will immediately return an empty list if there are no events pending. Typically, this key
+   * should be reset after processing the returned events, the `pollEventsManaged` method can be used to do this
+   * automatically and reliably.
    */
   def pollEvents: UIO[List[WatchEvent[_]]] = UIO.effectTotal(javaKey.pollEvents().asScala.toList)
 
   /**
    * Retrieves and removes all pending events for this watch key as a managed resource.
    *
-   * This does not block, it will immediately return an empty list if there are no events pending.
-   * When the returned `Managed` completed, this key will be '''reset'''.
+   * This does not block, it will immediately return an empty list if there are no events pending. When the returned
+   * `Managed` completed, this key will be '''reset'''.
    */
   def pollEventsManaged: Managed[Nothing, List[WatchEvent[_]]] = pollEvents.toManaged_.ensuring(reset)
 
   /**
-   * Resets this watch key, making it eligible to be re-queued in the `WatchService`.
-   * A key is typically reset after all the pending events retrieved from `pollEvents` have been processed.
-   * Use `pollEventsManaged` to automatically and reliably perform a reset.
+   * Resets this watch key, making it eligible to be re-queued in the `WatchService`. A key is typically reset after all
+   * the pending events retrieved from `pollEvents` have been processed. Use `pollEventsManaged` to automatically and
+   * reliably perform a reset.
    */
   def reset: UIO[Boolean] = UIO.effectTotal(javaKey.reset())
 
   /**
-   * Cancels the registration with the watch service. Upon return the watch key will be invalid.
-   * If the watch key is enqueued, waiting to be retrieved from the watch service, then it will remain in the
-   * queue until it is removed. Pending events, if any, remain pending and may be retrieved by invoking the
-   * pollEvents method after the key is cancelled. If this watch key has already been cancelled then invoking
-   * this method has no effect. Once cancelled, a watch key remains forever invalid.
+   * Cancels the registration with the watch service. Upon return the watch key will be invalid. If the watch key is
+   * enqueued, waiting to be retrieved from the watch service, then it will remain in the queue until it is removed.
+   * Pending events, if any, remain pending and may be retrieved by invoking the pollEvents method after the key is
+   * cancelled. If this watch key has already been cancelled then invoking this method has no effect. Once cancelled, a
+   * watch key remains forever invalid.
    */
   def cancel: UIO[Unit] = UIO.effectTotal(javaKey.cancel())
 
@@ -95,21 +97,20 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
    * Convenience method to construct the complete path indicated by a `WatchEvent`.
    *
    * If both the following are true:
-   * 1. This key's watchable is a filesystem path
-   * 2. The event has a path as its context
+   *   1. This key's watchable is a filesystem path 2. The event has a path as its context
    *
-   * then this method returns a path with the event's path resolved against
-   * this key's path, `(key path) / (event path)`.
+   * then this method returns a path with the event's path resolved against this key's path, `(key path) / (event
+   * path)`.
    *
-   * If either of the above conditions don't hold, `None` is returned.
-   * The conditions will always hold when watching file system paths.
+   * If either of the above conditions don't hold, `None` is returned. The conditions will always hold when watching
+   * file system paths.
    */
   def resolveEventPath(event: WatchEvent[_]): Option[Path] =
     for {
-      parent    <- javaKey.watchable() match {
-                     case javaPath: JPath => Some(Path.fromJava(javaPath))
-                     case _               => None
-                   }
+      parent <- javaKey.watchable() match {
+                  case javaPath: JPath => Some(Path.fromJava(javaPath))
+                  case _               => None
+                }
       eventPath <- event.asPath
     } yield parent / eventPath
 
@@ -121,8 +122,8 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
  * For example a file manager may use a watch service to monitor a directory for changes so that it can update its
  * display of the list of files when files are created or deleted.
  *
- * Note if any of the methods, or a stream returned by the `stream` method, is used after this `WatchService`
- * has been closed, the operation will die with a `ClosedWatchServiceException`.
+ * Note if any of the methods, or a stream returned by the `stream` method, is used after this `WatchService` has been
+ * closed, the operation will die with a `ClosedWatchServiceException`.
  */
 final class WatchService private (private[file] val javaWatchService: JWatchService) extends IOCloseable {
 
@@ -145,8 +146,8 @@ final class WatchService private (private[file] val javaWatchService: JWatchServ
   /**
    * A stream of signalled objects which have pending events.
    *
-   * Note the `WatchKey` objects returned by this stream must be reset before they will be
-   * queued again with any additional events.
+   * Note the `WatchKey` objects returned by this stream must be reset before they will be queued again with any
+   * additional events.
    */
   def stream: ZStream[Blocking, Nothing, WatchKey] = ZStream.repeatEffect(take)
 

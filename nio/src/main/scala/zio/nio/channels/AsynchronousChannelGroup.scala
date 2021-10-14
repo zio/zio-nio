@@ -1,12 +1,12 @@
 package zio.nio.channels
 
 import zio.duration._
-import zio.{ IO, UIO }
+import zio.{IO, UIO}
 
 import java.io.IOException
-import java.nio.channels.spi.{ AsynchronousChannelProvider => JAsynchronousChannelProvider }
-import java.nio.channels.{ AsynchronousChannelGroup => JAsynchronousChannelGroup }
-import java.util.concurrent.{ ThreadFactory => JThreadFactory, TimeUnit }
+import java.nio.channels.spi.{AsynchronousChannelProvider => JAsynchronousChannelProvider}
+import java.nio.channels.{AsynchronousChannelGroup => JAsynchronousChannelGroup}
+import java.util.concurrent.{ThreadFactory => JThreadFactory, TimeUnit}
 import scala.concurrent.ExecutionContextExecutorService
 
 object AsynchronousChannelGroup {
@@ -32,6 +32,7 @@ object AsynchronousChannelGroup {
     IO.effect(
       new AsynchronousChannelGroup(JAsynchronousChannelGroup.withThreadPool(executor))
     ).refineToOrDie[IOException]
+
 }
 
 final class AsynchronousChannelGroup(val channelGroup: JAsynchronousChannelGroup) {
@@ -50,4 +51,5 @@ final class AsynchronousChannelGroup(val channelGroup: JAsynchronousChannelGroup
 
   val shutdownNow: IO[IOException, Unit] =
     IO.effect(channelGroup.shutdownNow()).refineToOrDie[IOException]
+
 }
