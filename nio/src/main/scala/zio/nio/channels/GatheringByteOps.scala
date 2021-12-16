@@ -1,7 +1,7 @@
 package zio.nio.channels
 
 import zio._
-import zio.clock.Clock
+import zio.Clock
 import zio.nio.{Buffer, ByteBuffer}
 import zio.stream.{ZSink, ZStream}
 
@@ -19,10 +19,10 @@ trait GatheringByteOps {
   protected[channels] def channel: JGatheringByteChannel
 
   final def write(srcs: List[ByteBuffer]): IO[IOException, Long] =
-    IO.effect(channel.write(unwrap(srcs))).refineToOrDie[IOException]
+    IO.attempt(channel.write(unwrap(srcs))).refineToOrDie[IOException]
 
   final def write(src: ByteBuffer): IO[IOException, Int] =
-    IO.effect(channel.write(src.buffer)).refineToOrDie[IOException]
+    IO.attempt(channel.write(src.buffer)).refineToOrDie[IOException]
 
   /**
    * Writes a list of chunks, in order.
@@ -70,7 +70,7 @@ trait GatheringByteOps {
   ): ZSink[Clock, IOException, Byte, Byte, Long] =
     ZSink {
       for {
-        buffer   <- bufferConstruct.toManaged_
+        buffer   <- bufferConstruct.toManaged
         countRef <- Ref.makeManaged(0L)
       } yield (_: Option[Chunk[Byte]]).map { chunk =>
         def doWrite(total: Int, c: Chunk[Byte]): ZIO[Clock, IOException, Int] = {
@@ -78,7 +78,7 @@ trait GatheringByteOps {
             remaining <- buffer.putChunk(c)
             _         <- buffer.flip
             count <- ZStream
-                       .repeatEffectWith(write(buffer), Schedule.recurWhileM(Function.const(buffer.hasRemaining)))
+                       .repeatZIOWithSchedule(write(buffer), Schedule.recureWhileZIO(Function.const(buffer.hasRemaining)))
                        .runSum
             _ <- buffer.clear
           } yield (count + total, remaining)
@@ -89,7 +89,7 @@ trait GatheringByteOps {
           }
         }
 
-        doWrite(0, chunk).foldM(
+        doWrite(0, chunk).foldZIO(
           e => buffer.getChunk().flatMap(ZSink.Push.fail(e, _)),
           count => countRef.update(_ + count.toLong)
         )

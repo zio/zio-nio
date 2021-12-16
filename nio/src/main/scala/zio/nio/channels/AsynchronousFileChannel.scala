@@ -2,7 +2,7 @@ package zio.nio
 package channels
 
 import zio._
-import zio.clock.Clock
+import zio.Clock
 import zio.nio.file.Path
 import zio.stream.{Stream, ZSink, ZStream}
 
@@ -17,7 +17,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
 
   import AsynchronousByteChannel.effectAsyncChannel
 
-  def force(metaData: Boolean): IO[IOException, Unit] = IO.effect(channel.force(metaData)).refineToOrDie[IOException]
+  def force(metaData: Boolean): IO[IOException, Unit] = IO.attempt(channel.force(metaData)).refineToOrDie[IOException]
 
   def lock(position: Long = 0L, size: Long = Long.MaxValue, shared: Boolean = false): IO[IOException, FileLock] =
     effectAsyncChannel[JAsynchronousFileChannel, JFileLock](channel)(c => c.lock(position, size, shared, (), _))
@@ -53,16 +53,16 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
       chunk <- b.getChunk()
     } yield chunk
 
-  def size: IO[IOException, Long] = IO.effect(channel.size()).refineToOrDie[IOException]
+  def size: IO[IOException, Long] = IO.attempt(channel.size()).refineToOrDie[IOException]
 
-  def truncate(size: Long): IO[IOException, Unit] = IO.effect(channel.truncate(size)).refineToOrDie[IOException].unit
+  def truncate(size: Long): IO[IOException, Unit] = IO.attempt(channel.truncate(size)).refineToOrDie[IOException].unit
 
   def tryLock(
     position: Long = 0L,
     size: Long = Long.MaxValue,
     shared: Boolean = false
   ): IO[IOException, FileLock] =
-    IO.effect(new FileLock(channel.tryLock(position, size, shared))).refineToOrDie[IOException]
+    IO.attempt(new FileLock(channel.tryLock(position, size, shared))).refineToOrDie[IOException]
 
   def write(src: ByteBuffer, position: Long): IO[IOException, Int] =
     src.withJavaBuffer { buf =>
@@ -107,7 +107,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
     ZStream {
       for {
         posRef <- Ref.makeManaged(position)
-        buffer <- bufferConstruct.toManaged_
+        buffer <- bufferConstruct.toManaged
       } yield {
         val doRead = for {
           pos   <- posRef.get
@@ -139,7 +139,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
   ): ZSink[Clock, IOException, Byte, Byte, Long] =
     ZSink {
       for {
-        buffer <- bufferConstruct.toManaged_
+        buffer <- bufferConstruct.toManaged
         posRef <- Ref.makeManaged(position)
       } yield (_: Option[Chunk[Byte]]).map { chunk =>
         def doWrite(currentPos: Long, c: Chunk[Byte]): ZIO[Clock, IOException, Long] = {
@@ -147,9 +147,9 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
             remaining <- buffer.putChunk(c)
             _         <- buffer.flip
             count <- ZStream
-                       .repeatEffectWith(
+                       .repeatZIOWithSchedule(
                          write(buffer, currentPos),
-                         Schedule.recurWhileM(Function.const(buffer.hasRemaining))
+                         Schedule.recureWhileZIO(Function.const(buffer.hasRemaining))
                        )
                        .runSum
             _ <- buffer.clear
@@ -180,7 +180,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
 object AsynchronousFileChannel {
 
   def open(file: Path, options: OpenOption*): Managed[IOException, AsynchronousFileChannel] =
-    IO.effect(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*)))
+    IO.attempt(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*)))
       .refineToOrDie[IOException]
       .toNioManaged
 
@@ -190,7 +190,7 @@ object AsynchronousFileChannel {
     executor: Option[ExecutionContextExecutorService],
     attrs: Set[FileAttribute[_]]
   ): Managed[IOException, AsynchronousFileChannel] =
-    IO.effect(
+    IO.attempt(
       new AsynchronousFileChannel(
         JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
       )

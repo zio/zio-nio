@@ -21,14 +21,14 @@ final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset
   def contains(cs: Charset): Boolean = javaCharset.contains(cs.javaCharset)
 
   def decode(byteBuffer: ByteBuffer): UIO[CharBuffer] =
-    byteBuffer.withJavaBuffer(jBuf => UIO.effectTotal(Buffer.charFromJava(javaCharset.decode(jBuf))))
+    byteBuffer.withJavaBuffer(jBuf => UIO.succeed(Buffer.charFromJava(javaCharset.decode(jBuf))))
 
   def displayName: String = javaCharset.displayName()
 
   def displayName(locale: ju.Locale): String = javaCharset.displayName(locale)
 
   def encode(charBuffer: CharBuffer): UIO[ByteBuffer] =
-    charBuffer.withJavaBuffer(jBuf => UIO.effectTotal(Buffer.byteFromJava(javaCharset.encode(jBuf))))
+    charBuffer.withJavaBuffer(jBuf => UIO.succeed(Buffer.byteFromJava(javaCharset.encode(jBuf))))
 
   override def equals(other: Any): Boolean =
     other match {

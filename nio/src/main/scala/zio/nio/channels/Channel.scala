@@ -1,11 +1,11 @@
 package zio.nio.channels
 
-import zio.blocking.{Blocking, blocking}
 import zio.nio.IOCloseable
 import zio.{IO, UIO, ZIO}
 
 import java.io.IOException
 import java.nio.channels.{Channel => JChannel}
+import zio.ZIO.blocking
 
 trait Channel extends IOCloseable {
 
@@ -14,12 +14,12 @@ trait Channel extends IOCloseable {
   /**
    * Closes this channel.
    */
-  final def close: IO[IOException, Unit] = IO.effect(channel.close()).refineToOrDie[IOException]
+  final def close: IO[IOException, Unit] = IO.attempt(channel.close()).refineToOrDie[IOException]
 
   /**
    * Tells whether or not this channel is open.
    */
-  final def isOpen: UIO[Boolean] = IO.effectTotal(channel.isOpen)
+  final def isOpen: UIO[Boolean] = IO.succeed(channel.isOpen)
 }
 
 /**
@@ -32,7 +32,7 @@ trait BlockingChannel extends Channel {
    */
   type BlockingOps
 
-  final protected def nioBlocking[R, E, A](zioEffect: ZIO[R, E, A]): ZIO[R with Blocking, E, A] =
+  final protected def nioBlocking[R, E, A](zioEffect: ZIO[R, E, A]): ZIO[R with Any, E, A] =
     blocking(zioEffect).fork.flatMap(_.join).onInterrupt(close.ignore)
 
   /**
@@ -44,6 +44,6 @@ trait BlockingChannel extends Channel {
    *   Given a `BlockingOps` argument appropriate for this channel type, produces an effect value containing blocking
    *   operations.
    */
-  def useBlocking[R, E >: IOException, A](f: BlockingOps => ZIO[R, E, A]): ZIO[R with Blocking, E, A]
+  def useBlocking[R, E >: IOException, A](f: BlockingOps => ZIO[R, E, A]): ZIO[R with Any, E, A]
 
 }

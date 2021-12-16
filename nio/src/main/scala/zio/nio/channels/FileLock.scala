@@ -61,9 +61,9 @@ final class FileLock private[channels] (javaLock: JFileLock) {
    * Tells whether or not this lock is valid. A lock object remains valid until it is released or the associated file
    * channel is closed, whichever comes first.
    */
-  def isValid: UIO[Boolean] = UIO.effectTotal(javaLock.isValid)
+  def isValid: UIO[Boolean] = UIO.succeed(javaLock.isValid)
 
-  def release: IO[IOException, Unit] = IO.effect(javaLock.release()).refineToOrDie[IOException]
+  def release: IO[IOException, Unit] = IO.attempt(javaLock.release()).refineToOrDie[IOException]
 }
 
 object FileLock {

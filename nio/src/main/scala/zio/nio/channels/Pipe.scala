@@ -9,10 +9,10 @@ import java.nio.channels.{Pipe => JPipe}
 final class Pipe private (private val pipe: JPipe) {
 
   val source: Managed[Nothing, Pipe.SourceChannel] =
-    IO.effectTotal(new channels.Pipe.SourceChannel(pipe.source())).toNioManaged
+    IO.succeed(new channels.Pipe.SourceChannel(pipe.source())).toNioManaged
 
   val sink: Managed[Nothing, Pipe.SinkChannel] =
-    IO.effectTotal(new Pipe.SinkChannel(pipe.sink())).toNioManaged
+    IO.succeed(new Pipe.SinkChannel(pipe.sink())).toNioManaged
 
 }
 
@@ -55,7 +55,7 @@ object Pipe {
   }
 
   val open: IO[IOException, Pipe] =
-    IO.effect(new Pipe(JPipe.open())).refineToOrDie[IOException]
+    IO.attempt(new Pipe(JPipe.open())).refineToOrDie[IOException]
 
   def fromJava(javaPipe: JPipe): Pipe = new Pipe(javaPipe)
 

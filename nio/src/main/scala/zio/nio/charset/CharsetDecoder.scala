@@ -24,7 +24,7 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
   def charset: Charset = Charset.fromJava(javaDecoder.charset())
 
   def decode(in: ByteBuffer): IO[j.CharacterCodingException, CharBuffer] =
-    in.withJavaBuffer[Any, Throwable, CharBuffer](jBuf => IO.effect(Buffer.charFromJava(javaDecoder.decode(jBuf))))
+    in.withJavaBuffer[Any, Throwable, CharBuffer](jBuf => IO.attempt(Buffer.charFromJava(javaDecoder.decode(jBuf))))
       .refineToOrDie[j.CharacterCodingException]
 
   def decode(
@@ -34,14 +34,14 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
   ): UIO[CoderResult] =
     in.withJavaBuffer { jIn =>
       out.withJavaBuffer { jOut =>
-        IO.effectTotal(
+        IO.succeed(
           CoderResult.fromJava(javaDecoder.decode(jIn, jOut, endOfInput))
         )
       }
     }
 
   def autoDetect: UIO[AutoDetect] =
-    UIO.effectTotal {
+    UIO.succeed {
       if (javaDecoder.isAutoDetecting)
         if (javaDecoder.isCharsetDetected)
           AutoDetect.Detected(Charset.fromJava(javaDecoder.detectedCharset()))
@@ -52,28 +52,28 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
     }
 
   def flush(out: CharBuffer): UIO[CoderResult] =
-    out.withJavaBuffer(jOut => UIO.effectTotal(CoderResult.fromJava(javaDecoder.flush(jOut))))
+    out.withJavaBuffer(jOut => UIO.succeed(CoderResult.fromJava(javaDecoder.flush(jOut))))
 
-  def malformedInputAction: UIO[j.CodingErrorAction] = UIO.effectTotal(javaDecoder.malformedInputAction())
+  def malformedInputAction: UIO[j.CodingErrorAction] = UIO.succeed(javaDecoder.malformedInputAction())
 
   def onMalformedInput(errorAction: j.CodingErrorAction): UIO[Unit] =
-    UIO.effectTotal(javaDecoder.onMalformedInput(errorAction)).unit
+    UIO.succeed(javaDecoder.onMalformedInput(errorAction)).unit
 
-  def unmappableCharacterAction: UIO[j.CodingErrorAction] = UIO.effectTotal(javaDecoder.unmappableCharacterAction())
+  def unmappableCharacterAction: UIO[j.CodingErrorAction] = UIO.succeed(javaDecoder.unmappableCharacterAction())
 
   def onUnmappableCharacter(errorAction: j.CodingErrorAction): UIO[Unit] =
-    UIO.effectTotal(javaDecoder.onUnmappableCharacter(errorAction)).unit
+    UIO.succeed(javaDecoder.onUnmappableCharacter(errorAction)).unit
 
   def maxCharsPerByte: Float = javaDecoder.maxCharsPerByte()
 
-  def replacement: UIO[String] = UIO.effectTotal(javaDecoder.replacement())
+  def replacement: UIO[String] = UIO.succeed(javaDecoder.replacement())
 
-  def replaceWith(replacement: String): UIO[Unit] = UIO.effectTotal(javaDecoder.replaceWith(replacement)).unit
+  def replaceWith(replacement: String): UIO[Unit] = UIO.succeed(javaDecoder.replaceWith(replacement)).unit
 
   /**
    * Resets this decoder, clearing any internal state.
    */
-  def reset: UIO[Unit] = UIO.effectTotal(javaDecoder.reset()).unit
+  def reset: UIO[Unit] = UIO.succeed(javaDecoder.reset()).unit
 
   /**
    * Decodes a stream of bytes into characters according to this character set's encoding.
@@ -86,9 +86,9 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
   def transducer(bufSize: Int = 5000): Transducer[j.CharacterCodingException, Byte, Char] = {
     val push: Managed[Nothing, Option[Chunk[Byte]] => IO[j.CharacterCodingException, Chunk[Char]]] = {
       for {
-        _          <- reset.toManaged_
-        byteBuffer <- Buffer.byte(bufSize).toManaged_
-        charBuffer <- Buffer.char((bufSize.toFloat * this.averageCharsPerByte).round).toManaged_
+        _          <- reset.toManaged
+        byteBuffer <- Buffer.byte(bufSize).toManaged
+        charBuffer <- Buffer.char((bufSize.toFloat * this.averageCharsPerByte).round).toManaged
       } yield {
 
         def handleCoderResult(coderResult: CoderResult) =

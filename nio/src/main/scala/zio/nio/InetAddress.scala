@@ -32,14 +32,14 @@ final class InetAddress private[nio] (private[nio] val jInetAddress: JInetAddres
   def isMCOrgLocal: Boolean = jInetAddress.isMCOrgLocal
 
   def isReachable(timeOut: Int): IO[IOException, Boolean] =
-    IO.effect(jInetAddress.isReachable(timeOut)).refineToOrDie[IOException]
+    IO.attempt(jInetAddress.isReachable(timeOut)).refineToOrDie[IOException]
 
   def isReachable(
     networkInterface: NetworkInterface,
     ttl: Integer,
     timeout: Integer
   ): IO[IOException, Boolean] =
-    IO.effect(jInetAddress.isReachable(networkInterface.jNetworkInterface, ttl, timeout))
+    IO.attempt(jInetAddress.isReachable(networkInterface.jNetworkInterface, ttl, timeout))
       .refineToOrDie[IOException]
 
   def hostName: String = jInetAddress.getHostName
@@ -63,22 +63,22 @@ final class InetAddress private[nio] (private[nio] val jInetAddress: JInetAddres
 object InetAddress {
 
   def byAddress(bytes: Chunk[Byte]): IO[UnknownHostException, InetAddress] =
-    IO.effect(new InetAddress(JInetAddress.getByAddress(bytes.toArray)))
+    IO.attempt(new InetAddress(JInetAddress.getByAddress(bytes.toArray)))
       .refineToOrDie[UnknownHostException]
 
   def byAddress(hostname: String, bytes: Chunk[Byte]): IO[UnknownHostException, InetAddress] =
-    IO.effect(new InetAddress(JInetAddress.getByAddress(hostname, bytes.toArray)))
+    IO.attempt(new InetAddress(JInetAddress.getByAddress(hostname, bytes.toArray)))
       .refineToOrDie[UnknownHostException]
 
   def byAllName(hostName: String): IO[UnknownHostException, List[InetAddress]] =
-    IO.effect(JInetAddress.getAllByName(hostName).toList.map(new InetAddress(_)))
+    IO.attempt(JInetAddress.getAllByName(hostName).toList.map(new InetAddress(_)))
       .refineToOrDie[UnknownHostException]
 
   def byName(hostName: String): IO[UnknownHostException, InetAddress] =
-    IO.effect(new InetAddress(JInetAddress.getByName(hostName)))
+    IO.attempt(new InetAddress(JInetAddress.getByName(hostName)))
       .refineToOrDie[UnknownHostException]
 
   def localHost: IO[UnknownHostException, InetAddress] =
-    IO.effect(new InetAddress(JInetAddress.getLocalHost)).refineToOrDie[UnknownHostException]
+    IO.attempt(new InetAddress(JInetAddress.getLocalHost)).refineToOrDie[UnknownHostException]
 
 }

@@ -2,12 +2,12 @@ package zio
 package nio
 package examples
 
-import zio.blocking.Blocking
-import zio.console.Console
+
 import zio.nio.channels.{FileChannel, ManagedBlockingNioOps}
 import zio.nio.charset.Charset
 import zio.nio.file.Path
 import zio.stream.ZStream
+import zio.{ Console, Console, ZIOAppDefault }
 
 /**
  * Dumps a text file to the console using a specified encoding.
@@ -15,7 +15,7 @@ import zio.stream.ZStream
  * Two command line parameters must be provided:
  *   1. The path of the file to dump 2. The character encoding to use — optional, defaults to UTF-8
  */
-object TextFileDump extends App {
+object TextFileDump extends ZIOAppDefault {
 
   override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] = {
     val charset = (args match {
@@ -31,19 +31,19 @@ object TextFileDump extends App {
     program.exitCode
   }
 
-  private def dump(charset: Charset, file: Path): ZIO[Console with Blocking, Exception, Unit] =
+  private def dump(charset: Charset, file: Path): ZIO[Console with Any, Exception, Unit] =
     FileChannel.open(file).useNioBlockingOps { fileOps =>
-      val inStream: ZStream[Blocking, Exception, Byte] = ZStream.repeatEffectChunkOption {
+      val inStream: ZStream[Any, Exception, Byte] = ZStream.repeatZIOChunkOption {
         fileOps.readChunk(1000).asSomeError.flatMap { chunk =>
           if (chunk.isEmpty) ZIO.fail(None) else ZIO.succeed(chunk)
         }
       }
 
       // apply decoding transducer
-      val charStream: ZStream[Blocking, Exception, Char] =
+      val charStream: ZStream[Any, Exception, Char] =
         inStream.transduce(charset.newDecoder.transducer())
 
-      charStream.foreachChunk(chars => console.putStr(chars.mkString))
+      charStream.runForeachChunk(chars => Console.print(chars.mkString))
     }
 
 }

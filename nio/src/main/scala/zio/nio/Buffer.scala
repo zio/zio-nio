@@ -102,7 +102,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
   /**
    * Returns this buffer's position.
    */
-  final def position: UIO[Int] = UIO.effectTotal(buffer.position)
+  final def position: UIO[Int] = UIO.succeed(buffer.position)
 
   /**
    * Sets this buffer's position.
@@ -112,7 +112,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * @param newPosition
    *   Must be >= 0 and <= the current limit.
    */
-  final def position(newPosition: Int): UIO[Unit] = UIO.effectTotal(buffer.position(newPosition)).unit
+  final def position(newPosition: Int): UIO[Unit] = UIO.succeed(buffer.position(newPosition)).unit
 
   /**
    * Moves this buffer's position forward or backwards by a delta.
@@ -132,7 +132,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
   /**
    * Returns this buffer's limit.
    */
-  final def limit: UIO[Int] = UIO.effectTotal(buffer.limit)
+  final def limit: UIO[Int] = UIO.succeed(buffer.limit)
 
   /**
    * Sets this buffer's limit.
@@ -142,7 +142,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * @param newLimit
    *   Must be >= 0 and <= this buffer's capacity.
    */
-  final def limit(newLimit: Int): UIO[Unit] = UIO.effectTotal(buffer.limit(newLimit)).unit
+  final def limit(newLimit: Int): UIO[Unit] = UIO.succeed(buffer.limit(newLimit)).unit
 
   /**
    * Moves this buffer's limit forward or backwards by a delta.
@@ -162,24 +162,24 @@ abstract class Buffer[A: ClassTag] private[nio] () {
   /**
    * Returns the number of elements between this buffer's position and its limit.
    */
-  final def remaining: UIO[Int] = UIO.effectTotal(buffer.remaining)
+  final def remaining: UIO[Int] = UIO.succeed(buffer.remaining)
 
   /**
    * Indicates whether there are any elements between this buffer's position and its limit.
    */
-  final def hasRemaining: UIO[Boolean] = UIO.effectTotal(buffer.hasRemaining)
+  final def hasRemaining: UIO[Boolean] = UIO.succeed(buffer.hasRemaining)
 
   /**
    * Sets this buffer's mark to the current position.
    */
-  final def mark: UIO[Unit] = UIO.effectTotal(buffer.mark()).unit
+  final def mark: UIO[Unit] = UIO.succeed(buffer.mark()).unit
 
   /**
    * Resets the position to the previously set mark. A mark ''must'' be set before calling this.
    *
    * Dies with `InvalidMarkException` if a mark has not previously been set.
    */
-  final def reset: UIO[Unit] = UIO.effectTotal(buffer.reset()).unit
+  final def reset: UIO[Unit] = UIO.succeed(buffer.reset()).unit
 
   /**
    * Clears this buffer. The position is set to zero, the limit is set to the capacity, and the mark is discarded. No
@@ -189,7 +189,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * If the buffer's current values have not been completely processed, then the `compact` method may be more
    * appropriate.
    */
-  final def clear: UIO[Unit] = UIO.effectTotal(buffer.clear()).unit
+  final def clear: UIO[Unit] = UIO.succeed(buffer.clear()).unit
 
   /**
    * Flips this buffer. The limit is set to the current position and then the position is set to zero. If the mark is
@@ -199,13 +199,13 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * This method is often used in conjunction with the `compact` method when transferring data from one place to
    * another.
    */
-  final def flip: UIO[Unit] = UIO.effectTotal(buffer.flip()).unit
+  final def flip: UIO[Unit] = UIO.succeed(buffer.flip()).unit
 
   /**
    * Rewinds this buffer. The position is set to zero and the mark is discarded. Invoke this method before a sequence of
    * channel-write or get operations, assuming that the limit has already been set appropriately.
    */
-  final def rewind: UIO[Unit] = UIO.effectTotal(buffer.rewind()).unit
+  final def rewind: UIO[Unit] = UIO.succeed(buffer.rewind()).unit
 
   /**
    * Indicates if this buffer is read-only.
@@ -284,7 +284,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
     if (buffer.hasArray)
       for {
         a      <- array
-        offset <- UIO.effectTotal(buffer.arrayOffset())
+        offset <- UIO.succeed(buffer.arrayOffset())
         result <- hasArray(a, offset)
       } yield result
     else
@@ -373,7 +373,7 @@ object Buffer {
    * @param capacity
    *   The number of bytes to allocate.
    */
-  def byte(capacity: Int): UIO[ByteBuffer] = UIO.effectTotal(byteFromJava(JByteBuffer.allocate(capacity)))
+  def byte(capacity: Int): UIO[ByteBuffer] = UIO.succeed(byteFromJava(JByteBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -384,7 +384,7 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def byte(chunk: Chunk[Byte]): UIO[ByteBuffer] = UIO.effectTotal(byteFromJava(JByteBuffer.wrap(chunk.toArray)))
+  def byte(chunk: Chunk[Byte]): UIO[ByteBuffer] = UIO.succeed(byteFromJava(JByteBuffer.wrap(chunk.toArray)))
 
   /**
    * Allocates a direct byte buffer.
@@ -396,7 +396,7 @@ object Buffer {
    * @param capacity
    *   The number of bytes to allocate.
    */
-  def byteDirect(capacity: Int): UIO[ByteBuffer] = UIO.effectTotal(byteFromJava(JByteBuffer.allocateDirect(capacity)))
+  def byteDirect(capacity: Int): UIO[ByteBuffer] = UIO.succeed(byteFromJava(JByteBuffer.allocateDirect(capacity)))
 
   /**
    * Wraps an existing Java `ByteBuffer`.
@@ -415,7 +415,7 @@ object Buffer {
    * @param capacity
    *   The number of characters to allocate.
    */
-  def char(capacity: Int): UIO[CharBuffer] = UIO.effectTotal(charFromJava(JCharBuffer.allocate(capacity)))
+  def char(capacity: Int): UIO[CharBuffer] = UIO.succeed(charFromJava(JCharBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -426,7 +426,7 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def char(chunk: Chunk[Char]): UIO[CharBuffer] = UIO.effectTotal(charFromJava(JCharBuffer.wrap(chunk.toArray)))
+  def char(chunk: Chunk[Char]): UIO[CharBuffer] = UIO.succeed(charFromJava(JCharBuffer.wrap(chunk.toArray)))
 
   /**
    * Creates a read-only character buffer wrapping a character sequence.
@@ -446,7 +446,7 @@ object Buffer {
     charSequence: CharSequence,
     start: Int,
     end: Int
-  ): UIO[CharBuffer] = UIO.effectTotal(charFromJava(JCharBuffer.wrap(charSequence, start, end)))
+  ): UIO[CharBuffer] = UIO.succeed(charFromJava(JCharBuffer.wrap(charSequence, start, end)))
 
   /**
    * Creates a read-only character buffer wrapping a character sequence.
@@ -457,7 +457,7 @@ object Buffer {
    *   The characters to wrap.
    */
   def char(charSequence: CharSequence): UIO[CharBuffer] =
-    UIO.effectTotal(new CharBuffer(JCharBuffer.wrap(charSequence)))
+    UIO.succeed(new CharBuffer(JCharBuffer.wrap(charSequence)))
 
   /**
    * Wraps an existing Java `CharBuffer`.
@@ -476,7 +476,7 @@ object Buffer {
    * @param capacity
    *   The number of floats to allocate.
    */
-  def float(capacity: Int): UIO[FloatBuffer] = UIO.effectTotal(floatFromJava(JFloatBuffer.allocate(capacity)))
+  def float(capacity: Int): UIO[FloatBuffer] = UIO.succeed(floatFromJava(JFloatBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -487,7 +487,7 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def float(chunk: Chunk[Float]): UIO[FloatBuffer] = UIO.effectTotal(floatFromJava(JFloatBuffer.wrap(chunk.toArray)))
+  def float(chunk: Chunk[Float]): UIO[FloatBuffer] = UIO.succeed(floatFromJava(JFloatBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `FloatBuffer`.
@@ -506,7 +506,7 @@ object Buffer {
    * @param capacity
    *   The number of doubles to allocate.
    */
-  def double(capacity: Int): UIO[DoubleBuffer] = UIO.effectTotal(doubleFromJava(JDoubleBuffer.allocate(capacity)))
+  def double(capacity: Int): UIO[DoubleBuffer] = UIO.succeed(doubleFromJava(JDoubleBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -518,7 +518,7 @@ object Buffer {
    *   The data to copy into the new buffer.
    */
   def double(chunk: Chunk[Double]): UIO[DoubleBuffer] =
-    UIO.effectTotal(doubleFromJava(JDoubleBuffer.wrap(chunk.toArray)))
+    UIO.succeed(doubleFromJava(JDoubleBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `DoubleBuffer`.
@@ -537,7 +537,7 @@ object Buffer {
    * @param capacity
    *   The number of ints to allocate.
    */
-  def int(capacity: Int): UIO[IntBuffer] = UIO.effectTotal(intFromJava(JIntBuffer.allocate(capacity)))
+  def int(capacity: Int): UIO[IntBuffer] = UIO.succeed(intFromJava(JIntBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -548,7 +548,7 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def int(chunk: Chunk[Int]): UIO[IntBuffer] = UIO.effectTotal(intFromJava(JIntBuffer.wrap(chunk.toArray)))
+  def int(chunk: Chunk[Int]): UIO[IntBuffer] = UIO.succeed(intFromJava(JIntBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `IntBuffer`.
@@ -567,7 +567,7 @@ object Buffer {
    * @param capacity
    *   The number of longs to allocate.
    */
-  def long(capacity: Int): UIO[LongBuffer] = UIO.effectTotal(longFromJava(JLongBuffer.allocate(capacity)))
+  def long(capacity: Int): UIO[LongBuffer] = UIO.succeed(longFromJava(JLongBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -578,7 +578,7 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def long(chunk: Chunk[Long]): UIO[LongBuffer] = UIO.effectTotal(longFromJava(JLongBuffer.wrap(chunk.toArray)))
+  def long(chunk: Chunk[Long]): UIO[LongBuffer] = UIO.succeed(longFromJava(JLongBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `LongBuffer`.
@@ -597,7 +597,7 @@ object Buffer {
    * @param capacity
    *   The number of shorts to allocate.
    */
-  def short(capacity: Int): UIO[ShortBuffer] = UIO.effectTotal(shortFromJava(JShortBuffer.allocate(capacity)))
+  def short(capacity: Int): UIO[ShortBuffer] = UIO.succeed(shortFromJava(JShortBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -608,7 +608,7 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def short(chunk: Chunk[Short]): UIO[ShortBuffer] = UIO.effectTotal(shortFromJava(JShortBuffer.wrap(chunk.toArray)))
+  def short(chunk: Chunk[Short]): UIO[ShortBuffer] = UIO.succeed(shortFromJava(JShortBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `ShortBuffer`.

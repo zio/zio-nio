@@ -27,7 +27,7 @@ trait ScatteringByteOps {
    *   The number of bytes read in total, possibly 0
    */
   final def read(dsts: Seq[ByteBuffer]): IO[IOException, Long] =
-    IO.effect(channel.read(unwrap(dsts))).refineToOrDie[IOException].flatMap(eofCheck)
+    IO.attempt(channel.read(unwrap(dsts))).refineToOrDie[IOException].flatMap(eofCheck)
 
   /**
    * Reads a sequence of bytes from this channel into the given buffer.
@@ -38,7 +38,7 @@ trait ScatteringByteOps {
    *   The number of bytes read, possibly 0
    */
   final def read(dst: ByteBuffer): IO[IOException, Int] =
-    IO.effect(channel.read(dst.buffer)).refineToOrDie[IOException].flatMap(eofCheck)
+    IO.attempt(channel.read(dst.buffer)).refineToOrDie[IOException].flatMap(eofCheck)
 
   /**
    * Reads a chunk of bytes.
@@ -91,7 +91,7 @@ trait ScatteringByteOps {
     bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
   ): Stream[IOException, Byte] =
     ZStream {
-      bufferConstruct.toManaged_.map { buffer =>
+      bufferConstruct.toManaged.map { buffer =>
         val doRead = for {
           _     <- read(buffer)
           _     <- buffer.flip

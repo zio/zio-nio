@@ -1,6 +1,5 @@
 package zio.nio.file
 
-import zio.blocking.Blocking
 import zio.{Chunk, ZIO}
 
 import java.io.{File, IOError, IOException}
@@ -47,17 +46,17 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
 
   def relativize(other: Path): Path = fromJava(javaPath.relativize(other.javaPath))
 
-  def toUri: ZIO[Blocking, IOError, URI] =
-    ZIO.accessM[Blocking](_.get.effectBlocking(javaPath.toUri)).refineToOrDie[IOError]
+  def toUri: ZIO[Any, IOError, URI] =
+    ZIO.attemptBlocking(javaPath.toUri).refineToOrDie[IOError]
 
-  def toAbsolutePath: ZIO[Blocking, IOError, Path] =
+  def toAbsolutePath: ZIO[Any, IOError, Path] =
     ZIO
-      .accessM[Blocking](_.get.effectBlocking(fromJava(javaPath.toAbsolutePath)))
+      .attemptBlocking(fromJava(javaPath.toAbsolutePath))
       .refineToOrDie[IOError]
 
-  def toRealPath(linkOptions: LinkOption*): ZIO[Blocking, IOException, Path] =
+  def toRealPath(linkOptions: LinkOption*): ZIO[Any, IOException, Path] =
     ZIO
-      .accessM[Blocking](_.get.effectBlocking(fromJava(javaPath.toRealPath(linkOptions: _*))))
+      .attemptBlocking(fromJava(javaPath.toRealPath(linkOptions: _*)))
       .refineToOrDie[IOException]
 
   def toFile: File = javaPath.toFile
@@ -88,10 +87,10 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
     events: Iterable[WatchEvent.Kind[_]],
     maxDepth: Int = Int.MaxValue,
     modifiers: Iterable[WatchEvent.Modifier] = Iterable.empty
-  ): ZIO[Blocking, IOException, Chunk[WatchKey]] =
+  ): ZIO[Any, IOException, Chunk[WatchKey]] =
     Files
       .find(path = this, maxDepth = maxDepth)((_, a) => a.isDirectory)
-      .mapM(dir => dir.register(watcher, events, modifiers.toSeq: _*))
+      .mapZIO(dir => dir.register(watcher, events, modifiers.toSeq: _*))
       .runCollect
 
   override protected def javaWatchable: JWatchable = javaPath
