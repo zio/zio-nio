@@ -86,8 +86,7 @@ jobs:
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Test
-        if: ${{ !startsWith(matrix.scala, '3.0.') }}
-        run: ./sbt ++${{ matrix.scala }}! test
+        run: ./sbt test
 
   ci:
     runs-on: ubuntu-20.04
