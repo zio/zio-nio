@@ -62,7 +62,9 @@ package object nio {
      */
     def useForked[R2 <: R, E2 >: E, B](f: A => ZIO[R2, E2, B]): ZIO[R2, E, Fiber[E2, B]] =
       ReleaseMap.make.flatMap { releaseMap =>
-        managed.zio.provideSome[R]((_, releaseMap)).flatMap { case (finalizer, a) => f(a).onExit(finalizer).fork }
+        managed.zio.provideSome[R]((_, releaseMap)).flatMap { case (finalizer, a) =>
+          f(a).onExit(finalizer).fork
+        }
       }
 
   }

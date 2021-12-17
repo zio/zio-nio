@@ -80,9 +80,10 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
           val x = for {
             remaining <- buffer.putChunk(c)
             _         <- buffer.flip
-            count <- ZStream
-                       .repeatZIOWithSchedule(write(buffer), Schedule.recureWhileZIO(Function.const(buffer.hasRemaining)))
-                       .runSum
+            count <-
+              ZStream
+                .repeatZIOWithSchedule(write(buffer), Schedule.recurWhileZIO(Function.const(buffer.hasRemaining)))
+                .runSum
             _ <- buffer.clear
           } yield (count + total, remaining)
           x.flatMap {

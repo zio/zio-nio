@@ -2,7 +2,7 @@ package zio
 package nio
 package charset
 
-import zio.stream.{Transducer, ZTransducer}
+import zio.stream.{ZChannel, ZPipeline}
 
 import java.nio.charset.{MalformedInputException, UnmappableCharacterException}
 import java.nio.{charset => j}
@@ -65,8 +65,8 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
    * @param bufSize
    *   The size of the internal buffer used for encoding. Must be at least 50.
    */
-  def transducer(bufSize: Int = 5000): Transducer[j.CharacterCodingException, Char, Byte] = {
-    val push: Managed[Nothing, Option[Chunk[Char]] => IO[j.CharacterCodingException, Chunk[Byte]]] = {
+  def transducer(bufSize: Int = 5000): ZPipeline[Any, Exception, Char, Byte] = { // TODO make E CharacterCodingException
+    val push: UManaged[Option[Chunk[Char]] => IO[j.CharacterCodingException, Chunk[Byte]]] = {
       for {
         _          <- reset.toManaged
         charBuffer <- Buffer.char((bufSize.toFloat / this.averageBytesPerChar).round).toManaged
@@ -124,10 +124,10 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
       }
     }
 
-    if (bufSize < 50)
-      ZTransducer.die(new IllegalArgumentException(s"Buffer size is $bufSize, must be >= 50"))
-    else
-      ZTransducer(push)
+    if (bufSize < 50) {
+      ZPipeline.fromChannel(ZChannel.fail(new IllegalArgumentException(s"Buffer size is $bufSize, must be >= 50")))
+    } else
+      ZPipeline.fromPush(push)
   }
 
 }

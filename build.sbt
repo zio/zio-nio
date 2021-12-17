@@ -19,7 +19,7 @@ addCommandAlias(
   ";zioNio/test;examples/test"
 )
 
-val zioVersion = "2.0.0-RC1"
+val zioVersion = "2.0.0-RC1+6-179b6661-SNAPSHOT"
 
 lazy val zioNio = project
   .in(file("nio"))
@@ -32,6 +32,8 @@ lazy val zioNio = project
       "dev.zio"                %% "zio-test"                % zioVersion % Test,
       "dev.zio"                %% "zio-test-sbt"            % zioVersion % Test
     ),
+    resolvers +=
+      "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
   .settings(dottySettings)
