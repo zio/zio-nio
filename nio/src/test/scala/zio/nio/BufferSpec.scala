@@ -2,7 +2,7 @@ package zio.nio
 
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.TestEnvironment
+import zio.test.TestEnvironment
 import zio.{Chunk, IO}
 
 import java.nio.{
@@ -87,50 +87,50 @@ object BufferSpec extends BaseSpec {
     def zeroValues      = Array(0, 0, 0).map(f)
 
     suite(suiteName)(
-      testM("apply") {
+      test("apply") {
         for {
           allocated <- allocate(3)
           array     <- allocated.array
         } yield assert(array.toList)(hasSameElements(zeroValues.toList))
       },
-      testM("wrap backed by an array") {
+      test("wrap backed by an array") {
         for {
           buffer <- wrap(Chunk.fromArray(initialValues))
           array  <- buffer.array
         } yield assert(array.toList)(hasSameElements(initialValues.toList))
       },
-      testM("capacity") {
+      test("capacity") {
         for {
           allocated <- allocate(initialCapacity)
           capacity   = allocated.capacity
         } yield assert(capacity)(equalTo(jAllocate(initialCapacity).capacity))
       },
-      testM("capacity initialized") {
+      test("capacity initialized") {
         for {
           allocated <- allocate(initialCapacity)
           capacity   = allocated.capacity
         } yield assert(capacity)(equalTo(initialCapacity))
       },
-      testM("position is 0") {
+      test("position is 0") {
         for {
           allocated <- allocate(initialCapacity)
           position  <- allocated.position
         } yield assert(position)(equalTo(0))
       },
-      testM("limit is capacity") {
+      test("limit is capacity") {
         for {
           allocated <- allocate(initialCapacity)
           limit     <- allocated.limit
         } yield assert(limit)(equalTo(initialCapacity))
       },
-      testM("position set") {
+      test("position set") {
         for {
           buffer   <- Buffer.byte(initialCapacity)
           _        <- buffer.position(3)
           position <- buffer.position
         } yield assert(position)(equalTo(3))
       },
-      testM("limit set") {
+      test("limit set") {
         for {
           buffer   <- Buffer.byte(initialCapacity)
           limit     = 3
@@ -138,7 +138,7 @@ object BufferSpec extends BaseSpec {
           newLimit <- buffer.limit
         } yield assert(newLimit)(equalTo(limit))
       },
-      testM("position reset") {
+      test("position reset") {
         for {
           buffer   <- Buffer.byte(initialCapacity)
           newLimit  = 3
@@ -147,7 +147,7 @@ object BufferSpec extends BaseSpec {
           position <- buffer.position
         } yield assert(position)(equalTo(newLimit))
       },
-      testM("reset to marked position") {
+      test("reset to marked position") {
         for {
           b           <- allocate(initialCapacity)
           _           <- b.position(1)
@@ -157,7 +157,7 @@ object BufferSpec extends BaseSpec {
           newPosition <- b.position
         } yield assert(newPosition)(equalTo(1))
       },
-      testM("clear") {
+      test("clear") {
         for {
           b        <- allocate(initialCapacity)
           _        <- b.position(1)
@@ -167,7 +167,7 @@ object BufferSpec extends BaseSpec {
           limit    <- b.limit
         } yield assert(position)(equalTo(0)) && assert(limit)(equalTo(initialCapacity))
       },
-      testM("flip") {
+      test("flip") {
         for {
           b        <- allocate(initialCapacity)
           _        <- b.position(1)
@@ -176,7 +176,7 @@ object BufferSpec extends BaseSpec {
           limit    <- b.limit
         } yield assert(position)(equalTo(0)) && assert(limit)(equalTo(1))
       },
-      testM("rewind sets position to 0") {
+      test("rewind sets position to 0") {
         for {
           b           <- allocate(initialCapacity)
           _           <- b.position(1)
@@ -184,12 +184,12 @@ object BufferSpec extends BaseSpec {
           newPosition <- b.position
         } yield assert(newPosition)(equalTo(0))
       },
-      testM("heap buffers a backed by an array") {
+      test("heap buffers a backed by an array") {
         for {
           b <- allocate(initialCapacity)
         } yield assert(b.hasArray)(isTrue)
       },
-      testM("put writes an element and increments the position") {
+      test("put writes an element and increments the position") {
         for {
           b        <- allocate(initialCapacity)
           _        <- b.put(initialValue)
@@ -197,20 +197,20 @@ object BufferSpec extends BaseSpec {
           position <- b.position
         } yield assert(newValue)(equalTo(initialValue)) && assert(position)(equalTo(1))
       },
-      testM("failing put if there are no elements remaining") {
+      test("failing put if there are no elements remaining") {
         for {
           b      <- allocate(0)
-          result <- b.put(initialValue).run
+          result <- b.put(initialValue).exit
         } yield assert(result)(dies(isSubtype[BufferOverflowException](anything)))
       },
-      testM("failing put if this is a read-only buffer") {
+      test("failing put if this is a read-only buffer") {
         for {
           b         <- allocate(initialCapacity)
           bReadOnly <- b.asReadOnlyBuffer
-          result    <- bReadOnly.put(initialValue).run
+          result    <- bReadOnly.put(initialValue).exit
         } yield assert(result)(dies(isSubtype[ReadOnlyBufferException](anything)))
       },
-      testM("put writes an element at a specified index") {
+      test("put writes an element at a specified index") {
         for {
           b        <- allocate(initialCapacity)
           _        <- b.put(1, initialValue)
@@ -218,20 +218,20 @@ object BufferSpec extends BaseSpec {
           position <- b.position
         } yield assert(newValue)(equalTo(initialValue)) && assert(position)(equalTo(0))
       },
-      testM("failing put if the index is negative") {
+      test("failing put if the index is negative") {
         for {
           b      <- allocate(initialCapacity)
-          result <- b.put(-1, initialValue).run
+          result <- b.put(-1, initialValue).exit
         } yield assert(result)(dies(isSubtype[IndexOutOfBoundsException](anything)))
       },
-      testM("failing put if the index is not smaller than the limit") {
+      test("failing put if the index is not smaller than the limit") {
         for {
           b      <- allocate(initialCapacity)
-          result <- b.put(initialCapacity, initialValue).run
+          result <- b.put(initialCapacity, initialValue).exit
         } yield assert(result)(dies(isSubtype[IndexOutOfBoundsException](anything)))
       },
       testM[TestEnvironment, Exception]("0 <= mark <= position <= limit <= capacity") {
-        checkM(Gen.int(-1, 10), Gen.int(-1, 10), Gen.int(-1, 10), Gen.int(-1, 10)) {
+        check(Gen.int(-1, 10), Gen.int(-1, 10), Gen.int(-1, 10), Gen.int(-1, 10)) {
           (markedPosition: Int, position: Int, limit: Int, capacity: Int) =>
             (for {
               b    <- Buffer.byte(capacity)
@@ -244,7 +244,7 @@ object BufferSpec extends BaseSpec {
             } yield assert(mark)(isWithin(0, position)) && assert(limit)(
               isWithin(position, capacity)
             )).catchSomeDefect { case _: IllegalArgumentException | _: IllegalStateException =>
-              IO.effectTotal(assertCompletes)
+              IO.succeed(assertCompletes)
             }
         }
       }

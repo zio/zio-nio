@@ -91,12 +91,14 @@ trait GatheringByteOps {
         }
 
         doWrite(0, chunk).foldZIO(
-          e => buffer.getChunk().flatMap(ZIO.fail(e, _)),
+          e => buffer.getChunk().flatMap(chunk => ZIO.fail((Left(e), chunk))),
           count => countRef.update(_ + count.toLong)
         )
       }
         .getOrElse(
-          countRef.get.flatMap[Any, (Either[IOException, Long], Chunk[Byte]), Unit](count => ZIO.succeed(count))
+          countRef.get.flatMap[Any, (Either[IOException, Long], Chunk[Byte]), Unit](count =>
+            ZIO.fail((Right(count), Chunk.empty))
+          )
         )
     }
 

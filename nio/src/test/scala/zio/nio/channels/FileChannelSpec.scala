@@ -1,16 +1,12 @@
 package zio.nio.channels
 
-import zio.blocking.Blocking
-import zio.clock.Clock
 import zio.nio.charset.Charset
 import zio.nio.file.{Files, Path}
 import zio.nio.{BaseSpec, Buffer}
-import zio.random.Random
 import zio.stream.Stream
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.{Live, TestClock, TestConsole, TestRandom, TestSystem}
-import zio.{Chunk, Has, URIO, ZIO, blocking}
+import zio.{Chunk, Clock, Random, UIO, ZIO}
 
 import java.io.EOFException
 import java.nio.file.StandardOpenOption
@@ -22,21 +18,19 @@ object FileChannelSpec extends BaseSpec {
 
   private val readFileContents = "Hello World"
 
-  def loadViaSource(path: Path): URIO[Blocking, List[String]] =
+  def loadViaSource(path: Path): UIO[List[String]] =
     ZIO
-      .effect(Source.fromFile(path.toFile))
-      .bracket(s => ZIO.effectTotal(s.close()))(s => blocking.effectBlocking(s.getLines().toList))
+      .attempt(Source.fromFile(path.toFile))
+      .acquireReleaseWith(s => ZIO.succeed(s.close()))(s => ZIO.attemptBlocking(s.getLines().toList))
       .orDie
 
-  override def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
-    TestClock.Service
-  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
-    TestSystem.Service
-  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
-    Random.Service
-  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
+  override def spec: Spec[
+    Annotations with Live with Sized with TestClock with TestConfig with TestConsole with TestRandom with TestSystem with Clock with zio.Console with zio.System with Random,
+    TestFailure[Any],
+    TestSuccess
+  ] =
     suite("FileChannelSpec")(
-      testM("asynchronous file buffer read") {
+      test("asynchronous file buffer read") {
         AsynchronousFileChannel.open(readFile, StandardOpenOption.READ).use { channel =>
           for {
             buffer <- Buffer.byte(16)
@@ -47,7 +41,7 @@ object FileChannelSpec extends BaseSpec {
           } yield assert(text)(equalTo(readFileContents))
         }
       },
-      testM("asynchronous file chunk read") {
+      test("asynchronous file chunk read") {
         AsynchronousFileChannel.open(readFile, StandardOpenOption.READ).use { channel =>
           for {
             bytes <- channel.readChunk(500, 0L)
@@ -55,7 +49,7 @@ object FileChannelSpec extends BaseSpec {
           } yield assert(chars.mkString)(equalTo(readFileContents))
         }
       },
-      testM("asynchronous file write") {
+      test("asynchronous file write") {
         val path = Path("nio/src/test/resources/async_file_write_test.txt")
         AsynchronousFileChannel
           .open(
@@ -73,7 +67,7 @@ object FileChannelSpec extends BaseSpec {
 
           }
       },
-      testM("memory mapped buffer") {
+      test("memory mapped buffer") {
         for {
           result <- FileChannel
                       .open(readFile, StandardOpenOption.READ)
@@ -86,7 +80,7 @@ object FileChannelSpec extends BaseSpec {
                       }
         } yield result
       },
-      testM("end of stream") {
+      test("end of stream") {
         FileChannel
           .open(readFile, StandardOpenOption.READ)
           .useNioBlocking { (channel, ops) =>
@@ -99,19 +93,19 @@ object FileChannelSpec extends BaseSpec {
           .flip
           .map(assert(_)(isSubtype[EOFException](anything)))
       },
-      testM("stream reading") {
+      test("stream reading") {
         FileChannel
           .open(readFile, StandardOpenOption.READ)
           .useNioBlockingOps {
-            _.stream().transduce(Charset.Standard.utf8.newDecoder.transducer()).runCollect.map(_.mkString)
+            _.stream().via(Charset.Standard.utf8.newDecoder.transducer()).runCollect.map(_.mkString)
           }
           .map(assert(_)(equalTo(readFileContents)))
       },
-      testM("sink writing") {
+      test("sink writing") {
         val testData =
           """Yet such is oft the course of deeds that move the wheels of the world:
             | small hands do them because they must, while the eyes of the great are elsewhere.""".stripMargin
-        val stream = Stream.fromIterable(testData).transduce(Charset.Standard.utf8.newEncoder.transducer())
+        val stream = Stream.fromIterable(testData).via(Charset.Standard.utf8.newEncoder.transducer())
         val file   = Path("nio/src/test/resources/sink_write_test.txt")
         FileChannel
           .open(file, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW)

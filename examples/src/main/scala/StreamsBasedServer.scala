@@ -1,16 +1,13 @@
 package zio.nio.examples
 
-import zio._
-import zio.Clock
-
 import zio.nio.InetSocketAddress
 import zio.nio.channels.AsynchronousServerSocketChannel
 import zio.stream._
-import zio.{ Clock, Console, Console, ZIOAppDefault }
+import zio.{Clock, Console, ExitCode, Managed, RIO, URIO, ZIO, ZIOAppDefault, durationInt}
 
 object StreamsBasedServer extends ZIOAppDefault {
 
-  def run(args: List[String]): URIO[Console with Clock with Console, ExitCode] =
+  def run: URIO[Console with Clock with Console, ExitCode] =
     ZStream
       .managed(server(8080))
       .flatMap(handleConnections(_) { chunk =>
@@ -45,12 +42,11 @@ object StreamsBasedServer extends ZIOAppDefault {
                       )
                       .flattenChunks
                       .take(4)
-                      .transduce(ZTransducer.utf8Decode)
+                      .via(ZPipeline.utf8Decode)
                       .run(Sink.foldLeft("")(_ + (_: String)))
             _ <- closeConn
             _ <- f(data)
           } yield ()
         }
       }
-
 }

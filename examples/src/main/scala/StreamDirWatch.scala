@@ -5,7 +5,7 @@ package examples
 import zio.nio.file.{Path, WatchService}
 
 import java.nio.file.{StandardWatchEventKinds, WatchEvent}
-import zio.{ Console, ZIOAppDefault }
+import zio.{Console, ZIOAppDefault}
 
 /**
  * Example of using the `ZStream` API for watching a file system directory for events.
@@ -46,9 +46,12 @@ object StreamDirWatch extends ZIOAppDefault {
       } yield ()
     }
 
-  override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] =
-    args.headOption
-      .map(dirString => watch(Path(dirString)).exitCode)
-      .getOrElse(Console.printLine("A directory argument is required").exitCode)
+  override def run: URIO[zio.ZEnv with ZIOAppArgs, ExitCode] =
+    ZIO
+      .serviceWith[ZIOAppArgs](_.getArgs.toList.headOption)
+      .flatMap(
+        _.map(dirString => watch(Path(dirString)).exitCode)
+          .getOrElse(Console.printLine("A directory argument is required").exitCode)
+      )
 
 }

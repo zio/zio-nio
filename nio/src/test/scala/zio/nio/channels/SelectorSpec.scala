@@ -1,30 +1,27 @@
 package zio.nio.channels
 
 import zio._
-import zio.blocking.Blocking
-import zio.clock.Clock
-import zio.duration.durationInt
+import zio.Clock
+import zio.durationInt
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.{BaseSpec, Buffer, ByteBuffer, SocketAddress}
-import zio.random.Random
+import zio.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.{Live, TestClock, TestConsole, TestRandom, TestSystem, live}
+import zio.test.{Live, TestClock, TestConsole, TestRandom, TestSystem, live}
 
 import java.io.IOException
 import java.nio.channels.CancelledKeyException
 
 object SelectorSpec extends BaseSpec {
 
-  override def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
-    TestClock.Service
-  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
-    TestSystem.Service
-  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
-    Random.Service
-  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
+  override def spec: Spec[
+    Annotations with Live with Sized with TestClock with TestConfig with TestConsole with TestRandom with TestSystem with Clock with zio.Console with zio.System with Random,
+    TestFailure[Any],
+    TestSuccess
+  ] =
     suite("SelectorSpec")(
-      testM("read/write") {
+      test("read/write") {
         for {
           started     <- Promise.make[Nothing, SocketAddress]
           serverFiber <- server(started).useNow.fork
@@ -34,7 +31,7 @@ object SelectorSpec extends BaseSpec {
           message     <- clientFiber.join
         } yield assert(message)(equalTo("Hello world"))
       },
-      testM("select is interruptible") {
+      test("select is interruptible") {
         live {
           Selector.open.use { selector =>
             for {
@@ -52,12 +49,12 @@ object SelectorSpec extends BaseSpec {
   def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
     statusCheck.fold(_ => false, identity)
 
-  def server(started: Promise[Nothing, SocketAddress]): ZManaged[Clock with Blocking, Exception, Unit] = {
+  def server(started: Promise[Nothing, SocketAddress]): ZManaged[Clock, Exception, Unit] = {
     def serverLoop(
       scope: Managed.Scope,
       selector: Selector,
       buffer: ByteBuffer
-    ): ZIO[Blocking, Exception, Unit] =
+    ): ZIO[Any, Exception, Unit] =
       for {
         _ <- selector.select
         _ <- selector.foreachSelectedKey { key =>
@@ -92,7 +89,7 @@ object SelectorSpec extends BaseSpec {
       scope    <- Managed.scope
       selector <- Selector.open
       channel  <- ServerSocketChannel.open
-      _ <- Managed.fromEffect {
+      _ <- Managed.fromZIO {
              for {
                _      <- channel.bindAuto()
                _      <- channel.configureBlocking(false)
@@ -112,7 +109,7 @@ object SelectorSpec extends BaseSpec {
     } yield ()
   }
 
-  def client(address: SocketAddress): ZIO[Blocking, IOException, String] = {
+  def client(address: SocketAddress): IO[IOException, String] = {
     val bytes = Chunk.fromArray("Hello world".getBytes)
     for {
       buffer <- Buffer.byte(bytes)

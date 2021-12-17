@@ -2,12 +2,10 @@ package zio
 package nio
 package examples
 
-
 import zio.nio.channels.{FileChannel, ManagedBlockingNioOps}
 import zio.nio.charset.Charset
 import zio.nio.file.Path
 import zio.stream.ZStream
-import zio.{ Console, Console, ZIOAppDefault }
 
 /**
  * Dumps a text file to the console using a specified encoding.
@@ -17,14 +15,18 @@ import zio.{ Console, Console, ZIOAppDefault }
  */
 object TextFileDump extends ZIOAppDefault {
 
-  override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] = {
-    val charset = (args match {
-      case _ :: s :: _ => Some(s)
-      case _           => None
-    }).flatMap(Charset.forNameIfSupported).getOrElse(Charset.Standard.utf8)
+  override def run: URIO[zio.ZEnv with ZIOAppArgs, ExitCode] = {
+    val charsetEff = ZIO.serviceWith[ZIOAppArgs](s =>
+      (s.getArgs.toList match {
+        case _ :: s :: _ => Some(s)
+        case _           => None
+      }).flatMap(Charset.forNameIfSupported).getOrElse(Charset.Standard.utf8)
+    )
 
     val program = for {
-      fileArg <- ZIO.succeed(args.headOption).someOrFail(new Exception("File name must be specified"))
+      fileArg <-
+        ZIO.serviceWith[ZIOAppArgs](_.getArgs.toSeq.headOption).someOrFail(new Exception("File name must be specified"))
+      charset <- charsetEff
       _       <- dump(charset, Path(fileArg))
     } yield ()
 
@@ -39,9 +41,9 @@ object TextFileDump extends ZIOAppDefault {
         }
       }
 
-      // apply decoding transducer
+      // apply decoding pipeline
       val charStream: ZStream[Any, Exception, Char] =
-        inStream.transduce(charset.newDecoder.transducer())
+        inStream.via(charset.newDecoder.transducer())
 
       charStream.runForeachChunk(chars => Console.print(chars.mkString))
     }

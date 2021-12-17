@@ -83,7 +83,7 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
    * @param bufSize
    *   The size of the internal buffer used for encoding. Must be at least 50.
    */
-  def transducer(bufSize: Int = 5000): ZPipeline[Any, Exception, Byte, Char] = { // TODO make E CharacterCodingException
+  def transducer(bufSize: Int = 5000): ZPipeline[Any, j.CharacterCodingException, Byte, Char] = {
     val push: Managed[Nothing, Option[Chunk[Byte]] => IO[j.CharacterCodingException, Chunk[Char]]] = {
       for {
         _          <- reset.toManaged
@@ -151,7 +151,7 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
     }
 
     if (bufSize < 50)
-      ZPipeline.fromChannel(ZChannel.fail(new IllegalArgumentException(s"Buffer size is $bufSize, must be >= 50")))
+      ZPipeline.fromChannel(ZChannel.fromZIO(ZIO.dieMessage(s"Buffer size is $bufSize, must be >= 50"))) // TODO hack
     else
       ZPipeline.fromPush(push)
   }

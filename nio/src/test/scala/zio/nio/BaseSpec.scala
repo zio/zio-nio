@@ -1,7 +1,7 @@
 package zio.nio
 
-import zio.duration._
-import zio.test.environment.Live
+import zio._
+import zio.test.Live
 import zio.test.{DefaultRunnableSpec, TestAspect, TestAspectAtLeastR}
 
 trait BaseSpec extends DefaultRunnableSpec {
