@@ -47,7 +47,7 @@ package object nio {
     private val acquire: ZIO[R, E, A]
   ) extends AnyVal {
 
-    def toNioManaged: ZManaged[R, E, A] = ZManaged.makeInterruptible(acquire)(_.close.ignore)
+    def toNioManaged: ZManaged[R, E, A] = ZManaged.acquireReleaseInterruptibleWith(acquire)(_.close.ignore)
 
   }
 

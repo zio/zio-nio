@@ -25,7 +25,7 @@ object DatagramChannelSpec extends BaseSpec {
             _ <- DatagramChannel.open.useNioBlocking { (server, ops) =>
                    for {
                      _    <- server.bindAuto
-                     addr <- server.localAddress.someOrElseM(ZIO.dieMessage("Must have local address"))
+                     addr <- server.localAddress.someOrElseZIO(ZIO.dieMessage("Must have local address"))
                      _    <- started.succeed(addr)
                      addr <- ops.receive(sink)
                      _    <- sink.flip

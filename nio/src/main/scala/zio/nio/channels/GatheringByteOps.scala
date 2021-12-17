@@ -1,9 +1,8 @@
 package zio.nio.channels
 
 import zio._
-import zio.Clock
 import zio.nio.{Buffer, ByteBuffer}
-import zio.stream.{ZChannel, ZSink, ZStream}
+import zio.stream.{ZSink, ZStream}
 
 import java.io.IOException
 import java.nio.channels.{GatheringByteChannel => JGatheringByteChannel}

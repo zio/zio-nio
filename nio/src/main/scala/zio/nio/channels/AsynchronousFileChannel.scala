@@ -4,7 +4,7 @@ package channels
 import zio._
 import zio.Clock
 import zio.nio.file.Path
-import zio.stream.{Stream, ZChannel, ZSink, ZStream}
+import zio.stream.{Stream, ZSink, ZStream}
 
 import java.io.{EOFException, IOException}
 import java.nio.channels.{AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock}
@@ -170,7 +170,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
       }
         .getOrElse(
           posRef.get.flatMap[Any, (Either[IOException, Long], Chunk[Byte]), Unit](finalPos =>
-            ZIO.fail(Right(finalPos - position), Chunk.empty)
+            ZIO.fail((Right(finalPos - position), Chunk.empty))
           )
         )
     }

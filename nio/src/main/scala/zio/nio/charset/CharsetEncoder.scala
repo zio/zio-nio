@@ -125,7 +125,9 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
     }
 
     if (bufSize < 50) {
-      ZPipeline.fromChannel(ZChannel.fromZIO(ZIO.dieMessage(s"Buffer size is $bufSize, must be >= 50"))) // TODO hack
+      ZPipeline.fromChannel(
+        ZChannel.fromZIO(ZIO.die(new IllegalArgumentException(s"Buffer size is $bufSize, must be >= 50")))
+      )
     } else
       ZPipeline.fromPush(push)
   }
