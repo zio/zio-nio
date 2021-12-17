@@ -71,7 +71,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
   def sink(
     bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
   ): ZSink[Clock, IOException, Byte, Byte, Long] =
-    ZSink {
+    ZSink.fromPush {
       for {
         buffer   <- bufferConstruct.toManaged
         countRef <- Ref.makeManaged(0L)
@@ -113,7 +113,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
   def stream(
     bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
   ): Stream[IOException, Byte] =
-    ZStream {
+    ZStream.unwrapManaged {
       bufferConstruct.toManaged.map { buffer =>
         val doRead = for {
           _     <- read(buffer)
@@ -121,9 +121,11 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
           chunk <- buffer.getChunk()
           _     <- buffer.clear
         } yield chunk
-        doRead.mapError {
-          case _: EOFException => None
-          case e               => Some(e)
+        ZStream.repeatZIOChunkOption {
+          doRead.mapError {
+            case _: EOFException => None
+            case e               => Some(e)
+          }
         }
       }
     }

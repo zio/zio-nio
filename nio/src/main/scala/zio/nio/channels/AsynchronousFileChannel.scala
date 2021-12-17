@@ -4,7 +4,7 @@ package channels
 import zio._
 import zio.Clock
 import zio.nio.file.Path
-import zio.stream.{Stream, ZSink, ZStream}
+import zio.stream.{Stream, ZChannel, ZSink, ZStream}
 
 import java.io.{EOFException, IOException}
 import java.nio.channels.{AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock}
@@ -104,7 +104,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
    *   default a heap buffer is used, but a direct buffer will usually perform better.
    */
   def stream(position: Long, bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)): Stream[IOException, Byte] =
-    ZStream {
+    ZStream.unwrapManaged {
       for {
         posRef <- Ref.makeManaged(position)
         buffer <- bufferConstruct.toManaged
@@ -117,10 +117,10 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
           chunk <- buffer.getChunk()
           _     <- buffer.clear
         } yield chunk
-        doRead.mapError {
+        ZStream.repeatZIOChunkOption(doRead.mapError {
           case _: EOFException => None
           case e               => Some(e)
-        }
+        })
       }
     }
 
@@ -137,7 +137,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
     position: Long,
     bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
   ): ZSink[Clock, IOException, Byte, Byte, Long] =
-    ZSink {
+    ZSink.fromPush {
       for {
         buffer <- bufferConstruct.toManaged
         posRef <- Ref.makeManaged(position)
@@ -149,7 +149,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
             count <- ZStream
                        .repeatZIOWithSchedule(
                          write(buffer, currentPos),
-                         Schedule.recureWhileZIO(Function.const(buffer.hasRemaining))
+                         Schedule.recurWhileZIO(Function.const(buffer.hasRemaining))
                        )
                        .runSum
             _ <- buffer.clear
@@ -163,14 +163,14 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
 
         for {
           currentPos <- posRef.get
-          newPos     <- doWrite(currentPos, chunk).catchAll(e => buffer.getChunk().flatMap(ZSink.Push.fail(e, _)))
+          newPos     <- doWrite(currentPos, chunk).catchAll(e => buffer.getChunk().flatMap(ZIO.fail(e, _)))
           _          <- posRef.set(newPos)
         } yield ()
 
       }
         .getOrElse(
           posRef.get.flatMap[Any, (Either[IOException, Long], Chunk[Byte]), Unit](finalPos =>
-            ZSink.Push.emit(finalPos - position, Chunk.empty)
+            ZIO.succeed(finalPos - position)
           )
         )
     }

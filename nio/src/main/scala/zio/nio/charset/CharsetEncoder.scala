@@ -65,7 +65,7 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
    * @param bufSize
    *   The size of the internal buffer used for encoding. Must be at least 50.
    */
-  def transducer(bufSize: Int = 5000): ZPipeline[Any, Exception, Char, Byte] = { // TODO make E CharacterCodingException
+  def transducer(bufSize: Int = 5000): ZPipeline[Any, Exception, Char, Byte] = { // TODO get back j.CharacterCodingException for E
     val push: UManaged[Option[Chunk[Char]] => IO[j.CharacterCodingException, Chunk[Byte]]] = {
       for {
         _          <- reset.toManaged

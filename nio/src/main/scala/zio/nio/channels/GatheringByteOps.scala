@@ -3,7 +3,7 @@ package zio.nio.channels
 import zio._
 import zio.Clock
 import zio.nio.{Buffer, ByteBuffer}
-import zio.stream.{ZSink, ZStream}
+import zio.stream.{ZChannel, ZSink, ZStream}
 
 import java.io.IOException
 import java.nio.channels.{GatheringByteChannel => JGatheringByteChannel}
@@ -68,7 +68,7 @@ trait GatheringByteOps {
   def sink(
     bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
   ): ZSink[Clock, IOException, Byte, Byte, Long] =
-    ZSink {
+    ZSink.fromPush {
       for {
         buffer   <- bufferConstruct.toManaged
         countRef <- Ref.makeManaged(0L)
@@ -77,9 +77,10 @@ trait GatheringByteOps {
           val x = for {
             remaining <- buffer.putChunk(c)
             _         <- buffer.flip
-            count <- ZStream
-                       .repeatZIOWithSchedule(write(buffer), Schedule.recureWhileZIO(Function.const(buffer.hasRemaining)))
-                       .runSum
+            count <-
+              ZStream
+                .repeatZIOWithSchedule(write(buffer), Schedule.recurWhileZIO(Function.const(buffer.hasRemaining)))
+                .runSum
             _ <- buffer.clear
           } yield (count + total, remaining)
           // can't safely recurse in for expression
@@ -90,14 +91,12 @@ trait GatheringByteOps {
         }
 
         doWrite(0, chunk).foldZIO(
-          e => buffer.getChunk().flatMap(ZSink.Push.fail(e, _)),
+          e => buffer.getChunk().flatMap(ZIO.fail(e, _)),
           count => countRef.update(_ + count.toLong)
         )
       }
         .getOrElse(
-          countRef.get.flatMap[Any, (Either[IOException, Long], Chunk[Byte]), Unit](count =>
-            ZSink.Push.emit(count, Chunk.empty)
-          )
+          countRef.get.flatMap[Any, (Either[IOException, Long], Chunk[Byte]), Unit](count => ZIO.succeed(count))
         )
     }
 
