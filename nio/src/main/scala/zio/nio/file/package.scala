@@ -1,6 +1,8 @@
 package zio.nio
 
-import java.nio.file.{Path => JPath, WatchEvent}
+import zio.stacktracer.TracingImplicits.disableAutoTrace
+
+import java.nio.file.{WatchEvent, Path => JPath}
 
 package object file {
 

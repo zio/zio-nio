@@ -33,7 +33,9 @@ object TextFileDump extends ZIOAppDefault {
     program.exitCode
   }
 
-  private def dump(charset: Charset, file: Path): ZIO[Console with Any, Exception, Unit] =
+  private def dump(charset: Charset, file: Path)(implicit
+    trace: ZTraceElement
+  ): ZIO[Console with Any, Exception, Unit] =
     FileChannel.open(file).useNioBlockingOps { fileOps =>
       val inStream: ZStream[Any, Exception, Byte] = ZStream.repeatZIOChunkOption {
         fileOps.readChunk(1000).asSomeError.flatMap { chunk =>

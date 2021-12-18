@@ -19,7 +19,7 @@ object DatagramChannelSpec extends BaseSpec {
   ] =
     suite("DatagramChannelSpec")(
       test("read/write") {
-        def echoServer(started: Promise[Nothing, SocketAddress]): UIO[Unit] =
+        def echoServer(started: Promise[Nothing, SocketAddress])(implicit trace: ZTraceElement): UIO[Unit] =
           for {
             sink <- Buffer.byte(3)
             _ <- DatagramChannel.open.useNioBlocking { (server, ops) =>
@@ -34,7 +34,7 @@ object DatagramChannelSpec extends BaseSpec {
                  }.fork
           } yield ()
 
-        def echoClient(address: SocketAddress): IO[IOException, Boolean] =
+        def echoClient(address: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Boolean] =
           for {
             src <- Buffer.byte(3)
             result <- DatagramChannel.open.useNioBlockingOps { client =>
@@ -58,13 +58,13 @@ object DatagramChannelSpec extends BaseSpec {
         } yield assert(same)(isTrue)
       },
       test("close channel unbind port") {
-        def client(address: SocketAddress): IO[IOException, Unit] =
+        def client(address: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Unit] =
           DatagramChannel.open.useNioBlockingOps(_.connect(address).unit)
 
         def server(
           address: Option[SocketAddress],
           started: Promise[Nothing, SocketAddress]
-        ): UIO[Fiber[IOException, Unit]] =
+        )(implicit trace: ZTraceElement): UIO[Fiber[IOException, Unit]] =
           for {
             worker <- DatagramChannel.open.useNioBlocking { (server, _) =>
                         for {

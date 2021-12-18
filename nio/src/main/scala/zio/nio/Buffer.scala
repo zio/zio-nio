@@ -1,11 +1,12 @@
 package zio.nio
 
-import zio.{Chunk, UIO, ZIO}
+import zio.stacktracer.TracingImplicits.disableAutoTrace
+import zio.{Chunk, UIO, ZIO, ZTraceElement}
 
 import java.nio.{
+  ByteOrder,
   Buffer => JBuffer,
   ByteBuffer => JByteBuffer,
-  ByteOrder,
   CharBuffer => JCharBuffer,
   DoubleBuffer => JDoubleBuffer,
   FloatBuffer => JFloatBuffer,
@@ -53,7 +54,7 @@ import scala.reflect.ClassTag
  * View buffers are constructed via the various `asXXX` methods on the [[zio.nio.ByteBuffer]] class, for example:
  *
  * {{{
- *   val ints: UIO[IntBuffer] = bytes.asIntBuffer
+ *   val ints(implicit trace: ZTraceElement): UIO[IntBuffer] = bytes.asIntBuffer
  * }}}
  *
  * Changes to made via view buffers are reflected in the original `ByteBuffer` and vice-versa.
@@ -97,12 +98,12 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    *
    * Also the byte order used any view buffers created from this buffer.
    */
-  def order: UIO[ByteOrder]
+  def order(implicit trace: ZTraceElement): UIO[ByteOrder]
 
   /**
    * Returns this buffer's position.
    */
-  final def position: UIO[Int] = UIO.succeed(buffer.position)
+  final def position(implicit trace: ZTraceElement): UIO[Int] = UIO.succeed(buffer.position)
 
   /**
    * Sets this buffer's position.
@@ -112,7 +113,8 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * @param newPosition
    *   Must be >= 0 and <= the current limit.
    */
-  final def position(newPosition: Int): UIO[Unit] = UIO.succeed(buffer.position(newPosition)).unit
+  final def position(newPosition: Int)(implicit trace: ZTraceElement): UIO[Unit] =
+    UIO.succeed(buffer.position(newPosition)).unit
 
   /**
    * Moves this buffer's position forward or backwards by a delta.
@@ -122,7 +124,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * @return
    *   The new position.
    */
-  final def movePosition(delta: Int): UIO[Int] =
+  final def movePosition(delta: Int)(implicit trace: ZTraceElement): UIO[Int] =
     for {
       pos   <- position
       newPos = pos + delta
@@ -132,7 +134,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
   /**
    * Returns this buffer's limit.
    */
-  final def limit: UIO[Int] = UIO.succeed(buffer.limit)
+  final def limit(implicit trace: ZTraceElement): UIO[Int] = UIO.succeed(buffer.limit)
 
   /**
    * Sets this buffer's limit.
@@ -142,7 +144,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * @param newLimit
    *   Must be >= 0 and <= this buffer's capacity.
    */
-  final def limit(newLimit: Int): UIO[Unit] = UIO.succeed(buffer.limit(newLimit)).unit
+  final def limit(newLimit: Int)(implicit trace: ZTraceElement): UIO[Unit] = UIO.succeed(buffer.limit(newLimit)).unit
 
   /**
    * Moves this buffer's limit forward or backwards by a delta.
@@ -152,7 +154,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * @return
    *   The new limit.
    */
-  final def moveLimit(delta: Int): UIO[Int] =
+  final def moveLimit(delta: Int)(implicit trace: ZTraceElement): UIO[Int] =
     for {
       pos   <- limit
       newPos = pos + delta
@@ -162,24 +164,24 @@ abstract class Buffer[A: ClassTag] private[nio] () {
   /**
    * Returns the number of elements between this buffer's position and its limit.
    */
-  final def remaining: UIO[Int] = UIO.succeed(buffer.remaining)
+  final def remaining(implicit trace: ZTraceElement): UIO[Int] = UIO.succeed(buffer.remaining)
 
   /**
    * Indicates whether there are any elements between this buffer's position and its limit.
    */
-  final def hasRemaining: UIO[Boolean] = UIO.succeed(buffer.hasRemaining)
+  final def hasRemaining(implicit trace: ZTraceElement): UIO[Boolean] = UIO.succeed(buffer.hasRemaining)
 
   /**
    * Sets this buffer's mark to the current position.
    */
-  final def mark: UIO[Unit] = UIO.succeed(buffer.mark()).unit
+  final def mark(implicit trace: ZTraceElement): UIO[Unit] = UIO.succeed(buffer.mark()).unit
 
   /**
    * Resets the position to the previously set mark. A mark ''must'' be set before calling this.
    *
    * Dies with `InvalidMarkException` if a mark has not previously been set.
    */
-  final def reset: UIO[Unit] = UIO.succeed(buffer.reset()).unit
+  final def reset(implicit trace: ZTraceElement): UIO[Unit] = UIO.succeed(buffer.reset()).unit
 
   /**
    * Clears this buffer. The position is set to zero, the limit is set to the capacity, and the mark is discarded. No
@@ -189,7 +191,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * If the buffer's current values have not been completely processed, then the `compact` method may be more
    * appropriate.
    */
-  final def clear: UIO[Unit] = UIO.succeed(buffer.clear()).unit
+  final def clear(implicit trace: ZTraceElement): UIO[Unit] = UIO.succeed(buffer.clear()).unit
 
   /**
    * Flips this buffer. The limit is set to the current position and then the position is set to zero. If the mark is
@@ -199,13 +201,13 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * This method is often used in conjunction with the `compact` method when transferring data from one place to
    * another.
    */
-  final def flip: UIO[Unit] = UIO.succeed(buffer.flip()).unit
+  final def flip(implicit trace: ZTraceElement): UIO[Unit] = UIO.succeed(buffer.flip()).unit
 
   /**
    * Rewinds this buffer. The position is set to zero and the mark is discarded. Invoke this method before a sequence of
    * channel-write or get operations, assuming that the limit has already been set appropriately.
    */
-  final def rewind: UIO[Unit] = UIO.succeed(buffer.rewind()).unit
+  final def rewind(implicit trace: ZTraceElement): UIO[Unit] = UIO.succeed(buffer.rewind()).unit
 
   /**
    * Indicates if this buffer is read-only.
@@ -236,7 +238,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * The new buffer's position will be zero, its capacity and its limit will be the number of bytes remaining in this
    * buffer.
    */
-  def slice: UIO[Buffer[A]]
+  def slice(implicit trace: ZTraceElement): UIO[Buffer[A]]
 
   /**
    * Compacts this buffer (optional operation). The bytes between the buffer's current position and its limit, if any,
@@ -252,7 +254,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    *
    * Dies with `ReadOnlyBufferException` if this buffer is read-only.
    */
-  def compact: UIO[Unit]
+  def compact(implicit trace: ZTraceElement): UIO[Unit]
 
   /**
    * Creates a new buffer that shares this buffer's content. The content of the new buffer will be that of this buffer.
@@ -261,7 +263,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    *
    * The new buffer's capacity, limit, position, and mark values will be identical to those of this buffer.
    */
-  def duplicate: UIO[Buffer[A]]
+  def duplicate(implicit trace: ZTraceElement): UIO[Buffer[A]]
 
   /**
    * Perform effects using this buffer's underlying array directly. Because only some buffers are backed by arrays, two
@@ -280,7 +282,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
   final def withArray[R, E, B](
     noArray: ZIO[R, E, B],
     hasArray: (Array[A], Int) => ZIO[R, E, B]
-  ): ZIO[R, E, B] =
+  )(implicit trace: ZTraceElement): ZIO[R, E, B] =
     if (buffer.hasArray)
       for {
         a      <- array
@@ -290,21 +292,21 @@ abstract class Buffer[A: ClassTag] private[nio] () {
     else
       noArray
 
-  protected[nio] def array: UIO[Array[A]]
+  protected[nio] def array(implicit trace: ZTraceElement): UIO[Array[A]]
 
   /**
    * Relative get of a single element. Reads the element at the position and increments the position.
    *
    * Dies with `BufferUnderflowException` If there are no elements remaining.
    */
-  def get: UIO[A]
+  def get(implicit trace: ZTraceElement): UIO[A]
 
   /**
    * Absolute get of a single element. Reads the element at the given index. The position does not change.
    *
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit.
    */
-  def get(i: Int): UIO[A]
+  def get(i: Int)(implicit trace: ZTraceElement): UIO[A]
 
   /**
    * Relative get of multiple elements.
@@ -315,7 +317,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * @param maxLength
    *   Defaults to `Int.MaxValue`, meaning all remaining elements will be read.
    */
-  def getChunk(maxLength: Int = Int.MaxValue): UIO[Chunk[A]]
+  def getChunk(maxLength: Int = Int.MaxValue)(implicit trace: ZTraceElement): UIO[Chunk[A]]
 
   /**
    * Relative put of a single element. Writes the element at the position and increments the position.
@@ -323,7 +325,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * Dies with `BufferOverflowException` if there are no elements remaining. Dies with `ReadOnlyBufferException` if this
    * is a read-only buffer.
    */
-  def put(element: A): UIO[Unit]
+  def put(element: A)(implicit trace: ZTraceElement): UIO[Unit]
 
   /**
    * Absolute put of a single element. Writes the element at the specified index. The position does not change.
@@ -331,14 +333,14 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * Dies with `IndexOutOfBoundsException` if the index is negative or not smaller than the limit. Dies with
    * `ReadOnlyBufferException` if this is a read-only buffer.
    */
-  def put(index: Int, element: A): UIO[Unit]
+  def put(index: Int, element: A)(implicit trace: ZTraceElement): UIO[Unit]
 
   /**
    * Tries to put an entire chunk in this buffer, possibly overflowing.
    *
    * `putChunk` is a safe public variant of this that won't overflow.
    */
-  protected def putChunkAll(chunk: Chunk[A]): UIO[Unit]
+  protected def putChunkAll(chunk: Chunk[A])(implicit trace: ZTraceElement): UIO[Unit]
 
   /**
    * Relative put of multiple elements. Writes as many elements as can fit in remaining buffer space, returning any
@@ -347,7 +349,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
    * @return
    *   The remaining elements that could not fit in this buffer, if any.
    */
-  final def putChunk(chunk: Chunk[A]): UIO[Chunk[A]] =
+  final def putChunk(chunk: Chunk[A])(implicit trace: ZTraceElement): UIO[Chunk[A]] =
     for {
       r                         <- remaining
       (putChunk, remainderChunk) = chunk.splitAt(r)
@@ -357,7 +359,7 @@ abstract class Buffer[A: ClassTag] private[nio] () {
   /**
    * Creates a read-only view of this buffer.
    */
-  def asReadOnlyBuffer: UIO[Buffer[A]]
+  def asReadOnlyBuffer(implicit trace: ZTraceElement): UIO[Buffer[A]]
 
 }
 
@@ -373,7 +375,8 @@ object Buffer {
    * @param capacity
    *   The number of bytes to allocate.
    */
-  def byte(capacity: Int): UIO[ByteBuffer] = UIO.succeed(byteFromJava(JByteBuffer.allocate(capacity)))
+  def byte(capacity: Int)(implicit trace: ZTraceElement): UIO[ByteBuffer] =
+    UIO.succeed(byteFromJava(JByteBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -384,7 +387,8 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def byte(chunk: Chunk[Byte]): UIO[ByteBuffer] = UIO.succeed(byteFromJava(JByteBuffer.wrap(chunk.toArray)))
+  def byte(chunk: Chunk[Byte])(implicit trace: ZTraceElement): UIO[ByteBuffer] =
+    UIO.succeed(byteFromJava(JByteBuffer.wrap(chunk.toArray)))
 
   /**
    * Allocates a direct byte buffer.
@@ -396,7 +400,8 @@ object Buffer {
    * @param capacity
    *   The number of bytes to allocate.
    */
-  def byteDirect(capacity: Int): UIO[ByteBuffer] = UIO.succeed(byteFromJava(JByteBuffer.allocateDirect(capacity)))
+  def byteDirect(capacity: Int)(implicit trace: ZTraceElement): UIO[ByteBuffer] =
+    UIO.succeed(byteFromJava(JByteBuffer.allocateDirect(capacity)))
 
   /**
    * Wraps an existing Java `ByteBuffer`.
@@ -415,7 +420,8 @@ object Buffer {
    * @param capacity
    *   The number of characters to allocate.
    */
-  def char(capacity: Int): UIO[CharBuffer] = UIO.succeed(charFromJava(JCharBuffer.allocate(capacity)))
+  def char(capacity: Int)(implicit trace: ZTraceElement): UIO[CharBuffer] =
+    UIO.succeed(charFromJava(JCharBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -426,7 +432,8 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def char(chunk: Chunk[Char]): UIO[CharBuffer] = UIO.succeed(charFromJava(JCharBuffer.wrap(chunk.toArray)))
+  def char(chunk: Chunk[Char])(implicit trace: ZTraceElement): UIO[CharBuffer] =
+    UIO.succeed(charFromJava(JCharBuffer.wrap(chunk.toArray)))
 
   /**
    * Creates a read-only character buffer wrapping a character sequence.
@@ -446,7 +453,8 @@ object Buffer {
     charSequence: CharSequence,
     start: Int,
     end: Int
-  ): UIO[CharBuffer] = UIO.succeed(charFromJava(JCharBuffer.wrap(charSequence, start, end)))
+  )(implicit trace: ZTraceElement): UIO[CharBuffer] =
+    UIO.succeed(charFromJava(JCharBuffer.wrap(charSequence, start, end)))
 
   /**
    * Creates a read-only character buffer wrapping a character sequence.
@@ -456,7 +464,7 @@ object Buffer {
    * @param charSequence
    *   The characters to wrap.
    */
-  def char(charSequence: CharSequence): UIO[CharBuffer] =
+  def char(charSequence: CharSequence)(implicit trace: ZTraceElement): UIO[CharBuffer] =
     UIO.succeed(new CharBuffer(JCharBuffer.wrap(charSequence)))
 
   /**
@@ -476,7 +484,8 @@ object Buffer {
    * @param capacity
    *   The number of floats to allocate.
    */
-  def float(capacity: Int): UIO[FloatBuffer] = UIO.succeed(floatFromJava(JFloatBuffer.allocate(capacity)))
+  def float(capacity: Int)(implicit trace: ZTraceElement): UIO[FloatBuffer] =
+    UIO.succeed(floatFromJava(JFloatBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -487,7 +496,8 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def float(chunk: Chunk[Float]): UIO[FloatBuffer] = UIO.succeed(floatFromJava(JFloatBuffer.wrap(chunk.toArray)))
+  def float(chunk: Chunk[Float])(implicit trace: ZTraceElement): UIO[FloatBuffer] =
+    UIO.succeed(floatFromJava(JFloatBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `FloatBuffer`.
@@ -506,7 +516,8 @@ object Buffer {
    * @param capacity
    *   The number of doubles to allocate.
    */
-  def double(capacity: Int): UIO[DoubleBuffer] = UIO.succeed(doubleFromJava(JDoubleBuffer.allocate(capacity)))
+  def double(capacity: Int)(implicit trace: ZTraceElement): UIO[DoubleBuffer] =
+    UIO.succeed(doubleFromJava(JDoubleBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -517,7 +528,7 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def double(chunk: Chunk[Double]): UIO[DoubleBuffer] =
+  def double(chunk: Chunk[Double])(implicit trace: ZTraceElement): UIO[DoubleBuffer] =
     UIO.succeed(doubleFromJava(JDoubleBuffer.wrap(chunk.toArray)))
 
   /**
@@ -537,7 +548,8 @@ object Buffer {
    * @param capacity
    *   The number of ints to allocate.
    */
-  def int(capacity: Int): UIO[IntBuffer] = UIO.succeed(intFromJava(JIntBuffer.allocate(capacity)))
+  def int(capacity: Int)(implicit trace: ZTraceElement): UIO[IntBuffer] =
+    UIO.succeed(intFromJava(JIntBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -548,7 +560,8 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def int(chunk: Chunk[Int]): UIO[IntBuffer] = UIO.succeed(intFromJava(JIntBuffer.wrap(chunk.toArray)))
+  def int(chunk: Chunk[Int])(implicit trace: ZTraceElement): UIO[IntBuffer] =
+    UIO.succeed(intFromJava(JIntBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `IntBuffer`.
@@ -567,7 +580,8 @@ object Buffer {
    * @param capacity
    *   The number of longs to allocate.
    */
-  def long(capacity: Int): UIO[LongBuffer] = UIO.succeed(longFromJava(JLongBuffer.allocate(capacity)))
+  def long(capacity: Int)(implicit trace: ZTraceElement): UIO[LongBuffer] =
+    UIO.succeed(longFromJava(JLongBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -578,7 +592,8 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def long(chunk: Chunk[Long]): UIO[LongBuffer] = UIO.succeed(longFromJava(JLongBuffer.wrap(chunk.toArray)))
+  def long(chunk: Chunk[Long])(implicit trace: ZTraceElement): UIO[LongBuffer] =
+    UIO.succeed(longFromJava(JLongBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `LongBuffer`.
@@ -597,7 +612,8 @@ object Buffer {
    * @param capacity
    *   The number of shorts to allocate.
    */
-  def short(capacity: Int): UIO[ShortBuffer] = UIO.succeed(shortFromJava(JShortBuffer.allocate(capacity)))
+  def short(capacity: Int)(implicit trace: ZTraceElement): UIO[ShortBuffer] =
+    UIO.succeed(shortFromJava(JShortBuffer.allocate(capacity)))
 
   /**
    * Creates a new array-backed buffer containing data copied from a chunk.
@@ -608,7 +624,8 @@ object Buffer {
    * @param chunk
    *   The data to copy into the new buffer.
    */
-  def short(chunk: Chunk[Short]): UIO[ShortBuffer] = UIO.succeed(shortFromJava(JShortBuffer.wrap(chunk.toArray)))
+  def short(chunk: Chunk[Short])(implicit trace: ZTraceElement): UIO[ShortBuffer] =
+    UIO.succeed(shortFromJava(JShortBuffer.wrap(chunk.toArray)))
 
   /**
    * Wraps an existing Java `ShortBuffer`.

@@ -1,9 +1,10 @@
 package zio.nio
 
-import zio.{Chunk, IO}
+import zio.stacktracer.TracingImplicits.disableAutoTrace
+import zio.{Chunk, IO, ZTraceElement}
 
 import java.io.IOException
-import java.net.{InetAddress => JInetAddress, UnknownHostException}
+import java.net.{UnknownHostException, InetAddress => JInetAddress}
 
 /**
  * Representation of an Internet Protocol (IP) address.
@@ -31,14 +32,14 @@ final class InetAddress private[nio] (private[nio] val jInetAddress: JInetAddres
 
   def isMCOrgLocal: Boolean = jInetAddress.isMCOrgLocal
 
-  def isReachable(timeOut: Int): IO[IOException, Boolean] =
+  def isReachable(timeOut: Int)(implicit trace: ZTraceElement): IO[IOException, Boolean] =
     IO.attempt(jInetAddress.isReachable(timeOut)).refineToOrDie[IOException]
 
   def isReachable(
     networkInterface: NetworkInterface,
     ttl: Integer,
     timeout: Integer
-  ): IO[IOException, Boolean] =
+  )(implicit trace: ZTraceElement): IO[IOException, Boolean] =
     IO.attempt(jInetAddress.isReachable(networkInterface.jNetworkInterface, ttl, timeout))
       .refineToOrDie[IOException]
 
@@ -62,23 +63,25 @@ final class InetAddress private[nio] (private[nio] val jInetAddress: JInetAddres
 
 object InetAddress {
 
-  def byAddress(bytes: Chunk[Byte]): IO[UnknownHostException, InetAddress] =
+  def byAddress(bytes: Chunk[Byte])(implicit trace: ZTraceElement): IO[UnknownHostException, InetAddress] =
     IO.attempt(new InetAddress(JInetAddress.getByAddress(bytes.toArray)))
       .refineToOrDie[UnknownHostException]
 
-  def byAddress(hostname: String, bytes: Chunk[Byte]): IO[UnknownHostException, InetAddress] =
+  def byAddress(hostname: String, bytes: Chunk[Byte])(implicit
+    trace: ZTraceElement
+  ): IO[UnknownHostException, InetAddress] =
     IO.attempt(new InetAddress(JInetAddress.getByAddress(hostname, bytes.toArray)))
       .refineToOrDie[UnknownHostException]
 
-  def byAllName(hostName: String): IO[UnknownHostException, List[InetAddress]] =
+  def byAllName(hostName: String)(implicit trace: ZTraceElement): IO[UnknownHostException, List[InetAddress]] =
     IO.attempt(JInetAddress.getAllByName(hostName).toList.map(new InetAddress(_)))
       .refineToOrDie[UnknownHostException]
 
-  def byName(hostName: String): IO[UnknownHostException, InetAddress] =
+  def byName(hostName: String)(implicit trace: ZTraceElement): IO[UnknownHostException, InetAddress] =
     IO.attempt(new InetAddress(JInetAddress.getByName(hostName)))
       .refineToOrDie[UnknownHostException]
 
-  def localHost: IO[UnknownHostException, InetAddress] =
+  def localHost(implicit trace: ZTraceElement): IO[UnknownHostException, InetAddress] =
     IO.attempt(new InetAddress(JInetAddress.getLocalHost)).refineToOrDie[UnknownHostException]
 
 }

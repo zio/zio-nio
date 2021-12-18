@@ -3,7 +3,7 @@ package zio.nio.examples
 import zio.nio.InetSocketAddress
 import zio.nio.channels.AsynchronousServerSocketChannel
 import zio.stream._
-import zio.{Clock, Console, ExitCode, Managed, RIO, URIO, ZIO, ZIOAppDefault, durationInt}
+import zio.{Clock, Console, ExitCode, Managed, RIO, URIO, ZIO, ZIOAppDefault, ZTraceElement, durationInt}
 
 object StreamsBasedServer extends ZIOAppDefault {
 
@@ -19,7 +19,7 @@ object StreamsBasedServer extends ZIOAppDefault {
       .orDie
       .exitCode
 
-  def server(port: Int): Managed[Exception, AsynchronousServerSocketChannel] =
+  def server(port: Int)(implicit trace: ZTraceElement): Managed[Exception, AsynchronousServerSocketChannel] =
     for {
       server        <- AsynchronousServerSocketChannel.open
       socketAddress <- InetSocketAddress.wildCard(port).toManaged
@@ -28,7 +28,7 @@ object StreamsBasedServer extends ZIOAppDefault {
 
   def handleConnections[R <: Console](
     server: AsynchronousServerSocketChannel
-  )(f: String => RIO[R, Unit]): ZStream[R, Throwable, Unit] =
+  )(f: String => RIO[R, Unit])(implicit trace: ZTraceElement): ZStream[R, Throwable, Unit] =
     ZStream
       .repeatZIO(server.accept.preallocate)
       .map(conn => ZStream.managed(conn.ensuring(Console.printLine("Connection closed").ignore).withEarlyRelease))

@@ -6,7 +6,7 @@ import zio.nio.{BaseSpec, Buffer}
 import zio.stream.Stream
 import zio.test.Assertion._
 import zio.test._
-import zio.{Chunk, Clock, Random, UIO, ZIO}
+import zio.{Chunk, Clock, Random, UIO, ZIO, ZTraceElement}
 
 import java.io.EOFException
 import java.nio.file.StandardOpenOption
@@ -18,7 +18,7 @@ object FileChannelSpec extends BaseSpec {
 
   private val readFileContents = "Hello World"
 
-  def loadViaSource(path: Path): UIO[List[String]] =
+  def loadViaSource(path: Path)(implicit trace: ZTraceElement): UIO[List[String]] =
     ZIO
       .attempt(Source.fromFile(path.toFile))
       .acquireReleaseWith(s => ZIO.succeed(s.close()))(s => ZIO.attemptBlocking(s.getLines().toList))

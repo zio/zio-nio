@@ -1,10 +1,11 @@
 package zio.nio.file
 
-import zio.{Chunk, ZIO}
+import zio.stacktracer.TracingImplicits.disableAutoTrace
+import zio.{Chunk, ZIO, ZTraceElement}
 
 import java.io.{File, IOError, IOException}
 import java.net.URI
-import java.nio.file.{LinkOption, Path => JPath, Paths, WatchEvent, Watchable => JWatchable}
+import java.nio.file.{LinkOption, Paths, WatchEvent, Path => JPath, Watchable => JWatchable}
 import scala.jdk.CollectionConverters._
 
 final class Path private (private[nio] val javaPath: JPath) extends Watchable {
@@ -46,15 +47,15 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
 
   def relativize(other: Path): Path = fromJava(javaPath.relativize(other.javaPath))
 
-  def toUri: ZIO[Any, IOError, URI] =
+  def toUri(implicit trace: ZTraceElement): ZIO[Any, IOError, URI] =
     ZIO.attemptBlocking(javaPath.toUri).refineToOrDie[IOError]
 
-  def toAbsolutePath: ZIO[Any, IOError, Path] =
+  def toAbsolutePath(implicit trace: ZTraceElement): ZIO[Any, IOError, Path] =
     ZIO
       .attemptBlocking(fromJava(javaPath.toAbsolutePath))
       .refineToOrDie[IOError]
 
-  def toRealPath(linkOptions: LinkOption*): ZIO[Any, IOException, Path] =
+  def toRealPath(linkOptions: LinkOption*)(implicit trace: ZTraceElement): ZIO[Any, IOException, Path] =
     ZIO
       .attemptBlocking(fromJava(javaPath.toRealPath(linkOptions: _*)))
       .refineToOrDie[IOException]
@@ -87,7 +88,7 @@ final class Path private (private[nio] val javaPath: JPath) extends Watchable {
     events: Iterable[WatchEvent.Kind[_]],
     maxDepth: Int = Int.MaxValue,
     modifiers: Iterable[WatchEvent.Modifier] = Iterable.empty
-  ): ZIO[Any, IOException, Chunk[WatchKey]] =
+  )(implicit trace: ZTraceElement): ZIO[Any, IOException, Chunk[WatchKey]] =
     Files
       .find(path = this, maxDepth = maxDepth)((_, a) => a.isDirectory)
       .mapZIO(dir => dir.register(watcher, events, modifiers.toSeq: _*))

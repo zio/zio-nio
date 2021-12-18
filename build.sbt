@@ -36,7 +36,15 @@ lazy val zioNio = project
       "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
-  .settings(dottySettings)
+  .settings(scala3Settings)
+  .settings(
+    scalacOptions ++= {
+      if (scalaVersion.value == Scala3)
+        Seq.empty
+      else
+        Seq("-P:silencer:globalFilters=[zio.stacktracer.TracingImplicits.disableAutoTrace]")
+    }
+  )
 
 lazy val docs = project
   .in(file("zio-nio-docs"))
@@ -61,5 +69,5 @@ lazy val examples = project
     publish / skip := true,
     moduleName     := "examples"
   )
-  .settings(dottySettings)
+  .settings(scala3Settings)
   .dependsOn(zioNio)

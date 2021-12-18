@@ -46,15 +46,19 @@ object SelectorSpec extends BaseSpec {
 
   def byteArrayToString(array: Array[Byte]): String = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
 
-  def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean]): IO[Nothing, Boolean] =
+  def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean])(implicit
+    trace: ZTraceElement
+  ): IO[Nothing, Boolean] =
     statusCheck.fold(_ => false, identity)
 
-  def server(started: Promise[Nothing, SocketAddress]): ZManaged[Clock, Exception, Unit] = {
+  def server(
+    started: Promise[Nothing, SocketAddress]
+  )(implicit trace: ZTraceElement): ZManaged[Clock, Exception, Unit] = {
     def serverLoop(
       scope: Managed.Scope,
       selector: Selector,
       buffer: ByteBuffer
-    ): ZIO[Any, Exception, Unit] =
+    )(implicit trace: ZTraceElement): ZIO[Any, Exception, Unit] =
       for {
         _ <- selector.select
         _ <- selector.foreachSelectedKey { key =>
@@ -109,7 +113,7 @@ object SelectorSpec extends BaseSpec {
     } yield ()
   }
 
-  def client(address: SocketAddress): IO[IOException, String] = {
+  def client(address: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, String] = {
     val bytes = Chunk.fromArray("Hello world".getBytes)
     for {
       buffer <- Buffer.byte(bytes)

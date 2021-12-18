@@ -1,9 +1,9 @@
 package zio.nio.channels
 
+import zio._
 import zio.nio.{BaseSpec, Buffer, EffectOps, InetSocketAddress, SocketAddress}
 import zio.test.Assertion._
 import zio.test._
-import zio._
 
 import java.io.{EOFException, FileNotFoundException, IOException}
 import java.nio.channels
@@ -27,7 +27,7 @@ object ChannelSpec extends BaseSpec {
       },
       suite("AsynchronousSocketChannel")(
         test("read/write") {
-          def echoServer(started: Promise[Nothing, SocketAddress]): IO[Exception, Unit] =
+          def echoServer(started: Promise[Nothing, SocketAddress])(implicit trace: ZTraceElement): IO[Exception, Unit] =
             for {
               sink <- Buffer.byte(3)
               _ <- AsynchronousServerSocketChannel.open.use { server =>
@@ -44,7 +44,7 @@ object ChannelSpec extends BaseSpec {
                    }.fork
             } yield ()
 
-          def echoClient(address: SocketAddress): IO[Exception, Boolean] =
+          def echoClient(address: SocketAddress)(implicit trace: ZTraceElement): IO[Exception, Boolean] =
             for {
               src <- Buffer.byte(3)
               result <- AsynchronousSocketChannel.open.use { client =>
@@ -68,7 +68,9 @@ object ChannelSpec extends BaseSpec {
           } yield assert(same)(isTrue)
         },
         test("read should fail when connection close") {
-          def server(started: Promise[Nothing, SocketAddress]): IO[Exception, Fiber[Exception, Boolean]] =
+          def server(started: Promise[Nothing, SocketAddress])(implicit
+            trace: ZTraceElement
+          ): IO[Exception, Fiber[Exception, Boolean]] =
             for {
               result <- AsynchronousServerSocketChannel.open.use { server =>
                           for {
@@ -84,7 +86,7 @@ object ChannelSpec extends BaseSpec {
                         }.fork
             } yield result
 
-          def client(address: SocketAddress): IO[Exception, Unit] =
+          def client(address: SocketAddress)(implicit trace: ZTraceElement): IO[Exception, Unit] =
             for {
               _ <- AsynchronousSocketChannel.open.use { client =>
                      for {
@@ -103,14 +105,14 @@ object ChannelSpec extends BaseSpec {
           } yield assert(same)(isTrue)
         },
         test("close channel unbind port") {
-          def client(address: SocketAddress): IO[Exception, Unit] =
+          def client(address: SocketAddress)(implicit trace: ZTraceElement): IO[Exception, Unit] =
             AsynchronousSocketChannel.open.use {
               _.connect(address)
             }
 
           def server(
             started: Promise[Nothing, SocketAddress]
-          ): Managed[IOException, Fiber[Exception, Unit]] =
+          )(implicit trace: ZTraceElement): Managed[IOException, Fiber[Exception, Unit]] =
             for {
               server <- AsynchronousServerSocketChannel.open
               _      <- server.bindAuto().toManaged
@@ -218,7 +220,7 @@ object ChannelSpec extends BaseSpec {
 
             override def useBlocking[R, E >: IOException, A](
               f: GatheringByteOps => ZIO[R, E, A]
-            ): ZIO[R, E, A] = nioBlocking(f(hangingOps))
+            )(implicit trace: ZTraceElement): ZIO[R, E, A] = nioBlocking(f(hangingOps))
 
             override protected val channel: channels.Channel = hangingOps.channel
           }

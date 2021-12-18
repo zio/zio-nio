@@ -1,34 +1,34 @@
 package zio.nio.file
 
 import zio._
-
-import zio.Duration
 import zio.nio.IOCloseable
+import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.stream.ZStream
 
 import java.io.IOException
 import java.nio.file.{
-  Path => JPath,
   WatchEvent,
+  Path => JPath,
   WatchKey => JWatchKey,
   WatchService => JWatchService,
   Watchable => JWatchable
 }
 import java.util.concurrent.TimeUnit
 import scala.jdk.CollectionConverters._
-import zio.ZIO
 
 trait Watchable {
   protected def javaWatchable: JWatchable
 
-  final def register(watcher: WatchService, events: WatchEvent.Kind[_]*): IO[IOException, WatchKey] =
+  final def register(watcher: WatchService, events: WatchEvent.Kind[_]*)(implicit
+    trace: ZTraceElement
+  ): IO[IOException, WatchKey] =
     IO.attempt(new WatchKey(javaWatchable.register(watcher.javaWatchService, events: _*))).refineToOrDie[IOException]
 
   final def register(
     watcher: WatchService,
     events: Iterable[WatchEvent.Kind[_]],
     modifiers: WatchEvent.Modifier*
-  ): IO[IOException, WatchKey] =
+  )(implicit trace: ZTraceElement): IO[IOException, WatchKey] =
     IO.attempt(new WatchKey(javaWatchable.register(watcher.javaWatchService, events.toArray, modifiers: _*)))
       .refineToOrDie[IOException]
 
@@ -50,7 +50,7 @@ object Watchable {
  */
 final class WatchKey private[file] (private val javaKey: JWatchKey) {
 
-  def isValid: UIO[Boolean] = UIO.succeed(javaKey.isValid)
+  def isValid(implicit trace: ZTraceElement): UIO[Boolean] = UIO.succeed(javaKey.isValid)
 
   /**
    * Retrieves and removes all pending events for this watch key.
@@ -59,7 +59,8 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
    * should be reset after processing the returned events, the `pollEventsManaged` method can be used to do this
    * automatically and reliably.
    */
-  def pollEvents: UIO[List[WatchEvent[_]]] = UIO.succeed(javaKey.pollEvents().asScala.toList)
+  def pollEvents(implicit trace: ZTraceElement): UIO[List[WatchEvent[_]]] =
+    UIO.succeed(javaKey.pollEvents().asScala.toList)
 
   /**
    * Retrieves and removes all pending events for this watch key as a managed resource.
@@ -67,14 +68,15 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
    * This does not block, it will immediately return an empty list if there are no events pending. When the returned
    * `Managed` completed, this key will be '''reset'''.
    */
-  def pollEventsManaged: Managed[Nothing, List[WatchEvent[_]]] = pollEvents.toManaged.ensuring(reset)
+  def pollEventsManaged(implicit trace: ZTraceElement): Managed[Nothing, List[WatchEvent[_]]] =
+    pollEvents.toManaged.ensuring(reset)
 
   /**
    * Resets this watch key, making it eligible to be re-queued in the `WatchService`. A key is typically reset after all
    * the pending events retrieved from `pollEvents` have been processed. Use `pollEventsManaged` to automatically and
    * reliably perform a reset.
    */
-  def reset: UIO[Boolean] = UIO.succeed(javaKey.reset())
+  def reset(implicit trace: ZTraceElement): UIO[Boolean] = UIO.succeed(javaKey.reset())
 
   /**
    * Cancels the registration with the watch service. Upon return the watch key will be invalid. If the watch key is
@@ -83,7 +85,7 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
    * cancelled. If this watch key has already been cancelled then invoking this method has no effect. Once cancelled, a
    * watch key remains forever invalid.
    */
-  def cancel: UIO[Unit] = UIO.succeed(javaKey.cancel())
+  def cancel(implicit trace: ZTraceElement): UIO[Unit] = UIO.succeed(javaKey.cancel())
 
   /**
    * Returns the object for which this watch key was created.
@@ -128,11 +130,13 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
  */
 final class WatchService private (private[file] val javaWatchService: JWatchService) extends IOCloseable {
 
-  def close: IO[IOException, Unit] = IO.attempt(javaWatchService.close()).refineToOrDie[IOException]
+  def close(implicit trace: ZTraceElement): IO[IOException, Unit] =
+    IO.attempt(javaWatchService.close()).refineToOrDie[IOException]
 
-  def poll: UIO[Option[WatchKey]] = IO.succeed(Option(javaWatchService.poll()).map(new WatchKey(_)))
+  def poll(implicit trace: ZTraceElement): UIO[Option[WatchKey]] =
+    IO.succeed(Option(javaWatchService.poll()).map(new WatchKey(_)))
 
-  def poll(timeout: Duration): URIO[Any, Option[WatchKey]] =
+  def poll(timeout: Duration)(implicit trace: ZTraceElement): URIO[Any, Option[WatchKey]] =
     ZIO
       .attemptBlockingInterrupt(
         Option(javaWatchService.poll(timeout.toNanos, TimeUnit.NANOSECONDS)).map(new WatchKey(_))
@@ -142,7 +146,8 @@ final class WatchService private (private[file] val javaWatchService: JWatchServ
   /**
    * Retrieves and removes next watch key, waiting if none are yet present.
    */
-  def take: URIO[Any, WatchKey] = ZIO.attemptBlockingInterrupt(new WatchKey(javaWatchService.take())).orDie
+  def take(implicit trace: ZTraceElement): URIO[Any, WatchKey] =
+    ZIO.attemptBlockingInterrupt(new WatchKey(javaWatchService.take())).orDie
 
   /**
    * A stream of signalled objects which have pending events.
@@ -150,13 +155,14 @@ final class WatchService private (private[file] val javaWatchService: JWatchServ
    * Note the `WatchKey` objects returned by this stream must be reset before they will be queued again with any
    * additional events.
    */
-  def stream: ZStream[Any, Nothing, WatchKey] = ZStream.repeatZIO(take)
+  def stream(implicit trace: ZTraceElement): ZStream[Any, Nothing, WatchKey] = ZStream.repeatZIO(take)
 
 }
 
 object WatchService {
 
-  def forDefaultFileSystem: ZManaged[Any, IOException, WatchService] = FileSystem.default.newWatchService
+  def forDefaultFileSystem(implicit trace: ZTraceElement): ZManaged[Any, IOException, WatchService] =
+    FileSystem.default.newWatchService
 
   def fromJava(javaWatchService: JWatchService): WatchService = new WatchService(javaWatchService)
 

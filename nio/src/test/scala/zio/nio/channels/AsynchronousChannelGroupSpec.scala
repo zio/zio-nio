@@ -1,13 +1,12 @@
 package zio.nio.channels
 
-import zio.ZIO
-import zio.Duration
+import zio.{Duration, ZIO, ZTraceElement}
 import zio.nio.BaseSpec
 import zio.test.Assertion._
 import zio.test._
 
 import java.nio.channels.{AsynchronousChannelGroup => JAsynchronousChannelGroup}
-import java.util.concurrent.{ExecutorService => JExecutorService, Executors, TimeUnit}
+import java.util.concurrent.{Executors, TimeUnit, ExecutorService => JExecutorService}
 import scala.concurrent.ExecutionContext
 
 object AsynchronousChannelGroupSpec extends BaseSpec {
@@ -112,7 +111,9 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
         }
       }
 
-    def providedFixture(f: ClassFixture => ZIO[Any, Throwable, TestResult]): ZIO[Any, Throwable, TestResult] =
+    def providedFixture(f: ClassFixture => ZIO[Any, Throwable, TestResult])(implicit
+      trace: ZTraceElement
+    ): ZIO[Any, Throwable, TestResult] =
       ZIO(ClassFixture()).acquireReleaseWith(fixture => ZIO.succeed(fixture.cleanFixture()))(fixture => f(fixture))
   }
 }

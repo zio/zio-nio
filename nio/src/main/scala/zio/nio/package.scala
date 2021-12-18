@@ -15,7 +15,7 @@ package object nio {
    *
    * Produces an `EOFException` failure if `value` < 0, otherwise succeeds with `value`.
    */
-  private[nio] def eofCheck(value: Int): IO[EOFException, Int] =
+  private[nio] def eofCheck(value: Int)(implicit trace: ZTraceElement): IO[EOFException, Int] =
     if (value < 0) IO.fail(new EOFException("Channel has reached the end of stream")) else IO.succeed(value)
 
   /**
@@ -23,7 +23,7 @@ package object nio {
    *
    * Produces an `EOFException` failure if `value` < 0, otherwise succeeds with `value`.
    */
-  private[nio] def eofCheck(value: Long): IO[EOFException, Long] =
+  private[nio] def eofCheck(value: Long)(implicit trace: ZTraceElement): IO[EOFException, Long] =
     if (value < 0L) IO.fail(new EOFException("Channel has reached the end of stream")) else IO.succeed(value)
 
   implicit final class EffectOps[-R, +E, +A](private val effect: ZIO[R, E, A]) extends AnyVal {
@@ -35,7 +35,7 @@ package object nio {
      * exception types are wrapped in `Some`.
      */
     @silent("parameter value ev in method .* is never used")
-    def eofCheck[E2 >: E](implicit ev: EOFException <:< E2): ZIO[R, Option[E2], A] =
+    def eofCheck[E2 >: E](implicit ev: EOFException <:< E2, trace: ZTraceElement): ZIO[R, Option[E2], A] =
       effect.catchAll {
         case _: EOFException => ZIO.fail(None)
         case e               => ZIO.fail(Some(e))
@@ -47,7 +47,8 @@ package object nio {
     private val acquire: ZIO[R, E, A]
   ) extends AnyVal {
 
-    def toNioManaged: ZManaged[R, E, A] = ZManaged.acquireReleaseInterruptibleWith(acquire)(_.close.ignore)
+    def toNioManaged(implicit trace: ZTraceElement): ZManaged[R, E, A] =
+      ZManaged.acquireReleaseInterruptibleWith(acquire)(_.close.ignore)
 
   }
 
@@ -60,9 +61,14 @@ package object nio {
      * @param f
      *   The effect to run in a forked fiber. The resource is only valid within this effect.
      */
-    def useForked[R2 <: R, E2 >: E, B](f: A => ZIO[R2, E2, B]): ZIO[R2, E, Fiber[E2, B]] =
-      ReleaseMap.make.flatMap { releaseMap => // TODO fix this
-        managed.zio.provideSome[R](ZLayer.succeed(releaseMap)).flatMap { case (finalizer, a) =>
+    def useForked[R2 <: R, E2 >: E, B](
+      f: A => ZIO[R2, E2, B]
+    ): ZIO[R2, E, Fiber[
+      E2,
+      B
+    ]] = // TODO missing (implicit trace: ZTraceElement) but not sure how to male it work with it
+      ReleaseMap.make.flatMap { releaseMap =>
+        managed.zio.provideSome[R](ZLayer.succeed(releaseMap)).flatMap { case (finalizer, a: A) =>
           f(a).onExit(finalizer).fork
         }
       }

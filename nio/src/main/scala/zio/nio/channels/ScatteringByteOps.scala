@@ -2,8 +2,9 @@ package zio.nio
 
 package channels
 
+import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.stream.{Stream, ZStream}
-import zio.{Chunk, IO, UIO}
+import zio.{Chunk, IO, UIO, ZTraceElement}
 
 import java.io.{EOFException, IOException}
 import java.nio.channels.{ScatteringByteChannel => JScatteringByteChannel}
@@ -26,7 +27,7 @@ trait ScatteringByteOps {
    * @return
    *   The number of bytes read in total, possibly 0
    */
-  final def read(dsts: Seq[ByteBuffer]): IO[IOException, Long] =
+  final def read(dsts: Seq[ByteBuffer])(implicit trace: ZTraceElement): IO[IOException, Long] =
     IO.attempt(channel.read(unwrap(dsts))).refineToOrDie[IOException].flatMap(eofCheck)
 
   /**
@@ -37,7 +38,7 @@ trait ScatteringByteOps {
    * @return
    *   The number of bytes read, possibly 0
    */
-  final def read(dst: ByteBuffer): IO[IOException, Int] =
+  final def read(dst: ByteBuffer)(implicit trace: ZTraceElement): IO[IOException, Int] =
     IO.attempt(channel.read(dst.buffer)).refineToOrDie[IOException].flatMap(eofCheck)
 
   /**
@@ -50,7 +51,7 @@ trait ScatteringByteOps {
    * @return
    *   The bytes read, between 0 and `capacity` in size, inclusive
    */
-  final def readChunk(capacity: Int): IO[IOException, Chunk[Byte]] =
+  final def readChunk(capacity: Int)(implicit trace: ZTraceElement): IO[IOException, Chunk[Byte]] =
     for {
       buffer <- Buffer.byte(capacity)
       _      <- read(buffer)
@@ -69,12 +70,14 @@ trait ScatteringByteOps {
    *   A list with one `Chunk` per input size. Some chunks may be less than the requested size if the channel does not
    *   have enough data
    */
-  final def readChunks(capacities: Seq[Int]): IO[IOException, List[Chunk[Byte]]] =
+  final def readChunks(capacities: Seq[Int])(implicit trace: ZTraceElement): IO[IOException, List[Chunk[Byte]]] =
     for {
       buffers <- IO.foreach(capacities)(Buffer.byte)
       _       <- read(buffers)
       chunks  <- IO.foreach(buffers.init)(buf => buf.flip *> buf.getChunk())
     } yield chunks.toList
+
+  def stream()(implicit trace: ZTraceElement): Stream[IOException, Byte] = stream(Buffer.byte(5000))
 
   /**
    * A `ZStream` that reads from this channel. '''Note:''' This method does not work well with a channel in non-blocking
@@ -88,8 +91,8 @@ trait ScatteringByteOps {
    *   default a heap buffer is used, but a direct buffer will usually perform better.
    */
   def stream(
-    bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
-  ): Stream[IOException, Byte] =
+    bufferConstruct: UIO[ByteBuffer]
+  )(implicit trace: ZTraceElement): Stream[IOException, Byte] =
     ZStream.unwrapManaged {
       bufferConstruct.toManaged.map { buffer =>
         val doRead = for {
