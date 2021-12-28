@@ -4,7 +4,8 @@ package examples
 
 import zio.nio.channels.{ManagedBlockingNioOps, ServerSocketChannel, SocketChannel}
 import zio.nio.charset.Charset
-import zio.stream.{ZPipeline, ZStream}
+import zio.stream._
+import zio._
 
 import java.io.IOException
 import scala.util.control.Exception._
@@ -18,11 +19,8 @@ import scala.util.control.Exception._
  */
 object ToUppercaseAsAService extends ZIOAppDefault {
 
-  private val upperCaseIfier = new ZPipeline[Any, Nothing, Char, Char] {
-    override def apply[Env1 <: Any, Err1 >: Nothing](stream: ZStream[Env1, Err1, Char])(implicit
-      trace: ZTraceElement
-    ): ZStream[Env1, Err1, Char] = stream.map(_.toUpper)
-  }
+  private val upperCaseIfier: ZPipeline[Any, Nothing, Char, Char] =
+    ZPipeline.identity[Char] >>> ZPipeline.map(_.toUpper)
 
   private def handleConnection(
     socket: SocketChannel
