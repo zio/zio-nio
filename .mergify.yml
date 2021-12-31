@@ -10,7 +10,7 @@ pull_request_rules:
   - name: label scala-steward's breaking PRs
     conditions:
       - author=scala-steward
-      - "body~=(labels: library-update, semver-major)|(labels: sbt-plugin-update, semver-major)"
+      - "body~=(labels: library-update, early-semver-major)|(labels: sbt-plugin-update, early-semver-major)"
     actions:
       label:
         add: ["type: breaking"]
@@ -18,9 +18,23 @@ pull_request_rules:
     conditions:
       - base=master
       - author=scala-steward
-      - "body~=(labels: library-update, semver-minor)|(labels: library-update, semver-patch)|(labels: sbt-plugin-update, semver-minor)|(labels: sbt-plugin-update, semver-patch)|(labels: scalafix-rule-update)|(labels: test-library-update)"
+      - "body~=(labels: library-update, early-semver-minor)|(labels: library-update, early-semver-patch)|(labels: sbt-plugin-update, early-semver-minor)|(labels: sbt-plugin-update, early-semver-patch)|(labels: scalafix-rule-update)|(labels: test-library-update)"
       - "status-success=license/cla"
       - "status-success=ci"
     actions:
       merge:
         method: squash
+  - name: automatic update for PR marked mergify-update
+    conditions:
+      - -conflict # skip PRs with conflicts
+      - -draft # filter-out GH draft PRs
+      - label="mergify-update"
+    actions:
+      update: {}
+  - name: automatic update for dependency update PRs
+    conditions:
+      - -conflict # skip PRs with conflicts
+      - -draft # filter-out GH draft PRs
+      - "label=type: dependencies"
+    actions:
+      update: {}
