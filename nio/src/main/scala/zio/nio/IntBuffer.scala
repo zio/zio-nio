@@ -1,8 +1,8 @@
 package zio.nio
 
-import zio.{ Chunk, UIO, ZIO }
+import zio.{Chunk, UIO, ZIO}
 
-import java.nio.{ ByteOrder, IntBuffer => JIntBuffer }
+import java.nio.{ByteOrder, IntBuffer => JIntBuffer}
 
 /**
  * A mutable buffer of ints.
@@ -24,7 +24,8 @@ final class IntBuffer(protected[nio] val buffer: JIntBuffer) extends Buffer[Int]
    *
    * This is useful when using Java APIs that require a Java int buffer to be provided.
    *
-   * @return The effect value constructed by `f` using the underlying buffer.
+   * @return
+   *   The effect value constructed by `f` using the underlying buffer.
    */
   def withJavaBuffer[R, E, A](f: JIntBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(buffer)
 

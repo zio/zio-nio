@@ -2,18 +2,20 @@ package zio
 package nio
 package charset
 
-import zio.stream.{ Transducer, ZTransducer }
+import zio.stream.{Transducer, ZTransducer}
 
-import java.nio.charset.{ MalformedInputException, UnmappableCharacterException }
-import java.nio.{ charset => j }
+import java.nio.charset.{MalformedInputException, UnmappableCharacterException}
+import java.nio.{charset => j}
 
 /**
- * An engine that can transform a sequence of sixteen-bit Unicode characters into a sequence of bytes in a specific charset.
+ * An engine that can transform a sequence of sixteen-bit Unicode characters into a sequence of bytes in a specific
+ * charset.
  *
- * '''Important:''' an encoder instance is ''stateful'', as it internally tracks the state of the current encoding operation.
+ * '''Important:''' an encoder instance is ''stateful'', as it internally tracks the state of the current encoding
+ * operation.
  *   - an encoder instance cannot be used concurrently, it can only encode a single sequence of characters at a time
- *   - after an encode operation is completed, the `reset` method must be used to reset the decoder before using it again
- *     on a new sequence of characters
+ *   - after an encode operation is completed, the `reset` method must be used to reset the decoder before using it
+ *     again on a new sequence of characters
  */
 final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends AnyVal {
 
@@ -60,8 +62,8 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
    *
    * Note the returned transducer is tied to this encoder and cannot be used concurrently.
    *
-   * @param bufSize The size of the internal buffer used for encoding.
-   *                Must be at least 50.
+   * @param bufSize
+   *   The size of the internal buffer used for encoding. Must be at least 50.
    */
   def transducer(bufSize: Int = 5000): Transducer[j.CharacterCodingException, Char, Byte] = {
     val push: Managed[Nothing, Option[Chunk[Char]] => IO[j.CharacterCodingException, Chunk[Byte]]] = {
@@ -78,49 +80,47 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
                 byteBuffer.flip *>
                 byteBuffer.getChunk() <*
                 byteBuffer.clear
-            case CoderResult.Malformed(length)                =>
+            case CoderResult.Malformed(length) =>
               IO.fail(new MalformedInputException(length))
-            case CoderResult.Unmappable(length)               =>
+            case CoderResult.Unmappable(length) =>
               IO.fail(new UnmappableCharacterException(length))
           }
 
-        (_: Option[Chunk[Char]])
-          .map { inChunk =>
-            def encodeChunk(inChars: Chunk[Char]): IO[j.CharacterCodingException, Chunk[Byte]] =
-              for {
-                bufRemaining                 <- charBuffer.remaining
-                (decodeChars, remainingChars) = {
-                  if (inChars.length > bufRemaining)
-                    inChars.splitAt(bufRemaining)
-                  else
-                    (inChars, Chunk.empty)
-                }
-                _                            <- charBuffer.putChunk(decodeChars)
-                _                            <- charBuffer.flip
-                result                       <- encode(charBuffer, byteBuffer, endOfInput = false)
-                encodedBytes                 <- handleCoderResult(result)
-                remainderBytes               <- if (remainingChars.isEmpty) IO.succeed(Chunk.empty) else encodeChunk(remainingChars)
-              } yield encodedBytes ++ remainderBytes
+        (_: Option[Chunk[Char]]).map { inChunk =>
+          def encodeChunk(inChars: Chunk[Char]): IO[j.CharacterCodingException, Chunk[Byte]] =
+            for {
+              bufRemaining <- charBuffer.remaining
+              (decodeChars, remainingChars) = {
+                if (inChars.length > bufRemaining)
+                  inChars.splitAt(bufRemaining)
+                else
+                  (inChars, Chunk.empty)
+              }
+              _              <- charBuffer.putChunk(decodeChars)
+              _              <- charBuffer.flip
+              result         <- encode(charBuffer, byteBuffer, endOfInput = false)
+              encodedBytes   <- handleCoderResult(result)
+              remainderBytes <- if (remainingChars.isEmpty) IO.succeed(Chunk.empty) else encodeChunk(remainingChars)
+            } yield encodedBytes ++ remainderBytes
 
-            encodeChunk(inChunk)
-          }
-          .getOrElse {
-            def endOfInput: IO[j.CharacterCodingException, Chunk[Byte]] =
+          encodeChunk(inChunk)
+        }.getOrElse {
+          def endOfInput: IO[j.CharacterCodingException, Chunk[Byte]] =
+            for {
+              result         <- encode(charBuffer, byteBuffer, endOfInput = true)
+              encodedBytes   <- handleCoderResult(result)
+              remainderBytes <- if (result == CoderResult.Overflow) endOfInput else IO.succeed(Chunk.empty)
+            } yield encodedBytes ++ remainderBytes
+          charBuffer.flip *> endOfInput.flatMap { encodedBytes =>
+            def flushRemaining: IO[j.CharacterCodingException, Chunk[Byte]] =
               for {
-                result         <- encode(charBuffer, byteBuffer, endOfInput = true)
+                result         <- flush(byteBuffer)
                 encodedBytes   <- handleCoderResult(result)
-                remainderBytes <- if (result == CoderResult.Overflow) endOfInput else IO.succeed(Chunk.empty)
+                remainderBytes <- if (result == CoderResult.Overflow) flushRemaining else IO.succeed(Chunk.empty)
               } yield encodedBytes ++ remainderBytes
-            charBuffer.flip *> endOfInput.flatMap { encodedBytes =>
-              def flushRemaining: IO[j.CharacterCodingException, Chunk[Byte]] =
-                for {
-                  result         <- flush(byteBuffer)
-                  encodedBytes   <- handleCoderResult(result)
-                  remainderBytes <- if (result == CoderResult.Overflow) flushRemaining else IO.succeed(Chunk.empty)
-                } yield encodedBytes ++ remainderBytes
-              flushRemaining.map(encodedBytes ++ _)
-            } <* charBuffer.clear <* byteBuffer.clear
-          }
+            flushRemaining.map(encodedBytes ++ _)
+          } <* charBuffer.clear <* byteBuffer.clear
+        }
       }
     }
 

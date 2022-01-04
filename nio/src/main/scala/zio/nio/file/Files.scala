@@ -2,8 +2,8 @@ package zio.nio.file
 
 import zio.blocking._
 import zio.nio.charset.Charset
-import zio.stream.{ ZSink, ZStream }
-import zio.{ Chunk, ZIO, ZManaged }
+import zio.stream.{ZSink, ZStream}
+import zio.{Chunk, ZIO, ZManaged}
 
 import java.io.IOException
 import java.nio.file.attribute._
@@ -33,7 +33,7 @@ object Files {
 
   def newDirectoryStream(dir: Path, filter: Path => Boolean): ZStream[Blocking, IOException, Path] = {
     val javaFilter: DirectoryStream.Filter[_ >: JPath] = javaPath => filter(Path.fromJava(javaPath))
-    val managed                                        = ZManaged
+    val managed = ZManaged
       .fromAutoCloseable(effectBlocking(JFiles.newDirectoryStream(dir.javaPath, javaFilter)))
       .map(_.iterator())
     ZStream.fromJavaIteratorManaged(managed).map(Path.fromJava).refineToOrDie[IOException]
@@ -188,6 +188,7 @@ object Files {
         case view :: name :: Nil => Some(Attribute(name, view))
         case _                   => None
       }
+
   }
 
   def setAttribute(
@@ -209,6 +210,7 @@ object Files {
         case AttributeNames.All         => "*"
         case AttributeNames.List(names) => names.mkString(",")
       }
+
   }
 
   object AttributeNames {
@@ -221,6 +223,7 @@ object Files {
         case "*"  => All
         case list => List(list.split(',').toList)
       }
+
   }
 
   final case class Attributes(attributeNames: AttributeNames, viewName: String = "base") {
@@ -235,6 +238,7 @@ object Files {
         case view :: names :: Nil => Some(Attributes(AttributeNames.fromJava(names), view))
         case _                    => None
       }
+
   }
 
   def readAttributes(

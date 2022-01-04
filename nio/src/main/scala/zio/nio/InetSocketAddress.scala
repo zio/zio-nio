@@ -1,8 +1,8 @@
 package zio.nio
 
-import zio.{ IO, UIO }
+import zio.{IO, UIO}
 
-import java.net.{ InetSocketAddress => JInetSocketAddress, SocketAddress => JSocketAddress, UnknownHostException }
+import java.net.{InetSocketAddress => JInetSocketAddress, SocketAddress => JSocketAddress, UnknownHostException}
 
 /**
  * Representation of a socket address without a specific protocol.
@@ -28,7 +28,7 @@ object SocketAddress {
     jSocketAddress match {
       case inet: JInetSocketAddress =>
         new InetSocketAddress(inet)
-      case other                    =>
+      case other =>
         new SocketAddress(other)
     }
 
@@ -37,18 +37,14 @@ object SocketAddress {
 /**
  * Representation of an IP Socket Address (IP address + port number).
  *
- * It can also be a pair (hostname + port number), in which case an attempt
- * will be made to resolve the hostname.
- * If resolution fails then the address is said to be unresolved but can still
- * be used on some circumstances like connecting through a proxy.
- * However, note that network channels generally do ''not'' accept unresolved
- * socket addresses.
+ * It can also be a pair (hostname + port number), in which case an attempt will be made to resolve the hostname. If
+ * resolution fails then the address is said to be unresolved but can still be used on some circumstances like
+ * connecting through a proxy. However, note that network channels generally do ''not'' accept unresolved socket
+ * addresses.
  *
- * This class provides an immutable object used by sockets for binding, connecting,
- * or as returned values.
+ * This class provides an immutable object used by sockets for binding, connecting, or as returned values.
  *
- * The wildcard is a special local IP address. It usually means "any" and can
- * only be used for bind operations.
+ * The wildcard is a special local IP address. It usually means "any" and can only be used for bind operations.
  */
 final class InetSocketAddress private[nio] (private val jInetSocketAddress: JInetSocketAddress)
     extends SocketAddress(jInetSocketAddress) {
@@ -56,7 +52,8 @@ final class InetSocketAddress private[nio] (private val jInetSocketAddress: JIne
   /**
    * The socket's address.
    *
-   * @return The address of the socket, or `None` if this socket address is not resolved.
+   * @return
+   *   The address of the socket, or `None` if this socket address is not resolved.
    */
   def address: Option[InetAddress] = Option(jInetSocketAddress.getAddress).map(new InetAddress(_))
 
@@ -68,18 +65,16 @@ final class InetSocketAddress private[nio] (private val jInetSocketAddress: JIne
   /**
    * Gets the hostname.
    *
-   * Note: This method may trigger a name service reverse lookup if the
-   * address was created with a literal IP address.
+   * Note: This method may trigger a name service reverse lookup if the address was created with a literal IP address.
    */
   def hostName: UIO[String] = UIO.effectTotal(jInetSocketAddress.getHostName)
 
   /**
-   * Returns the hostname, or the String form of the address if it doesn't
-   * have a hostname (it was created using a literal).
+   * Returns the hostname, or the String form of the address if it doesn't have a hostname (it was created using a
+   * literal).
    *
-   * This has the benefit of not attempting a reverse lookup.
-   * This is an effect because the result could change if a reverse lookup
-   * is performed, for example by calling `hostName`.
+   * This has the benefit of not attempting a reverse lookup. This is an effect because the result could change if a
+   * reverse lookup is performed, for example by calling `hostName`.
    */
   def hostString: UIO[String] = UIO.effectTotal(jInetSocketAddress.getHostString)
 
@@ -100,8 +95,7 @@ object InetSocketAddress {
   def wildCard(port: Int): UIO[InetSocketAddress] = UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(port)))
 
   /**
-   * Creates a socket address where the IP address is the wildcard address and
-   * the port is ephemeral.
+   * Creates a socket address where the IP address is the wildcard address and the port is ephemeral.
    *
    * The socket address will be ''resolved''.
    */
@@ -110,8 +104,8 @@ object InetSocketAddress {
   /**
    * Creates a socket address from a hostname and a port number.
    *
-   * This method will attempt to resolve the hostname; if this fails, the returned
-   * socket address will be ''unresolved''.
+   * This method will attempt to resolve the hostname; if this fails, the returned socket address will be
+   * ''unresolved''.
    */
   def hostName(hostName: String, port: Int): UIO[InetSocketAddress] =
     UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(hostName, port)))
@@ -127,8 +121,8 @@ object InetSocketAddress {
   /**
    * Creates a socket address from a hostname, with an ephemeral port.
    *
-   * This method will attempt to resolve the hostname; if this fails, the returned
-   * socket address will be ''unresolved''.
+   * This method will attempt to resolve the hostname; if this fails, the returned socket address will be
+   * ''unresolved''.
    */
   def hostNameEphemeral(hostName: String): UIO[InetSocketAddress] = this.hostName(hostName, 0)
 
@@ -160,8 +154,8 @@ object InetSocketAddress {
   /**
    * Creates an unresolved socket address from a hostname and a port number.
    *
-   * No attempt will be made to resolve the hostname into an `InetAddress`.
-   * The socket address will be flagged as ''unresolved''.
+   * No attempt will be made to resolve the hostname into an `InetAddress`. The socket address will be flagged as
+   * ''unresolved''.
    */
   def unresolvedHostName(hostName: String, port: Int): UIO[InetSocketAddress] =
     UIO.effectTotal(new InetSocketAddress(JInetSocketAddress.createUnresolved(hostName, port)))
@@ -169,8 +163,8 @@ object InetSocketAddress {
   /**
    * Creates an unresolved socket address from a hostname using an ephemeral port.
    *
-   * No attempt will be made to resolve the hostname into an `InetAddress`.
-   * The socket address will be flagged as ''unresolved''.
+   * No attempt will be made to resolve the hostname into an `InetAddress`. The socket address will be flagged as
+   * ''unresolved''.
    */
   def unresolvedHostNameEphemeral(hostName: String): UIO[InetSocketAddress] = unresolvedHostName(hostName, 0)
 

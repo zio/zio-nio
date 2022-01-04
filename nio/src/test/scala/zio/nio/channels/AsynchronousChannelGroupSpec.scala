@@ -6,8 +6,8 @@ import zio.nio.BaseSpec
 import zio.test.Assertion._
 import zio.test._
 
-import java.nio.channels.{ AsynchronousChannelGroup => JAsynchronousChannelGroup }
-import java.util.concurrent.{ ExecutorService => JExecutorService, Executors, TimeUnit }
+import java.nio.channels.{AsynchronousChannelGroup => JAsynchronousChannelGroup}
+import java.util.concurrent.{ExecutorService => JExecutorService, Executors, TimeUnit}
 import scala.concurrent.ExecutionContext
 
 object AsynchronousChannelGroupSpec extends BaseSpec {
@@ -104,7 +104,7 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
 
         val jChannelGroup: JAsynchronousChannelGroup =
           JAsynchronousChannelGroup.withThreadPool(jExecutor)
-        val testObj                                  = new AsynchronousChannelGroup(jChannelGroup)
+        val testObj = new AsynchronousChannelGroup(jChannelGroup)
 
         def cleanFixture(): Unit = {
           jChannelGroup.shutdown()

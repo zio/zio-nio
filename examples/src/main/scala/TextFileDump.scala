@@ -4,7 +4,7 @@ package examples
 
 import zio.blocking.Blocking
 import zio.console.Console
-import zio.nio.channels.{ FileChannel, ManagedBlockingNioOps }
+import zio.nio.channels.{FileChannel, ManagedBlockingNioOps}
 import zio.nio.charset.Charset
 import zio.nio.file.Path
 import zio.stream.ZStream
@@ -13,8 +13,7 @@ import zio.stream.ZStream
  * Dumps a text file to the console using a specified encoding.
  *
  * Two command line parameters must be provided:
- * 1. The path of the file to dump
- * 2. The character encoding to use — optional, defaults to UTF-8
+ *   1. The path of the file to dump 2. The character encoding to use — optional, defaults to UTF-8
  */
 object TextFileDump extends App {
 

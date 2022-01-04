@@ -1,8 +1,8 @@
 package zio.nio
 
-import zio.{ Chunk, UIO, ZIO }
+import zio.{Chunk, UIO, ZIO}
 
-import java.nio.{ ByteOrder, FloatBuffer => JFloatBuffer }
+import java.nio.{ByteOrder, FloatBuffer => JFloatBuffer}
 
 /**
  * A mutable buffer of floats.
@@ -24,7 +24,8 @@ final class FloatBuffer(protected[nio] val buffer: JFloatBuffer) extends Buffer[
    *
    * This is useful when using Java APIs that require a Java float buffer to be provided.
    *
-   * @return The effect value constructed by `f` using the underlying buffer.
+   * @return
+   *   The effect value constructed by `f` using the underlying buffer.
    */
   def withJavaBuffer[R, E, A](f: JFloatBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(buffer)
 

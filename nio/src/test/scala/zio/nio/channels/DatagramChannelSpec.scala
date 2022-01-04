@@ -7,7 +7,7 @@ import zio.nio._
 import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment.{ Live, TestClock, TestConsole, TestRandom, TestSystem }
+import zio.test.environment.{Live, TestClock, TestConsole, TestRandom, TestSystem}
 
 import java.io.IOException
 
@@ -25,21 +25,21 @@ object DatagramChannelSpec extends BaseSpec {
         def echoServer(started: Promise[Nothing, SocketAddress]): ZIO[Blocking, Nothing, Unit] =
           for {
             sink <- Buffer.byte(3)
-            _    <- DatagramChannel.open.useNioBlocking { (server, ops) =>
-                      for {
-                        _    <- server.bindAuto
-                        addr <- server.localAddress.someOrElseM(ZIO.dieMessage("Must have local address"))
-                        _    <- started.succeed(addr)
-                        addr <- ops.receive(sink)
-                        _    <- sink.flip
-                        _    <- ops.send(sink, addr)
-                      } yield ()
-                    }.fork
+            _ <- DatagramChannel.open.useNioBlocking { (server, ops) =>
+                   for {
+                     _    <- server.bindAuto
+                     addr <- server.localAddress.someOrElseM(ZIO.dieMessage("Must have local address"))
+                     _    <- started.succeed(addr)
+                     addr <- ops.receive(sink)
+                     _    <- sink.flip
+                     _    <- ops.send(sink, addr)
+                   } yield ()
+                 }.fork
           } yield ()
 
         def echoClient(address: SocketAddress): ZIO[Blocking, IOException, Boolean] =
           for {
-            src    <- Buffer.byte(3)
+            src <- Buffer.byte(3)
             result <- DatagramChannel.open.useNioBlockingOps { client =>
                         for {
                           _        <- client.connect(address)

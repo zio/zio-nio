@@ -1,15 +1,16 @@
 package zio.nio
 
 import zio.blocking.Blocking
-import zio.{ IO, UIO, ZIO }
+import zio.{IO, UIO, ZIO}
 
-import java.nio.{ MappedByteBuffer => JMappedByteBuffer }
+import java.nio.{MappedByteBuffer => JMappedByteBuffer}
 
 /**
- * A direct byte buffer whose content is a memory-mapped region of a file.
- * Mapped byte buffers are created by the `FileChannel#map` method.
+ * A direct byte buffer whose content is a memory-mapped region of a file. Mapped byte buffers are created by the
+ * `FileChannel#map` method.
  *
- * @see zio.nio.channels.FileChannel#map
+ * @see
+ *   zio.nio.channels.FileChannel#map
  */
 final class MappedByteBuffer private[nio] (override protected[nio] val buffer: JMappedByteBuffer)
     extends ByteBuffer(buffer) {

@@ -2,15 +2,17 @@ package zio
 package nio
 package charset
 
-import zio.stream.{ Transducer, ZTransducer }
+import zio.stream.{Transducer, ZTransducer}
 
-import java.nio.charset.{ MalformedInputException, UnmappableCharacterException }
-import java.nio.{ charset => j }
+import java.nio.charset.{MalformedInputException, UnmappableCharacterException}
+import java.nio.{charset => j}
 
 /**
- * An engine that can transform a sequence of bytes in a specific charset into a sequence of sixteen-bit Unicode characters.
+ * An engine that can transform a sequence of bytes in a specific charset into a sequence of sixteen-bit Unicode
+ * characters.
  *
- * '''Important:''' a decoder instance is ''stateful'', as it internally tracks the state of the current decoding operation.
+ * '''Important:''' a decoder instance is ''stateful'', as it internally tracks the state of the current decoding
+ * operation.
  *   - a decoder instance cannot be used concurrently, it can only decode a single sequence of bytes at a time
  *   - after a decode operation is completed, the `reset` method must be used to reset the decoder before using it again
  *     on a new sequence of bytes
@@ -78,8 +80,8 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
    *
    * Note the returned transducer is tied to this decoder and cannot be used concurrently.
    *
-   * @param bufSize The size of the internal buffer used for encoding.
-   *                Must be at least 50.
+   * @param bufSize
+   *   The size of the internal buffer used for encoding. Must be at least 50.
    */
   def transducer(bufSize: Int = 5000): Transducer[j.CharacterCodingException, Byte, Char] = {
     val push: Managed[Nothing, Option[Chunk[Byte]] => IO[j.CharacterCodingException, Chunk[Char]]] = {
@@ -96,57 +98,55 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
                 charBuffer.flip *>
                 charBuffer.getChunk() <*
                 charBuffer.clear
-            case CoderResult.Malformed(length)                =>
+            case CoderResult.Malformed(length) =>
               IO.fail(new MalformedInputException(length))
-            case CoderResult.Unmappable(length)               =>
+            case CoderResult.Unmappable(length) =>
               IO.fail(new UnmappableCharacterException(length))
           }
 
-        (_: Option[Chunk[Byte]])
-          .map { inChunk =>
-            def decodeChunk(inBytes: Chunk[Byte]): IO[j.CharacterCodingException, Chunk[Char]] =
-              for {
-                bufRemaining                 <- byteBuffer.remaining
-                (decodeBytes, remainingBytes) = {
-                  if (inBytes.length > bufRemaining)
-                    inBytes.splitAt(bufRemaining)
-                  else
-                    (inBytes, Chunk.empty)
-                }
-                _                            <- byteBuffer.putChunk(decodeBytes)
-                _                            <- byteBuffer.flip
-                result                       <- decode(
-                                                  byteBuffer,
-                                                  charBuffer,
-                                                  endOfInput = false
-                                                )
-                decodedChars                 <- handleCoderResult(result)
-                remainderChars               <- if (remainingBytes.isEmpty) IO.succeed(Chunk.empty) else decodeChunk(remainingBytes)
-              } yield decodedChars ++ remainderChars
+        (_: Option[Chunk[Byte]]).map { inChunk =>
+          def decodeChunk(inBytes: Chunk[Byte]): IO[j.CharacterCodingException, Chunk[Char]] =
+            for {
+              bufRemaining <- byteBuffer.remaining
+              (decodeBytes, remainingBytes) = {
+                if (inBytes.length > bufRemaining)
+                  inBytes.splitAt(bufRemaining)
+                else
+                  (inBytes, Chunk.empty)
+              }
+              _ <- byteBuffer.putChunk(decodeBytes)
+              _ <- byteBuffer.flip
+              result <- decode(
+                          byteBuffer,
+                          charBuffer,
+                          endOfInput = false
+                        )
+              decodedChars   <- handleCoderResult(result)
+              remainderChars <- if (remainingBytes.isEmpty) IO.succeed(Chunk.empty) else decodeChunk(remainingBytes)
+            } yield decodedChars ++ remainderChars
 
-            decodeChunk(inChunk)
-          }
-          .getOrElse {
-            def endOfInput: IO[j.CharacterCodingException, Chunk[Char]] =
+          decodeChunk(inChunk)
+        }.getOrElse {
+          def endOfInput: IO[j.CharacterCodingException, Chunk[Char]] =
+            for {
+              result <- decode(
+                          byteBuffer,
+                          charBuffer,
+                          endOfInput = true
+                        )
+              decodedChars   <- handleCoderResult(result)
+              remainderChars <- if (result == CoderResult.Overflow) endOfInput else IO.succeed(Chunk.empty)
+            } yield decodedChars ++ remainderChars
+          byteBuffer.flip *> endOfInput.flatMap { decodedChars =>
+            def flushRemaining: IO[j.CharacterCodingException, Chunk[Char]] =
               for {
-                result         <- decode(
-                                    byteBuffer,
-                                    charBuffer,
-                                    endOfInput = true
-                                  )
+                result         <- flush(charBuffer)
                 decodedChars   <- handleCoderResult(result)
-                remainderChars <- if (result == CoderResult.Overflow) endOfInput else IO.succeed(Chunk.empty)
+                remainderChars <- if (result == CoderResult.Overflow) flushRemaining else IO.succeed(Chunk.empty)
               } yield decodedChars ++ remainderChars
-            byteBuffer.flip *> endOfInput.flatMap { decodedChars =>
-              def flushRemaining: IO[j.CharacterCodingException, Chunk[Char]] =
-                for {
-                  result         <- flush(charBuffer)
-                  decodedChars   <- handleCoderResult(result)
-                  remainderChars <- if (result == CoderResult.Overflow) flushRemaining else IO.succeed(Chunk.empty)
-                } yield decodedChars ++ remainderChars
-              flushRemaining.map(decodedChars ++ _)
-            } <* byteBuffer.clear <* charBuffer.clear
-          }
+            flushRemaining.map(decodedChars ++ _)
+          } <* byteBuffer.clear <* charBuffer.clear
+        }
       }
     }
 

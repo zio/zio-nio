@@ -5,8 +5,8 @@ import zio.nio.channels._
 
 import java.io.IOException
 import java.net.ProtocolFamily
-import java.nio.channels.spi.{ SelectorProvider => JSelectorProvider }
-import java.nio.{ channels => jc }
+import java.nio.channels.spi.{SelectorProvider => JSelectorProvider}
+import java.nio.{channels => jc}
 
 final class SelectorProvider(private val selectorProvider: JSelectorProvider) {
 
@@ -42,6 +42,7 @@ final class SelectorProvider(private val selectorProvider: JSelectorProvider) {
         }
       }
       .refineToOrDie[IOException]
+
 }
 
 object SelectorProvider {

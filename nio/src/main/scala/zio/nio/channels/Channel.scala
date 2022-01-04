@@ -1,11 +1,11 @@
 package zio.nio.channels
 
-import zio.blocking.{ Blocking, blocking }
+import zio.blocking.{Blocking, blocking}
 import zio.nio.IOCloseable
-import zio.{ IO, UIO, ZIO }
+import zio.{IO, UIO, ZIO}
 
 import java.io.IOException
-import java.nio.channels.{ Channel => JChannel }
+import java.nio.channels.{Channel => JChannel}
 
 trait Channel extends IOCloseable {
 
@@ -23,8 +23,7 @@ trait Channel extends IOCloseable {
 }
 
 /**
- * All channels that support blocking operation.
- * (All channels that are not asynchronous)
+ * All channels that support blocking operation. (All channels that are not asynchronous)
  */
 trait BlockingChannel extends Channel {
 
@@ -37,13 +36,13 @@ trait BlockingChannel extends Channel {
     blocking(zioEffect).fork.flatMap(_.join).onInterrupt(close.ignore)
 
   /**
-   * Puts this channel in blocking mode (if applicable) and performs a set of blocking operations.
-   * Uses the standard ZIO `Blocking` service to run the provided effect on the blocking thread pool.
-   * Installs interrupt handling so that if the ZIO fiber is interrupted, this channel will be closed,
-   * which will unblock any currently blocked operations.
+   * Puts this channel in blocking mode (if applicable) and performs a set of blocking operations. Uses the standard ZIO
+   * `Blocking` service to run the provided effect on the blocking thread pool. Installs interrupt handling so that if
+   * the ZIO fiber is interrupted, this channel will be closed, which will unblock any currently blocked operations.
    *
-   * @param f Given a `BlockingOps` argument appropriate for this channel type, produces an effect value
-   *          containing blocking operations.
+   * @param f
+   *   Given a `BlockingOps` argument appropriate for this channel type, produces an effect value containing blocking
+   *   operations.
    */
   def useBlocking[R, E >: IOException, A](f: BlockingOps => ZIO[R, E, A]): ZIO[R with Blocking, E, A]
 

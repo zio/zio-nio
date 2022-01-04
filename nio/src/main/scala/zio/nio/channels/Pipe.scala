@@ -1,10 +1,10 @@
 package zio.nio
 package channels
 
-import zio.{ IO, Managed }
+import zio.{IO, Managed}
 
 import java.io.IOException
-import java.nio.channels.{ Pipe => JPipe }
+import java.nio.channels.{Pipe => JPipe}
 
 final class Pipe private (private val pipe: JPipe) {
 
@@ -13,6 +13,7 @@ final class Pipe private (private val pipe: JPipe) {
 
   val sink: Managed[Nothing, Pipe.SinkChannel] =
     IO.effectTotal(new Pipe.SinkChannel(pipe.sink())).toNioManaged
+
 }
 
 object Pipe {

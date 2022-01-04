@@ -1,8 +1,8 @@
 package zio.nio
 
-import zio.{ Chunk, UIO, ZIO }
+import zio.{Chunk, UIO, ZIO}
 
-import java.nio.{ ByteOrder, ShortBuffer => JShortBuffer }
+import java.nio.{ByteOrder, ShortBuffer => JShortBuffer}
 
 /**
  * A mutable buffer of shorts.
@@ -24,7 +24,8 @@ final class ShortBuffer(protected[nio] val buffer: JShortBuffer) extends Buffer[
    *
    * This is useful when using Java APIs that require a Java short buffer to be provided.
    *
-   * @return The effect value constructed by `f` using the underlying buffer.
+   * @return
+   *   The effect value constructed by `f` using the underlying buffer.
    */
   def withJavaBuffer[R, E, A](f: JShortBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(buffer)
 

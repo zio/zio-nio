@@ -5,8 +5,8 @@ package charset
 import com.github.ghik.silencer.silent
 
 import java.nio.charset.IllegalCharsetNameException
-import java.nio.{ charset => j }
-import java.{ util => ju }
+import java.nio.{charset => j}
+import java.{util => ju}
 import scala.collection.JavaConverters._
 
 final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset] {
@@ -91,15 +91,18 @@ object Charset {
   /**
    * Returns a charset object for the named charset.
    *
-   * @throws java.nio.charset.IllegalCharsetNameException if the given charset name is illegal
-   * @throws java.nio.charset.UnsupportedCharsetException if no support for the named charset is available in this instance of the Java virtual machine
+   * @throws java.nio.charset.IllegalCharsetNameException
+   *   if the given charset name is illegal
+   * @throws java.nio.charset.UnsupportedCharsetException
+   *   if no support for the named charset is available in this instance of the Java virtual machine
    */
   def forName(name: String): Charset = fromJava(j.Charset.forName(name))
 
   /**
    * Tells whether the named charset is supported.
    *
-   * @throws java.nio.charset.IllegalCharsetNameException if the given charset name is illegal
+   * @throws java.nio.charset.IllegalCharsetNameException
+   *   if the given charset name is illegal
    */
   def isSupported(name: String): Boolean = j.Charset.isSupported(name)
 
@@ -112,7 +115,8 @@ object Charset {
   /**
    * Returns a charset for the given name, if it is a legal name supported by the JVM.
    *
-   * @return The charset if it is supported, otherwise `None`
+   * @return
+   *   The charset if it is supported, otherwise `None`
    */
   def forNameIfSupported(name: String): Option[Charset] = if (isLegalAndSupported(name)) Some(forName(name)) else None
 

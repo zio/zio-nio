@@ -1,8 +1,8 @@
 package zio.nio
 
-import zio.{ Chunk, UIO, ZIO }
+import zio.{Chunk, UIO, ZIO}
 
-import java.nio.{ ByteOrder, DoubleBuffer => JDoubleBuffer }
+import java.nio.{ByteOrder, DoubleBuffer => JDoubleBuffer}
 
 /**
  * A mutable buffer of doubles.
@@ -24,7 +24,8 @@ final class DoubleBuffer(protected[nio] val buffer: JDoubleBuffer) extends Buffe
    *
    * This is useful when using Java APIs that require a Java double buffer to be provided.
    *
-   * @return The effect value constructed by `f` using the underlying buffer.
+   * @return
+   *   The effect value constructed by `f` using the underlying buffer.
    */
   def withJavaBuffer[R, E, A](f: JDoubleBuffer => ZIO[R, E, A]): ZIO[R, E, A] = f(buffer)
 

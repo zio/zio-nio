@@ -4,10 +4,10 @@ package channels
 import zio._
 import zio.clock.Clock
 import zio.duration._
-import zio.stream.{ Stream, ZSink, ZStream }
+import zio.stream.{Stream, ZSink, ZStream}
 
-import java.io.{ EOFException, IOException }
-import java.lang.{ Integer => JInteger, Long => JLong, Void => JVoid }
+import java.io.{EOFException, IOException}
+import java.lang.{Integer => JInteger, Long => JLong, Void => JVoid}
 import java.net.SocketOption
 import java.nio.channels.{
   AsynchronousByteChannel => JAsynchronousByteChannel,
@@ -29,9 +29,9 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
   import AsynchronousByteChannel._
 
   /**
-   *  Reads data from this channel into buffer, returning the number of bytes read.
+   * Reads data from this channel into buffer, returning the number of bytes read.
    *
-   *  Fails with `java.io.EOFException` if end-of-stream is reached.
+   * Fails with `java.io.EOFException` if end-of-stream is reached.
    */
   final def read(b: ByteBuffer): IO[IOException, Int] =
     effectAsyncChannel[JAsynchronousByteChannel, JInteger](channel)(c => c.read(b.buffer, (), _))
@@ -46,7 +46,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
     } yield r
 
   /**
-   *  Writes data into this channel from buffer, returning the number of bytes written.
+   * Writes data into this channel from buffer, returning the number of bytes written.
    */
   final def write(b: ByteBuffer): IO[IOException, Int] =
     effectAsyncChannel[JAsynchronousByteChannel, JInteger](channel)(c => c.write(b.buffer, (), _)).map(_.toInt)
@@ -65,7 +65,8 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
   /**
    * A sink that will write all the bytes it receives to this channel.
    *
-   * @param bufferConstruct Optional, overrides how to construct the buffer used to transfer bytes received by the sink to this channel.
+   * @param bufferConstruct
+   *   Optional, overrides how to construct the buffer used to transfer bytes received by the sink to this channel.
    */
   def sink(
     bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
@@ -74,28 +75,27 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
       for {
         buffer   <- bufferConstruct.toManaged_
         countRef <- Ref.makeManaged(0L)
-      } yield (_: Option[Chunk[Byte]])
-        .map { chunk =>
-          def doWrite(total: Int, c: Chunk[Byte]): ZIO[Any with Clock, IOException, Int] = {
-            val x = for {
-              remaining <- buffer.putChunk(c)
-              _         <- buffer.flip
-              count     <- ZStream
-                             .repeatEffectWith(write(buffer), Schedule.recurWhileM(Function.const(buffer.hasRemaining)))
-                             .runSum
-              _         <- buffer.clear
-            } yield (count + total, remaining)
-            x.flatMap {
-              case (result, remaining) if remaining.isEmpty => ZIO.succeed(result)
-              case (result, remaining)                      => doWrite(result, remaining)
-            }
+      } yield (_: Option[Chunk[Byte]]).map { chunk =>
+        def doWrite(total: Int, c: Chunk[Byte]): ZIO[Any with Clock, IOException, Int] = {
+          val x = for {
+            remaining <- buffer.putChunk(c)
+            _         <- buffer.flip
+            count <- ZStream
+                       .repeatEffectWith(write(buffer), Schedule.recurWhileM(Function.const(buffer.hasRemaining)))
+                       .runSum
+            _ <- buffer.clear
+          } yield (count + total, remaining)
+          x.flatMap {
+            case (result, remaining) if remaining.isEmpty => ZIO.succeed(result)
+            case (result, remaining)                      => doWrite(result, remaining)
           }
-
-          doWrite(0, chunk).foldM(
-            e => buffer.getChunk().flatMap(c => ZIO.fail((Left(e), c))),
-            count => countRef.update(_ + count.toLong)
-          )
         }
+
+        doWrite(0, chunk).foldM(
+          e => buffer.getChunk().flatMap(c => ZIO.fail((Left(e), c))),
+          count => countRef.update(_ + count.toLong)
+        )
+      }
         .getOrElse(
           countRef.get.flatMap[Clock, (Either[IOException, Long], Chunk[Byte]), Unit](count =>
             ZIO.fail((Right(count), Chunk.empty))
@@ -104,28 +104,27 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
     }
 
   /**
-   * A `ZStream` that reads from this channel.
-   * The stream terminates without error if the channel reaches end-of-stream.
+   * A `ZStream` that reads from this channel. The stream terminates without error if the channel reaches end-of-stream.
    *
-   * @param bufferConstruct Optional, overrides how to construct the buffer used to transfer bytes read from this channel into the stream.
+   * @param bufferConstruct
+   *   Optional, overrides how to construct the buffer used to transfer bytes read from this channel into the stream.
    */
   def stream(
     bufferConstruct: UIO[ByteBuffer] = Buffer.byte(5000)
   ): Stream[IOException, Byte] =
     ZStream {
-      bufferConstruct.toManaged_
-        .map { buffer =>
-          val doRead = for {
-            _     <- read(buffer)
-            _     <- buffer.flip
-            chunk <- buffer.getChunk()
-            _     <- buffer.clear
-          } yield chunk
-          doRead.mapError {
-            case _: EOFException => None
-            case e               => Some(e)
-          }
+      bufferConstruct.toManaged_.map { buffer =>
+        val doRead = for {
+          _     <- read(buffer)
+          _     <- buffer.flip
+          chunk <- buffer.getChunk()
+          _     <- buffer.clear
+        } yield chunk
+        doRead.mapError {
+          case _: EOFException => None
+          case e               => Some(e)
         }
+      }
     }
 
 }
@@ -141,6 +140,7 @@ object AsynchronousByteChannel {
           case e: IOException => k(IO.fail(e))
           case _              => k(IO.die(t))
         }
+
     }
 
   /**
@@ -165,8 +165,8 @@ final class AsynchronousServerSocketChannel(protected val channel: JAsynchronous
   def bindAuto(backlog: Int = 0): IO[IOException, Unit] = bind(None, backlog)
 
   /**
-   * Binds the channel's socket to a local address and configures the socket
-   * to listen for connections, up to backlog pending connection.
+   * Binds the channel's socket to a local address and configures the socket to listen for connections, up to backlog
+   * pending connection.
    */
   def bind(address: Option[SocketAddress], backlog: Int = 0): IO[IOException, Unit] =
     IO.effect(channel.bind(address.map(_.jSocketAddress).orNull, backlog)).refineToOrDie[IOException].unit
@@ -184,10 +184,8 @@ final class AsynchronousServerSocketChannel(protected val channel: JAsynchronous
       .toNioManaged
 
   /**
-   * The `SocketAddress` that the socket is bound to,
-   * or the `SocketAddress` representing the loopback address if
-   * denied by the security manager, or `Maybe.empty` if the
-   * channel's socket is not bound.
+   * The `SocketAddress` that the socket is bound to, or the `SocketAddress` representing the loopback address if denied
+   * by the security manager, or `Maybe.empty` if the channel's socket is not bound.
    */
   def localAddress: IO[IOException, Option[SocketAddress]] =
     IO.effect(
@@ -252,9 +250,9 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
       .unit
 
   /**
-   *  Reads data from this channel into buffer, returning the number of bytes read.
+   * Reads data from this channel into buffer, returning the number of bytes read.
    *
-   *  Fails with `java.io.EOFException` if end-of-stream is reached.
+   * Fails with `java.io.EOFException` if end-of-stream is reached.
    */
   def read(dst: ByteBuffer, timeout: Duration): IO[IOException, Int] =
     AsynchronousByteChannel
@@ -278,9 +276,9 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
     } yield r
 
   /**
-   *  Reads data from this channel into a set of buffers, returning the number of bytes read.
+   * Reads data from this channel into a set of buffers, returning the number of bytes read.
    *
-   *  Fails with `java.io.EOFException` if end-of-stream is reached.
+   * Fails with `java.io.EOFException` if end-of-stream is reached.
    */
   def read(
     dsts: List[ByteBuffer],
