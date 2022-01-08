@@ -139,7 +139,10 @@ object AsynchronousByteChannel {
   private[channels] def effectAsyncChannel[C <: JChannel, A](
     channel: C
   )(op: C => CompletionHandler[A, Any] => Any): IO[IOException, A] =
-    Task(op(channel)).flatMap(Task.effectAsyncWithCompletionHandler).refineToOrDie[IOException]
+    Task(op(channel))
+      .flatMap(Task.effectAsyncWithCompletionHandler)
+      .refineToOrDie[IOException]
+      .onInterrupt(IO.effect(channel.close()).ignore)
 
 }
 
