@@ -8,7 +8,7 @@ import zio.test._
 import java.io.IOException
 import java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
 
-object WathServiceSpec extends BaseSpec {
+object WatchServiceSpec extends BaseSpec {
 
   override def spec: Spec[Blocking, TestFailure[IOException], TestSuccess] =
     suite("WatchServiceSpec")(
