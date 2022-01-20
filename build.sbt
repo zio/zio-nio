@@ -26,11 +26,11 @@ lazy val zioNio = project
   .settings(stdSettings("zio-nio"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio"                %% "zio"                     % zioVersion,
-      "dev.zio"                %% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0",
-      "dev.zio"                %% "zio-test"                % zioVersion % Test,
-      "dev.zio"                %% "zio-test-sbt"            % zioVersion % Test
+      "dev.zio"                 %% "zio"                     % zioVersion,
+      "dev.zio"                 %% "zio-streams"             % zioVersion,
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0").cross(CrossVersion.for3Use2_13),
+      "dev.zio"                 %% "zio-test"                % zioVersion % Test,
+      "dev.zio"                 %% "zio-test-sbt"            % zioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
