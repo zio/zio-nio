@@ -32,8 +32,6 @@ lazy val zioNio = project
       "dev.zio"                %% "zio-test"                % zioVersion % Test,
       "dev.zio"                %% "zio-test-sbt"            % zioVersion % Test
     ),
-    resolvers +=
-      "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
   .settings(scala3Settings)
