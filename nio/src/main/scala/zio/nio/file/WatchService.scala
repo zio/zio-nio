@@ -7,8 +7,8 @@ import zio.stream.ZStream
 
 import java.io.IOException
 import java.nio.file.{
-  WatchEvent,
   Path => JPath,
+  WatchEvent,
   WatchKey => JWatchKey,
   WatchService => JWatchService,
   Watchable => JWatchable

@@ -13,9 +13,9 @@ import java.nio.file.{
   DirectoryStream,
   FileStore,
   FileVisitOption,
+  Files => JFiles,
   LinkOption,
   OpenOption,
-  Files => JFiles,
   Path => JPath
 }
 import java.util.function.BiPredicate

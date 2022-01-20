@@ -7,7 +7,7 @@ import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.{Fiber, IO, Managed, UIO, ZIO, ZManaged, ZTraceElement}
 
 import java.io.IOException
-import java.net.{SocketOption, ServerSocket => JServerSocket, Socket => JSocket}
+import java.net.{ServerSocket => JServerSocket, Socket => JSocket, SocketOption}
 import java.nio.channels.{
   ClosedChannelException,
   SelectableChannel => JSelectableChannel,

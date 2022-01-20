@@ -3,7 +3,7 @@ package zio.nio
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.{IO, UIO, ZTraceElement}
 
-import java.net.{UnknownHostException, InetSocketAddress => JInetSocketAddress, SocketAddress => JSocketAddress}
+import java.net.{InetSocketAddress => JInetSocketAddress, SocketAddress => JSocketAddress, UnknownHostException}
 
 /**
  * Representation of a socket address without a specific protocol.

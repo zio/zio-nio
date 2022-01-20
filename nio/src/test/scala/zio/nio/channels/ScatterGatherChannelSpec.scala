@@ -1,13 +1,10 @@
 package zio.nio.channels
 
-import zio.Clock
 import zio.nio.file.Path
 import zio.nio.{BaseSpec, Buffer}
-import zio.Random
 import zio.test.Assertion._
-import zio.test._
-import zio.test.{Live, TestClock, TestConsole, TestRandom, TestSystem}
-import zio.{Chunk, IO, ZIO}
+import zio.test.{Live, TestClock, TestConsole, TestRandom, TestSystem, _}
+import zio.{Chunk, Clock, IO, Random, ZIO}
 
 import java.nio.file.{Files, StandardOpenOption}
 import scala.io.Source

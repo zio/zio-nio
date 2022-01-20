@@ -2,10 +2,10 @@ package zio
 package nio
 package examples
 
+import zio._
 import zio.nio.channels.{ManagedBlockingNioOps, ServerSocketChannel, SocketChannel}
 import zio.nio.charset.Charset
 import zio.stream._
-import zio._
 
 import java.io.IOException
 import scala.util.control.Exception._

@@ -2,7 +2,7 @@ package zio.nio.channels
 
 import zio._
 import zio.nio.Buffer.byteFromJava
-import zio.nio.{Buffer, ByteBuffer}
+import zio.nio.{Buffer, ByteBuffer, ZSinkCompanionOps}
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.stream.{ZSink, ZStream}
 

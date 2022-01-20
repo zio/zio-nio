@@ -4,7 +4,7 @@ import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.{Chunk, IO, ZTraceElement}
 
 import java.io.IOException
-import java.net.{UnknownHostException, InetAddress => JInetAddress}
+import java.net.{InetAddress => JInetAddress, UnknownHostException}
 
 /**
  * Representation of an Internet Protocol (IP) address.

@@ -1,11 +1,9 @@
 package zio.nio.file
 
-import zio.Clock
 import zio.nio.BaseSpec
-import zio.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.{Chunk, Ref}
+import zio.{Chunk, Clock, Random, Ref}
 
 object FilesSpec extends BaseSpec {
 

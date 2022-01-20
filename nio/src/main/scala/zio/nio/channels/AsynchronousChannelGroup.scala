@@ -6,7 +6,7 @@ import zio.stacktracer.TracingImplicits.disableAutoTrace
 import java.io.IOException
 import java.nio.channels.spi.{AsynchronousChannelProvider => JAsynchronousChannelProvider}
 import java.nio.channels.{AsynchronousChannelGroup => JAsynchronousChannelGroup}
-import java.util.concurrent.{TimeUnit, ThreadFactory => JThreadFactory}
+import java.util.concurrent.{ThreadFactory => JThreadFactory, TimeUnit}
 import scala.concurrent.ExecutionContextExecutorService
 
 object AsynchronousChannelGroup {

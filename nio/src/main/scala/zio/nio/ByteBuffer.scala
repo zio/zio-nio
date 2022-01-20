@@ -3,7 +3,7 @@ package zio.nio
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.{Chunk, UIO, ZIO, ZTraceElement}
 
-import java.nio.{ByteOrder, ByteBuffer => JByteBuffer}
+import java.nio.{ByteBuffer => JByteBuffer, ByteOrder}
 
 /**
  * A mutable buffer of bytes.

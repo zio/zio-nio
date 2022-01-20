@@ -4,9 +4,9 @@ import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.{Chunk, UIO, ZIO, ZTraceElement}
 
 import java.nio.{
-  ByteOrder,
   Buffer => JBuffer,
   ByteBuffer => JByteBuffer,
+  ByteOrder,
   CharBuffer => JCharBuffer,
   DoubleBuffer => JDoubleBuffer,
   FloatBuffer => JFloatBuffer,

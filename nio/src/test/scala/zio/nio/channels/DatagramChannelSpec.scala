@@ -1,12 +1,9 @@
 package zio.nio.channels
 
-import zio._
-import zio.Clock
 import zio.nio._
-import zio.Random
 import zio.test.Assertion._
-import zio.test._
-import zio.test.{Live, TestClock, TestConsole, TestRandom, TestSystem}
+import zio.test.{Live, TestClock, TestConsole, TestRandom, TestSystem, _}
+import zio.{Clock, Random, _}
 
 import java.io.IOException
 

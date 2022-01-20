@@ -1,12 +1,12 @@
 package zio.nio.channels
 
-import zio.{Duration, ZIO, ZTraceElement}
 import zio.nio.BaseSpec
 import zio.test.Assertion._
 import zio.test._
+import zio.{Duration, ZIO, ZTraceElement}
 
 import java.nio.channels.{AsynchronousChannelGroup => JAsynchronousChannelGroup}
-import java.util.concurrent.{Executors, TimeUnit, ExecutorService => JExecutorService}
+import java.util.concurrent.{ExecutorService => JExecutorService, Executors, TimeUnit}
 import scala.concurrent.ExecutionContext
 
 object AsynchronousChannelGroupSpec extends BaseSpec {

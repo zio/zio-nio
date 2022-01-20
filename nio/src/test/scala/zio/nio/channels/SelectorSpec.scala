@@ -1,14 +1,10 @@
 package zio.nio.channels
 
-import zio._
-import zio.Clock
-import zio.durationInt
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.{BaseSpec, Buffer, ByteBuffer, SocketAddress}
-import zio.Random
 import zio.test.Assertion._
-import zio.test._
-import zio.test.{Live, TestClock, TestConsole, TestRandom, TestSystem, live}
+import zio.test.{Live, TestClock, TestConsole, TestRandom, TestSystem, live, _}
+import zio.{Clock, Random, durationInt, _}
 
 import java.io.IOException
 import java.nio.channels.CancelledKeyException

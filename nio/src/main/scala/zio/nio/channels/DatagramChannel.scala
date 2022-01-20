@@ -5,7 +5,7 @@ import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.{IO, Managed, UIO, ZTraceElement}
 
 import java.io.IOException
-import java.net.{ProtocolFamily, SocketOption, DatagramSocket => JDatagramSocket, SocketAddress => JSocketAddress}
+import java.net.{DatagramSocket => JDatagramSocket, ProtocolFamily, SocketAddress => JSocketAddress, SocketOption}
 import java.nio.channels.{DatagramChannel => JDatagramChannel}
 
 /**

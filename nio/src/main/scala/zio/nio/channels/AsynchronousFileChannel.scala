@@ -1,9 +1,9 @@
 package zio.nio
 package channels
+import zio._
 import zio.nio.file.Path
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.stream.{Stream, ZSink, ZStream}
-import zio._
 
 import java.io.{EOFException, IOException}
 import java.nio.channels.{AsynchronousFileChannel => JAsynchronousFileChannel, FileLock => JFileLock}

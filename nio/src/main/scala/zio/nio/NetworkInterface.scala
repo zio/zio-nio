@@ -4,7 +4,7 @@ import com.github.ghik.silencer.silent
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.{IO, ZTraceElement}
 
-import java.net.{SocketException, NetworkInterface => JNetworkInterface}
+import java.net.{NetworkInterface => JNetworkInterface, SocketException}
 import scala.collection.JavaConverters._
 
 class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetworkInterface) {
