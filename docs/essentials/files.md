@@ -11,7 +11,7 @@ Required imports for presented snippets:
 import zio._
 import zio.nio.channels._
 import zio.nio.file._
-import zio.console._
+import zio.Console._
 ```
 
 ## Basic operations 
@@ -38,7 +38,7 @@ val readWriteOp = (channel: AsynchronousFileChannel) =>
   for {
     chunk <- channel.readChunk(20, 0L)
     text  = chunk.map(_.toChar).mkString
-    _     <- putStrLn(text)
+    _     <- printLine(text)
   
     input = Chunk.fromArray("message".toArray.map(_.toByte))
     _     <- channel.writeChunk(input, 0L)
@@ -51,12 +51,12 @@ they are not in effects. Apart from basic acquire/release actions, the core API 
 ```scala mdoc:silent
 val lockOp = (channel: AsynchronousFileChannel) =>
   for {
-    isShared     <- channel.lock().bracket(_.release.ignore)(l => IO.succeed(l.isShared))
-    _            <- putStrLn(isShared.toString)                                      // false
+    isShared     <- channel.lock().acquireReleaseWith(_.release.ignore)(l => IO.succeed(l.isShared))
+    _            <- printLine(isShared.toString)                                      // false
 
-    managed      = Managed.make(channel.lock(position = 0, size = 10, shared = false))(_.release.ignore)
+    managed      = Managed.acquireReleaseWith(channel.lock(position = 0, size = 10, shared = false))(_.release.ignore)
     isOverlaping <- managed.use(l => IO.succeed(l.overlaps(5, 20)))
-    _            <- putStrLn(isOverlaping.toString)                                  // true
+    _            <- printLine(isOverlaping.toString)                                  // true
   } yield ()
 ```
 
