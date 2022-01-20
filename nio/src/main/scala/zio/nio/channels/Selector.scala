@@ -91,7 +91,11 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    *   The number of keys, possibly zero, whose ready-operation sets were updated
    */
   def select(timeout: Duration)(implicit trace: ZTraceElement): IO[IOException, Int] =
-    IO.attemptBlocking(selector.select(timeout.toMillis)).refineToOrDie[IOException].fork.flatMap(_.join).onInterrupt(wakeup)
+    IO.attemptBlocking(selector.select(timeout.toMillis))
+      .refineToOrDie[IOException]
+      .fork
+      .flatMap(_.join)
+      .onInterrupt(wakeup)
 
   /**
    * Performs a blocking select operation.
