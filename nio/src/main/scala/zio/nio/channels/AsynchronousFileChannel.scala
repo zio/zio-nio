@@ -174,8 +174,9 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
 
         for {
           currentPos <- posRef.get
-          newPos     <- doWrite(currentPos, chunk).catchAll(e => buffer.getChunk().flatMap(chunk => ZIO.fail((Left(e), chunk))))
-          _          <- posRef.set(newPos)
+          newPos <-
+            doWrite(currentPos, chunk).catchAll(e => buffer.getChunk().flatMap(chunk => ZIO.fail((Left(e), chunk))))
+          _ <- posRef.set(newPos)
         } yield ()
 
       }
