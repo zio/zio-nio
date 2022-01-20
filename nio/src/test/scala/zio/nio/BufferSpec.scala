@@ -229,7 +229,7 @@ object BufferSpec extends BaseSpec {
           result <- b.put(initialCapacity, initialValue).exit
         } yield assert(result)(dies(isSubtype[IndexOutOfBoundsException](anything)))
       },
-      testM[TestEnvironment, Exception]("0 <= mark <= position <= limit <= capacity") {
+      test("0 <= mark <= position <= limit <= capacity") {
         check(Gen.int(-1, 10), Gen.int(-1, 10), Gen.int(-1, 10), Gen.int(-1, 10)) {
           (markedPosition: Int, position: Int, limit: Int, capacity: Int) =>
             (for {

@@ -1,7 +1,7 @@
 package zio.nio
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{ZIO, ZManaged}
+import zio.{ZIO, ZManaged, ZTraceElement}
 
 import java.io.IOException
 
@@ -14,11 +14,11 @@ package object channels {
 
     def useNioBlocking[R1, E >: IOException, A](
       f: F1[R1, E, A]
-    )(implicit trace: ZTraceElement): ZIO[R with R1 with Blocking, E, A] = underlying.use(c => c.useBlocking(f(c, _)))
+    )(implicit trace: ZTraceElement): ZIO[R with R1, E, A] = underlying.use(c => c.useBlocking(f(c, _)))
 
     def useNioBlockingOps[R1, E >: IOException, A](
       f: BO => ZIO[R1, E, A]
-    )(implicit trace: ZTraceElement): ZIO[R with R1 with Blocking, E, A] = useNioBlocking((_, ops) => f(ops))
+    )(implicit trace: ZTraceElement): ZIO[R with R1, E, A] = useNioBlocking((_, ops) => f(ops))
 
   }
 
