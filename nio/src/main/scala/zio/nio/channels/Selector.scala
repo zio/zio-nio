@@ -2,9 +2,9 @@ package zio.nio
 package channels
 
 import com.github.ghik.silencer.silent
-import zio.duration.Duration
 import zio.nio.channels.spi.SelectorProvider
-import zio.{IO, Managed, UIO, ZIO}
+import zio.stacktracer.TracingImplicits.disableAutoTrace
+import zio.{Duration, IO, Managed, UIO, ZIO, ZTraceElement}
 
 import java.io.IOException
 import java.nio.channels.{SelectionKey => JSelectionKey, Selector => JSelector}
@@ -22,14 +22,14 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
 
   type Env = Any
 
-  val isOpen: UIO[Boolean] = IO.effectTotal(selector.isOpen)
+  def isOpen(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(selector.isOpen)
 
-  val provider: UIO[SelectorProvider] =
-    IO.effectTotal(selector.provider()).map(new SelectorProvider(_))
+  def provider(implicit trace: ZTraceElement): UIO[SelectorProvider] =
+    IO.succeed(selector.provider()).map(new SelectorProvider(_))
 
   @silent
-  val keys: UIO[Set[SelectionKey]] =
-    IO.effectTotal(selector.keys())
+  def keys(implicit trace: ZTraceElement): UIO[Set[SelectionKey]] =
+    IO.succeed(selector.keys())
       .map(_.asScala.toSet[JSelectionKey].map(new SelectionKey(_)))
 
   /**
@@ -40,8 +40,8 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * thread-safe.
    */
   @silent
-  val selectedKeys: UIO[mutable.Set[SelectionKey]] =
-    IO.effectTotal(selector.selectedKeys())
+  def selectedKeys(implicit trace: ZTraceElement): UIO[mutable.Set[SelectionKey]] =
+    IO.succeed(selector.selectedKeys())
       .map(_.asScala.map(new SelectionKey(_)))
 
   /**
@@ -50,13 +50,13 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * If the result of effect is true, the key will be removed from the selected-key set, which is usually what you want
    * after successfully handling a selected key.
    */
-  def foreachSelectedKey[R, E](f: SelectionKey => ZIO[R, E, Boolean]): ZIO[R, E, Unit] =
-    ZIO.effectTotal(selector.selectedKeys().iterator()).flatMap { iter =>
+  def foreachSelectedKey[R, E](f: SelectionKey => ZIO[R, E, Boolean])(implicit trace: ZTraceElement): ZIO[R, E, Unit] =
+    ZIO.succeed(selector.selectedKeys().iterator()).flatMap { iter =>
       def loop: ZIO[R, E, Unit] =
-        ZIO.effectSuspendTotal {
+        ZIO.suspendSucceed {
           if (iter.hasNext) {
             val key = iter.next()
-            f(new SelectionKey(key)).flatMap(ZIO.when(_)(ZIO.effectTotal(iter.remove()))) *>
+            f(new SelectionKey(key)).flatMap(ZIO.when(_)(ZIO.succeed(iter.remove()))) *>
               loop
           } else
             ZIO.unit
@@ -65,7 +65,8 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
       loop
     }
 
-  def removeKey(key: SelectionKey): UIO[Unit] = IO.effectTotal(selector.selectedKeys().remove(key.selectionKey)).unit
+  def removeKey(key: SelectionKey)(implicit trace: ZTraceElement): UIO[Unit] =
+    IO.succeed(selector.selectedKeys().remove(key.selectionKey)).unit
 
   /**
    * Selects a set of keys whose corresponding channels are ready for I/O operations. This method performs a
@@ -75,8 +76,8 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * @return
    *   The number of keys, possibly zero, whose ready-operation sets were updated by the selection operation.
    */
-  val selectNow: IO[IOException, Int] =
-    IO.effect(selector.selectNow()).refineToOrDie[IOException]
+  def selectNow(implicit trace: ZTraceElement): IO[IOException, Int] =
+    IO.attempt(selector.selectNow()).refineToOrDie[IOException]
 
   /**
    * Performs a blocking select operation.
@@ -89,8 +90,12 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * @return
    *   The number of keys, possibly zero, whose ready-operation sets were updated
    */
-  def select(timeout: Duration): IO[IOException, Int] =
-    IO.effect(selector.select(timeout.toMillis)).refineToOrDie[IOException].fork.flatMap(_.join).onInterrupt(wakeup)
+  def select(timeout: Duration)(implicit trace: ZTraceElement): IO[IOException, Int] =
+    IO.attemptBlocking(selector.select(timeout.toMillis))
+      .refineToOrDie[IOException]
+      .fork
+      .flatMap(_.join)
+      .onInterrupt(wakeup)
 
   /**
    * Performs a blocking select operation.
@@ -103,8 +108,8 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * @return
    *   The number of keys, possibly zero, whose ready-operation sets were updated
    */
-  def select: IO[IOException, Int] =
-    IO.effect(selector.select()).refineToOrDie[IOException].fork.flatMap(_.join).onInterrupt(wakeup)
+  def select(implicit trace: ZTraceElement): IO[IOException, Int] =
+    IO.attemptBlocking(selector.select()).refineToOrDie[IOException].fork.flatMap(_.join).onInterrupt(wakeup)
 
   /**
    * Causes the first selection operation that has not yet returned to return immediately.
@@ -116,7 +121,7 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * `select(long)` methods will block as usual unless this method is invoked again in the meantime. Invoking this
    * method more than once between two successive selection operations has the same effect as invoking it just once.
    */
-  def wakeup: IO[Nothing, Unit] = IO.effectTotal(selector.wakeup()).unit
+  def wakeup(implicit trace: ZTraceElement): IO[Nothing, Unit] = IO.succeed(selector.wakeup()).unit
 
   /**
    * Closes this selector.
@@ -128,7 +133,8 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * to use it, except by invoking this method or the wakeup method, will cause a `ClosedSelectorException` to be raised
    * as a defect.
    */
-  def close: IO[IOException, Unit] = IO.effect(selector.close()).refineToOrDie[IOException]
+  def close(implicit trace: ZTraceElement): IO[IOException, Unit] =
+    IO.attempt(selector.close()).refineToOrDie[IOException]
 
 }
 
@@ -137,7 +143,7 @@ object Selector {
   /**
    * Opens a selector.
    */
-  val open: Managed[IOException, Selector] =
-    IO.effect(new Selector(JSelector.open())).refineToOrDie[IOException].toNioManaged
+  def open(implicit trace: ZTraceElement): Managed[IOException, Selector] =
+    IO.attempt(new Selector(JSelector.open())).refineToOrDie[IOException].toNioManaged
 
 }

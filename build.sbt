@@ -19,22 +19,30 @@ addCommandAlias(
   ";zioNio/test;examples/test"
 )
 
-val zioVersion = "1.0.12"
+val zioVersion = "2.0.0-RC1"
 
 lazy val zioNio = project
   .in(file("nio"))
   .settings(stdSettings("zio-nio"))
   .settings(
     libraryDependencies ++= Seq(
-      "dev.zio"                %% "zio"                     % zioVersion,
-      "dev.zio"                %% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.5.0",
-      "dev.zio"                %% "zio-test"                % zioVersion % Test,
-      "dev.zio"                %% "zio-test-sbt"            % zioVersion % Test
+      "dev.zio"                 %% "zio"                     % zioVersion,
+      "dev.zio"                 %% "zio-streams"             % zioVersion,
+      ("org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0").cross(CrossVersion.for3Use2_13),
+      "dev.zio"                 %% "zio-test"                % zioVersion % Test,
+      "dev.zio"                 %% "zio-test-sbt"            % zioVersion % Test
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
-  .settings(dottySettings)
+  .settings(scala3Settings)
+  .settings(
+    scalacOptions ++= {
+      if (scalaVersion.value == Scala3)
+        Seq.empty
+      else
+        Seq("-P:silencer:globalFilters=[zio.stacktracer.TracingImplicits.disableAutoTrace]")
+    }
+  )
 
 lazy val docs = project
   .in(file("zio-nio-docs"))
@@ -59,5 +67,5 @@ lazy val examples = project
     publish / skip := true,
     moduleName     := "examples"
   )
-  .settings(dottySettings)
+  .settings(scala3Settings)
   .dependsOn(zioNio)

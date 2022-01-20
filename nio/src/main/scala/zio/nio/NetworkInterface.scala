@@ -1,7 +1,8 @@
 package zio.nio
 
 import com.github.ghik.silencer.silent
-import zio.IO
+import zio.stacktracer.TracingImplicits.disableAutoTrace
+import zio.{IO, ZTraceElement}
 
 import java.net.{NetworkInterface => JNetworkInterface, SocketException}
 import scala.collection.JavaConverters._
@@ -27,47 +28,47 @@ class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetwor
 
   def displayName: String = jNetworkInterface.getDisplayName
 
-  val isUp: IO[SocketException, Boolean] =
-    IO.effect(jNetworkInterface.isUp).refineToOrDie[SocketException]
+  def isUp(implicit trace: ZTraceElement): IO[SocketException, Boolean] =
+    IO.attempt(jNetworkInterface.isUp).refineToOrDie[SocketException]
 
-  val isLoopback: IO[SocketException, Boolean] =
-    IO.effect(jNetworkInterface.isLoopback).refineToOrDie[SocketException]
+  def isLoopback(implicit trace: ZTraceElement): IO[SocketException, Boolean] =
+    IO.attempt(jNetworkInterface.isLoopback).refineToOrDie[SocketException]
 
-  val isPointToPoint: IO[SocketException, Boolean] =
-    IO.effect(jNetworkInterface.isPointToPoint).refineToOrDie[SocketException]
+  def isPointToPoint(implicit trace: ZTraceElement): IO[SocketException, Boolean] =
+    IO.attempt(jNetworkInterface.isPointToPoint).refineToOrDie[SocketException]
 
-  val supportsMulticast: IO[SocketException, Boolean] =
-    IO.effect(jNetworkInterface.supportsMulticast).refineToOrDie[SocketException]
+  def supportsMulticast(implicit trace: ZTraceElement): IO[SocketException, Boolean] =
+    IO.attempt(jNetworkInterface.supportsMulticast).refineToOrDie[SocketException]
 
-  val hardwareAddress: IO[SocketException, Array[Byte]] =
-    IO.effect(jNetworkInterface.getHardwareAddress).refineToOrDie[SocketException]
+  def hardwareAddress(implicit trace: ZTraceElement): IO[SocketException, Array[Byte]] =
+    IO.attempt(jNetworkInterface.getHardwareAddress).refineToOrDie[SocketException]
 
-  val mtu: IO[SocketException, Int] =
-    IO.effect(jNetworkInterface.getMTU).refineToOrDie[SocketException]
+  def mtu(implicit trace: ZTraceElement): IO[SocketException, Int] =
+    IO.attempt(jNetworkInterface.getMTU).refineToOrDie[SocketException]
 
   def isVirtual: Boolean = jNetworkInterface.isVirtual
 }
 
 object NetworkInterface {
 
-  def byName(name: String): IO[SocketException, NetworkInterface] =
-    IO.effect(JNetworkInterface.getByName(name))
+  def byName(name: String)(implicit trace: ZTraceElement): IO[SocketException, NetworkInterface] =
+    IO.attempt(JNetworkInterface.getByName(name))
       .refineToOrDie[SocketException]
       .map(new NetworkInterface(_))
 
-  def byIndex(index: Integer): IO[SocketException, NetworkInterface] =
-    IO.effect(JNetworkInterface.getByIndex(index))
+  def byIndex(index: Integer)(implicit trace: ZTraceElement): IO[SocketException, NetworkInterface] =
+    IO.attempt(JNetworkInterface.getByIndex(index))
       .refineToOrDie[SocketException]
       .map(new NetworkInterface(_))
 
-  def byInetAddress(address: InetAddress): IO[SocketException, NetworkInterface] =
-    IO.effect(JNetworkInterface.getByInetAddress(address.jInetAddress))
+  def byInetAddress(address: InetAddress)(implicit trace: ZTraceElement): IO[SocketException, NetworkInterface] =
+    IO.attempt(JNetworkInterface.getByInetAddress(address.jInetAddress))
       .refineToOrDie[SocketException]
       .map(new NetworkInterface(_))
 
   @silent
-  def networkInterfaces: IO[SocketException, Iterator[NetworkInterface]] =
-    IO.effect(JNetworkInterface.getNetworkInterfaces.asScala)
+  def networkInterfaces(implicit trace: ZTraceElement): IO[SocketException, Iterator[NetworkInterface]] =
+    IO.attempt(JNetworkInterface.getNetworkInterfaces.asScala)
       .refineToOrDie[SocketException]
       .map(_.map(new NetworkInterface(_)))
 

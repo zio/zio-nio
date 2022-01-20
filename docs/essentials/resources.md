@@ -13,14 +13,13 @@ The most straight-forward way to use a managed resource is with the `use` method
 
 ```scala mdoc:silent
 import zio._
-import zio.blocking.Blocking
 import zio.nio.channels._
 import zio.nio.file.Path
 import java.io.IOException
 
-def useChannel(f: FileChannel): ZIO[Blocking, IOException, Unit] = ???
+def useChannel(f: FileChannel): ZIO[Any, IOException, Unit] = ???
 
-val effect: ZIO[Blocking, IOException, Unit] = FileChannel.open(Path("foo.txt"))
+val effect: ZIO[Any, IOException, Unit] = FileChannel.open(Path("foo.txt"))
   .use { fileChannel =>
     // fileChannel is only valid in this lexical scope
     useChannel(fileChannel)

@@ -1,10 +1,10 @@
 package zio.nio
 package channels
 
-import zio.blocking.Blocking
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.channels.spi.SelectorProvider
-import zio.{Fiber, IO, Managed, UIO, ZIO, ZManaged}
+import zio.stacktracer.TracingImplicits.disableAutoTrace
+import zio.{Fiber, IO, Managed, UIO, ZIO, ZManaged, ZTraceElement}
 
 import java.io.IOException
 import java.net.{ServerSocket => JServerSocket, Socket => JSocket, SocketOption}
@@ -27,18 +27,18 @@ trait SelectableChannel extends BlockingChannel {
 
   protected val channel: JSelectableChannel
 
-  final val provider: UIO[SelectorProvider] =
-    IO.effectTotal(new SelectorProvider(channel.provider()))
+  final def provider(implicit trace: ZTraceElement): UIO[SelectorProvider] =
+    IO.succeed(new SelectorProvider(channel.provider()))
 
-  final val validOps: UIO[Set[Operation]] =
-    IO.effectTotal(channel.validOps())
+  final def validOps(implicit trace: ZTraceElement): UIO[Set[Operation]] =
+    IO.succeed(channel.validOps())
       .map(Operation.fromInt(_))
 
-  final val isRegistered: UIO[Boolean] =
-    IO.effectTotal(channel.isRegistered())
+  final def isRegistered(implicit trace: ZTraceElement): UIO[Boolean] =
+    IO.succeed(channel.isRegistered())
 
-  final def keyFor(sel: Selector): UIO[Option[SelectionKey]] =
-    IO.effectTotal(Option(channel.keyFor(sel.selector)).map(new SelectionKey(_)))
+  final def keyFor(sel: Selector)(implicit trace: ZTraceElement): UIO[Option[SelectionKey]] =
+    IO.succeed(Option(channel.keyFor(sel.selector)).map(new SelectionKey(_)))
 
   /**
    * Registers this channel with the given selector, returning a selection key.
@@ -56,22 +56,24 @@ trait SelectableChannel extends BlockingChannel {
     selector: Selector,
     ops: Set[Operation] = Set.empty,
     attachment: Option[AnyRef] = None
-  ): IO[ClosedChannelException, SelectionKey] =
-    IO.effect(new SelectionKey(channel.register(selector.selector, Operation.toInt(ops), attachment.orNull)))
+  )(implicit trace: ZTraceElement): IO[ClosedChannelException, SelectionKey] =
+    IO.attempt(new SelectionKey(channel.register(selector.selector, Operation.toInt(ops), attachment.orNull)))
       .refineToOrDie[ClosedChannelException]
 
-  final def configureBlocking(block: Boolean): IO[IOException, Unit] =
-    IO.effect(channel.configureBlocking(block)).unit.refineToOrDie[IOException]
+  final def configureBlocking(block: Boolean)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+    IO.attempt(channel.configureBlocking(block)).unit.refineToOrDie[IOException]
 
-  final val isBlocking: UIO[Boolean] =
-    IO.effectTotal(channel.isBlocking())
+  final def isBlocking(implicit trace: ZTraceElement): UIO[Boolean] =
+    IO.succeed(channel.isBlocking())
 
-  final val blockingLock: UIO[AnyRef] =
-    IO.effectTotal(channel.blockingLock())
+  final def blockingLock(implicit trace: ZTraceElement): UIO[AnyRef] =
+    IO.succeed(channel.blockingLock())
 
   protected def makeBlockingOps: BlockingOps
 
-  final override def useBlocking[R, E >: IOException, A](f: BlockingOps => ZIO[R, E, A]): ZIO[R with Blocking, E, A] =
+  final override def useBlocking[R, E >: IOException, A](f: BlockingOps => ZIO[R, E, A])(implicit
+    trace: ZTraceElement
+  ): ZIO[R with Any, E, A] =
     configureBlocking(true) *> nioBlocking(f(makeBlockingOps))
 
   protected def makeNonBlockingOps: NonBlockingOps
@@ -82,7 +84,9 @@ trait SelectableChannel extends BlockingChannel {
    * @param f
    *   Uses the `NonBlockingOps` appropriate for this channel type to produce non-blocking effects.
    */
-  final def useNonBlocking[R, E >: IOException, A](f: NonBlockingOps => ZIO[R, E, A]): ZIO[R, E, A] =
+  final def useNonBlocking[R, E >: IOException, A](f: NonBlockingOps => ZIO[R, E, A])(implicit
+    trace: ZTraceElement
+  ): ZIO[R, E, A] =
     configureBlocking(false) *> f(makeNonBlockingOps)
 
   /**
@@ -91,8 +95,10 @@ trait SelectableChannel extends BlockingChannel {
    * @param f
    *   Uses the `NonBlockingOps` appropriate for this channel type to produce non-blocking effects.
    */
-  final def useNonBlockingManaged[R, E >: IOException, A](f: NonBlockingOps => ZManaged[R, E, A]): ZManaged[R, E, A] =
-    configureBlocking(false).toManaged_ *> f(makeNonBlockingOps)
+  final def useNonBlockingManaged[R, E >: IOException, A](f: NonBlockingOps => ZManaged[R, E, A])(implicit
+    trace: ZTraceElement
+  ): ZManaged[R, E, A] =
+    configureBlocking(false).toManaged *> f(makeNonBlockingOps)
 
 }
 
@@ -110,8 +116,8 @@ final class SocketChannel(override protected[channels] val channel: JSocketChann
 
   final class BlockingSocketOps private[SocketChannel] () extends Ops {
 
-    def connect(remote: SocketAddress): IO[IOException, Unit] =
-      IO.effect(self.channel.connect(remote.jSocketAddress)).refineToOrDie[IOException].unit
+    def connect(remote: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+      IO.attempt(self.channel.connect(remote.jSocketAddress)).refineToOrDie[IOException].unit
 
   }
 
@@ -119,40 +125,43 @@ final class SocketChannel(override protected[channels] val channel: JSocketChann
 
   final class NonBlockingSocketOps private[SocketChannel] () extends Ops {
 
-    def isConnectionPending: UIO[Boolean] = IO.effectTotal(self.channel.isConnectionPending)
+    def isConnectionPending(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(self.channel.isConnectionPending)
 
-    def connect(remote: SocketAddress): IO[IOException, Boolean] =
-      IO.effect(self.channel.connect(remote.jSocketAddress)).refineToOrDie[IOException]
+    def connect(remote: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Boolean] =
+      IO.attempt(self.channel.connect(remote.jSocketAddress)).refineToOrDie[IOException]
 
-    def finishConnect: IO[IOException, Boolean] = IO.effect(self.channel.finishConnect()).refineToOrDie[IOException]
+    def finishConnect(implicit trace: ZTraceElement): IO[IOException, Boolean] =
+      IO.attempt(self.channel.finishConnect()).refineToOrDie[IOException]
 
   }
 
   override protected def makeNonBlockingOps = new NonBlockingSocketOps
 
-  def bindTo(address: SocketAddress): IO[IOException, Unit] = bind(Some(address))
+  def bindTo(address: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Unit] = bind(Some(address))
 
-  def bindAuto: IO[IOException, Unit] = bind(None)
+  def bindAuto(implicit trace: ZTraceElement): IO[IOException, Unit] = bind(None)
 
-  def bind(local: Option[SocketAddress]): IO[IOException, Unit] =
-    IO.effect(channel.bind(local.map(_.jSocketAddress).orNull)).refineToOrDie[IOException].unit
+  def bind(local: Option[SocketAddress])(implicit trace: ZTraceElement): IO[IOException, Unit] =
+    IO.attempt(channel.bind(local.map(_.jSocketAddress).orNull)).refineToOrDie[IOException].unit
 
-  def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
-    IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
+  def setOption[T](name: SocketOption[T], value: T)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+    IO.attempt(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
-  def shutdownInput: IO[IOException, Unit] = IO.effect(channel.shutdownInput()).refineToOrDie[IOException].unit
+  def shutdownInput(implicit trace: ZTraceElement): IO[IOException, Unit] =
+    IO.attempt(channel.shutdownInput()).refineToOrDie[IOException].unit
 
-  def shutdownOutput: IO[IOException, Unit] = IO.effect(channel.shutdownOutput()).refineToOrDie[IOException].unit
+  def shutdownOutput(implicit trace: ZTraceElement): IO[IOException, Unit] =
+    IO.attempt(channel.shutdownOutput()).refineToOrDie[IOException].unit
 
-  def socket: UIO[JSocket] = IO.effectTotal(channel.socket())
+  def socket(implicit trace: ZTraceElement): UIO[JSocket] = IO.succeed(channel.socket())
 
-  def isConnected: UIO[Boolean] = IO.effectTotal(channel.isConnected)
+  def isConnected(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(channel.isConnected)
 
-  def remoteAddress: IO[IOException, SocketAddress] =
-    IO.effect(SocketAddress.fromJava(channel.getRemoteAddress())).refineToOrDie[IOException]
+  def remoteAddress(implicit trace: ZTraceElement): IO[IOException, SocketAddress] =
+    IO.attempt(SocketAddress.fromJava(channel.getRemoteAddress())).refineToOrDie[IOException]
 
-  def localAddress: IO[IOException, Option[SocketAddress]] =
-    IO.effect(Option(channel.getLocalAddress()).map(SocketAddress.fromJava))
+  def localAddress(implicit trace: ZTraceElement): IO[IOException, Option[SocketAddress]] =
+    IO.attempt(Option(channel.getLocalAddress()).map(SocketAddress.fromJava))
       .refineToOrDie[IOException]
 
 }
@@ -161,11 +170,11 @@ object SocketChannel {
 
   def fromJava(javaSocketChannel: JSocketChannel): SocketChannel = new SocketChannel(javaSocketChannel)
 
-  val open: Managed[IOException, SocketChannel] =
-    IO.effect(new SocketChannel(JSocketChannel.open())).refineToOrDie[IOException].toNioManaged
+  def open(implicit trace: ZTraceElement): Managed[IOException, SocketChannel] =
+    IO.attempt(new SocketChannel(JSocketChannel.open())).refineToOrDie[IOException].toNioManaged
 
-  def open(remote: SocketAddress): Managed[IOException, SocketChannel] =
-    IO.effect(new SocketChannel(JSocketChannel.open(remote.jSocketAddress))).refineToOrDie[IOException].toNioManaged
+  def open(remote: SocketAddress)(implicit trace: ZTraceElement): Managed[IOException, SocketChannel] =
+    IO.attempt(new SocketChannel(JSocketChannel.open(remote.jSocketAddress))).refineToOrDie[IOException].toNioManaged
 
 }
 
@@ -186,8 +195,8 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
      * @return
      *   The channel for the accepted socket connection.
      */
-    def accept: Managed[IOException, SocketChannel] =
-      IO.effect(new SocketChannel(channel.accept())).refineToOrDie[IOException].toNioManaged
+    def accept(implicit trace: ZTraceElement): Managed[IOException, SocketChannel] =
+      IO.attempt(new SocketChannel(channel.accept())).refineToOrDie[IOException].toNioManaged
 
     /**
      * Accepts a connection and uses it to perform an effect on a forked fiber.
@@ -199,7 +208,7 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
      */
     def acceptAndFork[R, A](
       use: SocketChannel => ZIO[R, IOException, A]
-    ): ZIO[R, IOException, Fiber[IOException, A]] = accept.useForked(use)
+    )(implicit trace: ZTraceElement): ZIO[R, IOException, Fiber[IOException, A]] = accept.useForked(use)
 
   }
 
@@ -216,10 +225,10 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
      * @return
      *   None if no connection is currently available to be accepted.
      */
-    def accept: Managed[IOException, Option[SocketChannel]] =
-      IO.effect(Option(channel.accept()).map(new SocketChannel(_)))
+    def accept(implicit trace: ZTraceElement): Managed[IOException, Option[SocketChannel]] =
+      IO.attempt(Option(channel.accept()).map(new SocketChannel(_)))
         .refineToOrDie[IOException]
-        .toManaged(IO.whenCase(_) { case Some(channel) =>
+        .toManagedWith(IO.whenCase(_) { case Some(channel) =>
           channel.close.ignore
         })
 
@@ -227,28 +236,29 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
 
   override protected def makeNonBlockingOps: NonBlockingServerSocketOps = new NonBlockingServerSocketOps
 
-  def bindTo(local: SocketAddress, backlog: Int = 0): IO[IOException, Unit] = bind(Some(local), backlog)
+  def bindTo(local: SocketAddress, backlog: Int = 0)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+    bind(Some(local), backlog)
 
-  def bindAuto(backlog: Int = 0): IO[IOException, Unit] = bind(None, backlog)
+  def bindAuto(backlog: Int = 0)(implicit trace: ZTraceElement): IO[IOException, Unit] = bind(None, backlog)
 
-  def bind(local: Option[SocketAddress], backlog: Int = 0): IO[IOException, Unit] =
-    IO.effect(channel.bind(local.map(_.jSocketAddress).orNull, backlog)).refineToOrDie[IOException].unit
+  def bind(local: Option[SocketAddress], backlog: Int = 0)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+    IO.attempt(channel.bind(local.map(_.jSocketAddress).orNull, backlog)).refineToOrDie[IOException].unit
 
-  def setOption[T](name: SocketOption[T], value: T): IO[IOException, Unit] =
-    IO.effect(channel.setOption(name, value)).refineToOrDie[IOException].unit
+  def setOption[T](name: SocketOption[T], value: T)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+    IO.attempt(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
-  val socket: UIO[JServerSocket] =
-    IO.effectTotal(channel.socket())
+  def socket(implicit trace: ZTraceElement): UIO[JServerSocket] =
+    IO.succeed(channel.socket())
 
-  val localAddress: IO[IOException, SocketAddress] =
-    IO.effect(SocketAddress.fromJava(channel.getLocalAddress())).refineToOrDie[IOException]
+  def localAddress(implicit trace: ZTraceElement): IO[IOException, SocketAddress] =
+    IO.attempt(SocketAddress.fromJava(channel.getLocalAddress())).refineToOrDie[IOException]
 
 }
 
 object ServerSocketChannel {
 
-  val open: Managed[IOException, ServerSocketChannel] =
-    IO.effect(new ServerSocketChannel(JServerSocketChannel.open())).refineToOrDie[IOException].toNioManaged
+  def open(implicit trace: ZTraceElement): Managed[IOException, ServerSocketChannel] =
+    IO.attempt(new ServerSocketChannel(JServerSocketChannel.open())).refineToOrDie[IOException].toNioManaged
 
   def fromJava(javaChannel: JServerSocketChannel): ServerSocketChannel = new ServerSocketChannel(javaChannel)
 }

@@ -21,10 +21,10 @@ object BuildHelper {
     val list = yaml.get("jobs").get("test").get("strategy").get("matrix").get("scala").asScala
     list.map(v => (v.split('.').take(2).mkString("."), v)).toMap
   }
-  val Scala211: String   = versions("2.11")
-  val Scala212: String   = versions("2.12")
-  val Scala213: String   = versions("2.13")
-  val ScalaDotty: String = versions("3.0")
+  val Scala211: String = versions("2.11")
+  val Scala212: String = versions("2.12")
+  val Scala213: String = versions("2.13")
+  val Scala3: String   = versions("3.1")
 
   val SilencerVersion = "1.7.6"
 
@@ -66,23 +66,23 @@ object BuildHelper {
       buildInfoPackage := packageName
     )
 
-  val dottySettings = Seq(
-    crossScalaVersions += ScalaDotty,
+  val scala3Settings = Seq(
+    crossScalaVersions += Scala3,
     scalacOptions ++= {
-      if (scalaVersion.value == ScalaDotty)
+      if (scalaVersion.value == Scala3)
         Seq("-noindent")
       else
         Seq()
     },
     scalacOptions --= {
-      if (scalaVersion.value == ScalaDotty)
+      if (scalaVersion.value == Scala3)
         Seq("-Xfatal-warnings")
       else
         Seq()
     },
     Compile / doc / sources := {
       val old = (Compile / doc / sources).value
-      if (scalaVersion.value == ScalaDotty) {
+      if (scalaVersion.value == Scala3) {
         Nil
       } else {
         old
@@ -90,7 +90,7 @@ object BuildHelper {
     },
     Test / parallelExecution := {
       val old = (Test / parallelExecution).value
-      if (scalaVersion.value == ScalaDotty) {
+      if (scalaVersion.value == Scala3) {
         false
       } else {
         old
@@ -195,7 +195,7 @@ object BuildHelper {
       ThisBuild / scalaVersion := Scala213,
       scalacOptions            := stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
       libraryDependencies ++= {
-        if (scalaVersion.value == ScalaDotty)
+        if (scalaVersion.value == Scala3)
           Seq(
             "com.github.ghik" % s"silencer-lib_$Scala213" % SilencerVersion % Provided
           )
@@ -206,7 +206,7 @@ object BuildHelper {
             compilerPlugin(("org.typelevel"  %% "kind-projector"  % "0.13.2").cross(CrossVersion.full))
           )
       },
-      semanticdbEnabled := scalaVersion.value != ScalaDotty, // enable SemanticDB
+      semanticdbEnabled := scalaVersion.value != Scala3, // enable SemanticDB
       semanticdbOptions += "-P:semanticdb:synthetics:on",
       semanticdbVersion                      := scalafixSemanticdb.revision, // use Scalafix compatible version
       ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value),

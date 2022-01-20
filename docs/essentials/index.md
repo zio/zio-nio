@@ -27,13 +27,12 @@ When reading from channels, the end of the stream may be reached at any time. Th
 
 ```scala mdoc:silent
 import zio._
-import zio.blocking.Blocking
 import zio.nio._
 import zio.nio.channels._
 import zio.nio.file.Path
 import java.io.IOException
 
-val read100: ZIO[Blocking, Option[IOException], Chunk[Byte]] =
+val read100: ZIO[Any, Option[IOException], Chunk[Byte]] =
   FileChannel.open(Path("foo.txt"))
     .useNioBlockingOps(_.readChunk(100))
     .eofCheck

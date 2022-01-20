@@ -1,29 +1,23 @@
 package zio.nio.channels
 
-import zio.blocking.Blocking
-import zio.clock.Clock
 import zio.nio.file.Path
 import zio.nio.{BaseSpec, Buffer}
-import zio.random.Random
 import zio.test.Assertion._
-import zio.test._
-import zio.test.environment.{Live, TestClock, TestConsole, TestRandom, TestSystem}
-import zio.{Chunk, Has, IO, ZIO}
+import zio.test.{Live, TestClock, TestConsole, TestRandom, TestSystem, _}
+import zio.{Chunk, Clock, IO, Random, ZIO}
 
 import java.nio.file.{Files, StandardOpenOption}
 import scala.io.Source
 
 object ScatterGatherChannelSpec extends BaseSpec {
 
-  override def spec: Spec[Any with Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
-    TestClock.Service
-  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
-    TestSystem.Service
-  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
-    Random.Service
-  ] with Has[Blocking.Service] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
+  override def spec: Spec[
+    Any with Annotations with Live with Sized with TestClock with TestConfig with TestConsole with TestRandom with TestSystem with Clock with zio.Console with zio.System with Random,
+    TestFailure[Any],
+    TestSuccess
+  ] =
     suite("ScatterGatherChannelSpec")(
-      testM("scattering read") {
+      test("scattering read") {
         FileChannel
           .open(Path("nio/src/test/resources/scattering_read_test.txt"), StandardOpenOption.READ)
           .useNioBlockingOps { ops =>
@@ -41,7 +35,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
             } yield assert(list)(equalTo("Hello" :: "World" :: Nil))
           }
       },
-      testM("gathering write") {
+      test("gathering write") {
         val file = Path("nio/src/test/resources/gathering_write_test.txt")
         FileChannel
           .open(file, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)

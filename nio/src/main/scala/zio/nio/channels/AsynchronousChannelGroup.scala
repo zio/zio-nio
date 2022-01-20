@@ -1,7 +1,7 @@
 package zio.nio.channels
 
-import zio.duration._
-import zio.{IO, UIO}
+import zio._
+import zio.stacktracer.TracingImplicits.disableAutoTrace
 
 import java.io.IOException
 import java.nio.channels.spi.{AsynchronousChannelProvider => JAsynchronousChannelProvider}
@@ -11,8 +11,10 @@ import scala.concurrent.ExecutionContextExecutorService
 
 object AsynchronousChannelGroup {
 
-  def apply(executor: ExecutionContextExecutorService, initialSize: Int): IO[IOException, AsynchronousChannelGroup] =
-    IO.effect(
+  def apply(executor: ExecutionContextExecutorService, initialSize: Int)(implicit
+    trace: ZTraceElement
+  ): IO[IOException, AsynchronousChannelGroup] =
+    IO.attempt(
       new AsynchronousChannelGroup(
         JAsynchronousChannelGroup.withCachedThreadPool(executor, initialSize)
       )
@@ -21,15 +23,17 @@ object AsynchronousChannelGroup {
   def apply(
     threadsNo: Int,
     threadsFactory: JThreadFactory
-  ): IO[IOException, AsynchronousChannelGroup] =
-    IO.effect(
+  )(implicit trace: ZTraceElement): IO[IOException, AsynchronousChannelGroup] =
+    IO.attempt(
       new AsynchronousChannelGroup(
         JAsynchronousChannelGroup.withFixedThreadPool(threadsNo, threadsFactory)
       )
     ).refineToOrDie[IOException]
 
-  def apply(executor: ExecutionContextExecutorService): IO[IOException, AsynchronousChannelGroup] =
-    IO.effect(
+  def apply(
+    executor: ExecutionContextExecutorService
+  )(implicit trace: ZTraceElement): IO[IOException, AsynchronousChannelGroup] =
+    IO.attempt(
       new AsynchronousChannelGroup(JAsynchronousChannelGroup.withThreadPool(executor))
     ).refineToOrDie[IOException]
 
@@ -37,19 +41,19 @@ object AsynchronousChannelGroup {
 
 final class AsynchronousChannelGroup(val channelGroup: JAsynchronousChannelGroup) {
 
-  def awaitTermination(timeout: Duration): IO[InterruptedException, Boolean] =
-    IO.effect(channelGroup.awaitTermination(timeout.asJava.toMillis, TimeUnit.MILLISECONDS))
+  def awaitTermination(timeout: Duration)(implicit trace: ZTraceElement): IO[InterruptedException, Boolean] =
+    IO.attempt(channelGroup.awaitTermination(timeout.asJava.toMillis, TimeUnit.MILLISECONDS))
       .refineToOrDie[InterruptedException]
 
-  val isShutdown: UIO[Boolean] = IO.effectTotal(channelGroup.isShutdown)
+  def isShutdown(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(channelGroup.isShutdown)
 
-  val isTerminated: UIO[Boolean] = IO.effectTotal(channelGroup.isTerminated)
+  def isTerminated(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(channelGroup.isTerminated)
 
-  val provider: UIO[JAsynchronousChannelProvider] = IO.effectTotal(channelGroup.provider())
+  def provider(implicit trace: ZTraceElement): UIO[JAsynchronousChannelProvider] = IO.succeed(channelGroup.provider())
 
-  val shutdown: UIO[Unit] = IO.effectTotal(channelGroup.shutdown())
+  def shutdown(implicit trace: ZTraceElement): UIO[Unit] = IO.succeed(channelGroup.shutdown())
 
-  val shutdownNow: IO[IOException, Unit] =
-    IO.effect(channelGroup.shutdownNow()).refineToOrDie[IOException]
+  def shutdownNow(implicit trace: ZTraceElement): IO[IOException, Unit] =
+    IO.attempt(channelGroup.shutdownNow()).refineToOrDie[IOException]
 
 }

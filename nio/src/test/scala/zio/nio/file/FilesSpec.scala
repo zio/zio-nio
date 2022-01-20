@@ -1,25 +1,19 @@
 package zio.nio.file
 
-import zio.blocking.Blocking
-import zio.clock.Clock
 import zio.nio.BaseSpec
-import zio.random.Random
 import zio.test.Assertion._
 import zio.test._
-import zio.test.environment._
-import zio.{Chunk, Has, Ref}
+import zio.{Chunk, Clock, Random, Ref}
 
 object FilesSpec extends BaseSpec {
 
-  override def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
-    TestClock.Service
-  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
-    TestSystem.Service
-  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
-    Random.Service
-  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
+  override def spec: Spec[
+    Annotations with Live with Sized with TestClock with TestConfig with TestConsole with TestRandom with TestSystem with Clock with zio.Console with zio.System with Random,
+    TestFailure[Any],
+    TestSuccess
+  ] =
     suite("FilesSpec")(
-      testM("createTempFileInManaged cleans up temp file") {
+      test("createTempFileInManaged cleans up temp file") {
         val sampleFileContent = Chunk.fromArray("createTempFileInManaged works!".getBytes)
         for {
           pathRef <- Ref.make[Option[Path]](None)
@@ -33,7 +27,7 @@ object FilesSpec extends BaseSpec {
         } yield assert(readBytes)(equalTo(sampleFileContent)) &&
           assert(tmpFileExistsAfterUsage)(isFalse)
       },
-      testM("createTempFileManaged cleans up temp file") {
+      test("createTempFileManaged cleans up temp file") {
         val sampleFileContent = Chunk.fromArray("createTempFileManaged works!".getBytes)
         for {
           pathRef <- Ref.make[Option[Path]](None)
@@ -47,7 +41,7 @@ object FilesSpec extends BaseSpec {
         } yield assert(readBytes)(equalTo(sampleFileContent)) &&
           assert(tmpFileExistsAfterUsage)(isFalse)
       },
-      testM("createTempDirectoryManaged cleans up temp dir") {
+      test("createTempDirectoryManaged cleans up temp dir") {
         val sampleFileContent = Chunk.fromArray("createTempDirectoryManaged works!".getBytes)
         for {
           pathRef <- Ref.make[Option[Path]](None)
@@ -65,7 +59,7 @@ object FilesSpec extends BaseSpec {
         } yield assert(readBytes)(equalTo(sampleFileContent)) &&
           assert(tmpFileExistsAfterUsage)(isFalse)
       },
-      testM("createTempDirectoryManaged (dir) cleans up temp dir") {
+      test("createTempDirectoryManaged (dir) cleans up temp dir") {
         val sampleFileContent = Chunk.fromArray("createTempDirectoryManaged(dir) works!".getBytes)
         for {
           pathRef <- Ref.make[Option[Path]](None)

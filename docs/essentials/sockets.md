@@ -9,8 +9,8 @@ Required imports for snippets:
 
 ```scala mdoc:silent
 import zio._
-import zio.clock._
-import zio.console._
+import zio.Clock._
+import zio.Console._
 import zio.nio.channels._
 import zio.nio._
 ```
@@ -21,11 +21,11 @@ Creating a server socket:
 
 ```scala mdoc:silent
 val server = AsynchronousServerSocketChannel.open
-  .mapM { socket =>
+  .mapZIO { socket =>
     for {
       address <- InetSocketAddress.hostName("127.0.0.1", 1337)
       _ <- socket.bindTo(address)
-      _ <- socket.accept.preallocate.flatMap(_.use(channel => doWork(channel).catchAll(ex => putStrLn(ex.getMessage))).fork).forever.fork
+      _ <- socket.accept.preallocate.flatMap(_.use(channel => doWork(channel).catchAll(ex => printLine(ex.getMessage))).fork).forever.fork
     } yield ()
   }.useForever
 
@@ -34,10 +34,10 @@ def doWork(channel: AsynchronousSocketChannel): ZIO[Console with Clock, Throwabl
     for {
       chunk <- channel.readChunk(3)
       str = chunk.toArray.map(_.toChar).mkString
-      _ <- putStrLn(s"received: [$str] [${chunk.length}]")
+      _ <- printLine(s"received: [$str] [${chunk.length}]")
     } yield ()
 
-  process.whenM(channel.isOpen).forever
+  process.whenZIO(channel.isOpen).forever
 }
 ```
 
@@ -45,7 +45,7 @@ Creating a client socket:
 
 ```scala mdoc:silent
 val clientM: Managed[Exception, AsynchronousSocketChannel] = AsynchronousSocketChannel.open
-  .mapM { client =>
+  .mapZIO { client =>
     for {
       host    <- InetAddress.localHost
       address <- InetSocketAddress.inetAddress(host, 2552)

@@ -1,34 +1,28 @@
 package zio.nio.channels
 
-import zio._
-import zio.blocking.Blocking
-import zio.clock.Clock
 import zio.nio._
-import zio.random.Random
 import zio.test.Assertion._
-import zio.test._
-import zio.test.environment.{Live, TestClock, TestConsole, TestRandom, TestSystem}
+import zio.test.{Live, TestClock, TestConsole, TestRandom, TestSystem, _}
+import zio.{Clock, Random, _}
 
 import java.io.IOException
 
 object DatagramChannelSpec extends BaseSpec {
 
-  override def spec: Spec[Has[Annotations.Service] with Has[Live.Service] with Has[Sized.Service] with Has[
-    TestClock.Service
-  ] with Has[TestConfig.Service] with Has[TestConsole.Service] with Has[TestRandom.Service] with Has[
-    TestSystem.Service
-  ] with Has[Clock.Service] with Has[zio.console.Console.Service] with Has[zio.system.System.Service] with Has[
-    Random.Service
-  ] with Has[Blocking.Service], TestFailure[Any], TestSuccess] =
+  override def spec: Spec[
+    Annotations with Live with Sized with TestClock with TestConfig with TestConsole with TestRandom with TestSystem with Clock with zio.Console with zio.System with Random,
+    TestFailure[Any],
+    TestSuccess
+  ] =
     suite("DatagramChannelSpec")(
-      testM("read/write") {
-        def echoServer(started: Promise[Nothing, SocketAddress]): ZIO[Blocking, Nothing, Unit] =
+      test("read/write") {
+        def echoServer(started: Promise[Nothing, SocketAddress])(implicit trace: ZTraceElement): UIO[Unit] =
           for {
             sink <- Buffer.byte(3)
             _ <- DatagramChannel.open.useNioBlocking { (server, ops) =>
                    for {
                      _    <- server.bindAuto
-                     addr <- server.localAddress.someOrElseM(ZIO.dieMessage("Must have local address"))
+                     addr <- server.localAddress.someOrElseZIO(ZIO.dieMessage("Must have local address"))
                      _    <- started.succeed(addr)
                      addr <- ops.receive(sink)
                      _    <- sink.flip
@@ -37,7 +31,7 @@ object DatagramChannelSpec extends BaseSpec {
                  }.fork
           } yield ()
 
-        def echoClient(address: SocketAddress): ZIO[Blocking, IOException, Boolean] =
+        def echoClient(address: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Boolean] =
           for {
             src <- Buffer.byte(3)
             result <- DatagramChannel.open.useNioBlockingOps { client =>
@@ -60,19 +54,19 @@ object DatagramChannelSpec extends BaseSpec {
           same          <- echoClient(addr)
         } yield assert(same)(isTrue)
       },
-      testM("close channel unbind port") {
-        def client(address: SocketAddress): ZIO[Blocking, IOException, Unit] =
+      test("close channel unbind port") {
+        def client(address: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Unit] =
           DatagramChannel.open.useNioBlockingOps(_.connect(address).unit)
 
         def server(
           address: Option[SocketAddress],
           started: Promise[Nothing, SocketAddress]
-        ): ZIO[Blocking, Nothing, Fiber[IOException, Unit]] =
+        )(implicit trace: ZTraceElement): UIO[Fiber[IOException, Unit]] =
           for {
             worker <- DatagramChannel.open.useNioBlocking { (server, _) =>
                         for {
                           _    <- server.bind(address)
-                          addr <- server.localAddress.someOrElseM(ZIO.dieMessage("Local address must be bound"))
+                          addr <- server.localAddress.someOrElseZIO(ZIO.dieMessage("Local address must be bound"))
                           _    <- started.succeed(addr)
                         } yield ()
                       }.fork

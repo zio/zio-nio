@@ -54,24 +54,23 @@ import zio.nio.channels.FileChannel
 import zio.nio.channels._
 import zio.nio.file.Path
 import zio.stream.ZStream
-import zio.blocking.Blocking
-import zio.console
+import zio.Console
 import zio.ZIO
 
 // dump a file encoded in ISO8859 to the console
 
 FileChannel.open(Path("iso8859.txt")).useNioBlockingOps { fileOps =>
-  val inStream: ZStream[Blocking, Exception, Byte] = ZStream.repeatEffectChunkOption {
+  val inStream: ZStream[Any, Exception, Byte] = ZStream.repeatZIOChunkOption {
     fileOps.readChunk(1000).asSomeError.flatMap { chunk =>
       if (chunk.isEmpty) ZIO.fail(None) else ZIO.succeed(chunk)
     }
   }
 
   // apply decoding transducer
-  val charStream: ZStream[Blocking, Exception, Char] =
-    inStream.transduce(Charset.Standard.iso8859_1.newDecoder.transducer())
+  val charStream: ZStream[Any, Exception, Char] =
+    inStream.via(Charset.Standard.iso8859_1.newDecoder.transducer())
 
-  console.putStrLn("ISO8859 file contents:") *>
-    charStream.foreachChunk(chars => console.putStr(chars.mkString))
+  Console.printLine("ISO8859 file contents:") *>
+    charStream.runForeachChunk(chars => Console.printLine(chars.mkString))
 }
 ``` 

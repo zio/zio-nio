@@ -1,5 +1,5 @@
 package zio.nio.charset
-
+import zio.stacktracer.TracingImplicits.disableAutoTrace
 sealed abstract class AutoDetect
 
 object AutoDetect {

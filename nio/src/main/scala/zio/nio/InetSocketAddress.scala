@@ -1,6 +1,7 @@
 package zio.nio
 
-import zio.{IO, UIO}
+import zio.stacktracer.TracingImplicits.disableAutoTrace
+import zio.{IO, UIO, ZTraceElement}
 
 import java.net.{InetSocketAddress => JInetSocketAddress, SocketAddress => JSocketAddress, UnknownHostException}
 
@@ -67,7 +68,7 @@ final class InetSocketAddress private[nio] (private val jInetSocketAddress: JIne
    *
    * Note: This method may trigger a name service reverse lookup if the address was created with a literal IP address.
    */
-  def hostName: UIO[String] = UIO.effectTotal(jInetSocketAddress.getHostName)
+  def hostName(implicit trace: ZTraceElement): UIO[String] = UIO.succeed(jInetSocketAddress.getHostName)
 
   /**
    * Returns the hostname, or the String form of the address if it doesn't have a hostname (it was created using a
@@ -76,7 +77,7 @@ final class InetSocketAddress private[nio] (private val jInetSocketAddress: JIne
    * This has the benefit of not attempting a reverse lookup. This is an effect because the result could change if a
    * reverse lookup is performed, for example by calling `hostName`.
    */
-  def hostString: UIO[String] = UIO.effectTotal(jInetSocketAddress.getHostString)
+  def hostString(implicit trace: ZTraceElement): UIO[String] = UIO.succeed(jInetSocketAddress.getHostString)
 
   /**
    * Checks whether the address has been resolved or not.
@@ -92,14 +93,15 @@ object InetSocketAddress {
    *
    * The socket address will be ''resolved''.
    */
-  def wildCard(port: Int): UIO[InetSocketAddress] = UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(port)))
+  def wildCard(port: Int)(implicit trace: ZTraceElement): UIO[InetSocketAddress] =
+    UIO.succeed(new InetSocketAddress(new JInetSocketAddress(port)))
 
   /**
    * Creates a socket address where the IP address is the wildcard address and the port is ephemeral.
    *
    * The socket address will be ''resolved''.
    */
-  def wildCardEphemeral: UIO[InetSocketAddress] = wildCard(0)
+  def wildCardEphemeral(implicit trace: ZTraceElement): UIO[InetSocketAddress] = wildCard(0)
 
   /**
    * Creates a socket address from a hostname and a port number.
@@ -107,15 +109,17 @@ object InetSocketAddress {
    * This method will attempt to resolve the hostname; if this fails, the returned socket address will be
    * ''unresolved''.
    */
-  def hostName(hostName: String, port: Int): UIO[InetSocketAddress] =
-    UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(hostName, port)))
+  def hostName(hostName: String, port: Int)(implicit trace: ZTraceElement): UIO[InetSocketAddress] =
+    UIO.succeed(new InetSocketAddress(new JInetSocketAddress(hostName, port)))
 
   /**
    * Creates a resolved socket address from a hostname and port number.
    *
    * If the hostname cannot be resolved, fails with `UnknownHostException`.
    */
-  def hostNameResolved(hostName: String, port: Int): IO[UnknownHostException, InetSocketAddress] =
+  def hostNameResolved(hostName: String, port: Int)(implicit
+    trace: ZTraceElement
+  ): IO[UnknownHostException, InetSocketAddress] =
     InetAddress.byName(hostName).flatMap(inetAddress(_, port))
 
   /**
@@ -124,31 +128,35 @@ object InetSocketAddress {
    * This method will attempt to resolve the hostname; if this fails, the returned socket address will be
    * ''unresolved''.
    */
-  def hostNameEphemeral(hostName: String): UIO[InetSocketAddress] = this.hostName(hostName, 0)
+  def hostNameEphemeral(hostName: String)(implicit trace: ZTraceElement): UIO[InetSocketAddress] =
+    this.hostName(hostName, 0)
 
   /**
    * Creates a resolved socket address from a hostname, with an ephemeral port.
    *
    * If the hostname cannot be resolved, fails with `UnknownHostException`.
    */
-  def hostNameEphemeralResolved(hostName: String): IO[UnknownHostException, InetSocketAddress] =
+  def hostNameEphemeralResolved(hostName: String)(implicit
+    trace: ZTraceElement
+  ): IO[UnknownHostException, InetSocketAddress] =
     InetAddress.byName(hostName).flatMap(inetAddressEphemeral)
 
   /**
    * Creates a socket address from an IP address and a port number.
    */
-  def inetAddress(address: InetAddress, port: Int): UIO[InetSocketAddress] =
-    UIO.effectTotal(new InetSocketAddress(new JInetSocketAddress(address.jInetAddress, port)))
+  def inetAddress(address: InetAddress, port: Int)(implicit trace: ZTraceElement): UIO[InetSocketAddress] =
+    UIO.succeed(new InetSocketAddress(new JInetSocketAddress(address.jInetAddress, port)))
 
   /**
    * Creates a socket address from an IP address, with an ephemeral port.
    */
-  def inetAddressEphemeral(address: InetAddress): UIO[InetSocketAddress] = inetAddress(address, 0)
+  def inetAddressEphemeral(address: InetAddress)(implicit trace: ZTraceElement): UIO[InetSocketAddress] =
+    inetAddress(address, 0)
 
   /**
    * Creates a socket address for localhost using the specified port.
    */
-  def localHost(port: Int): IO[UnknownHostException, InetSocketAddress] =
+  def localHost(port: Int)(implicit trace: ZTraceElement): IO[UnknownHostException, InetSocketAddress] =
     InetAddress.localHost.flatMap(inetAddress(_, port))
 
   /**
@@ -157,8 +165,8 @@ object InetSocketAddress {
    * No attempt will be made to resolve the hostname into an `InetAddress`. The socket address will be flagged as
    * ''unresolved''.
    */
-  def unresolvedHostName(hostName: String, port: Int): UIO[InetSocketAddress] =
-    UIO.effectTotal(new InetSocketAddress(JInetSocketAddress.createUnresolved(hostName, port)))
+  def unresolvedHostName(hostName: String, port: Int)(implicit trace: ZTraceElement): UIO[InetSocketAddress] =
+    UIO.succeed(new InetSocketAddress(JInetSocketAddress.createUnresolved(hostName, port)))
 
   /**
    * Creates an unresolved socket address from a hostname using an ephemeral port.
@@ -166,6 +174,7 @@ object InetSocketAddress {
    * No attempt will be made to resolve the hostname into an `InetAddress`. The socket address will be flagged as
    * ''unresolved''.
    */
-  def unresolvedHostNameEphemeral(hostName: String): UIO[InetSocketAddress] = unresolvedHostName(hostName, 0)
+  def unresolvedHostNameEphemeral(hostName: String)(implicit trace: ZTraceElement): UIO[InetSocketAddress] =
+    unresolvedHostName(hostName, 0)
 
 }

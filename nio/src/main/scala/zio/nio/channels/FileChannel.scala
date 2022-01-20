@@ -1,16 +1,16 @@
 package zio.nio.channels
 
 import com.github.ghik.silencer.silent
-import zio.blocking.Blocking
 import zio.nio.file.Path
 import zio.nio.{ByteBuffer, IOCloseableManagement, MappedByteBuffer}
-import zio.{IO, Managed, ZIO}
+import zio.stacktracer.TracingImplicits.disableAutoTrace
+import zio.{IO, Managed, ZIO, ZTraceElement}
 
 import java.io.IOException
 import java.nio.channels.{FileChannel => JFileChannel}
 import java.nio.file.OpenOption
 import java.nio.file.attribute.FileAttribute
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /**
  * A channel for reading, writing, mapping, and manipulating a file.
@@ -38,7 +38,8 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
      * @param size
      *   The new size, must be >= 0
      */
-    def truncate(size: Long): IO[IOException, Unit] = IO.effect(channel.truncate(size)).unit.refineToOrDie[IOException]
+    def truncate(size: Long)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+      IO.attempt(channel.truncate(size)).unit.refineToOrDie[IOException]
 
     /**
      * Forces any updates to this channel's file to be written to the storage device that contains it.
@@ -47,7 +48,8 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
      *   If true then this method is required to force changes to both the file's content and metadata to be written to
      *   storage; otherwise, it need only force content changes to be written
      */
-    def force(metadata: Boolean): IO[IOException, Unit] = IO.effect(channel.force(metadata)).refineToOrDie[IOException]
+    def force(metadata: Boolean)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+      IO.attempt(channel.force(metadata)).refineToOrDie[IOException]
 
     /**
      * Transfers bytes from this channel's file to the given writable byte channel.
@@ -59,8 +61,10 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
      * @param target
      *   The target channel
      */
-    def transferTo(position: Long, count: Long, target: GatheringByteOps): IO[IOException, Long] =
-      IO.effect(channel.transferTo(position, count, target.channel)).refineToOrDie[IOException]
+    def transferTo(position: Long, count: Long, target: GatheringByteOps)(implicit
+      trace: ZTraceElement
+    ): IO[IOException, Long] =
+      IO.attempt(channel.transferTo(position, count, target.channel)).refineToOrDie[IOException]
 
     /**
      * Transfers bytes into this channel's file from the given readable byte channel.
@@ -72,8 +76,10 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
      * @param count
      *   The maximum number of bytes to be transferred, must be >= 0
      */
-    def transferFrom(src: ScatteringByteOps, position: Long, count: Long): IO[IOException, Long] =
-      IO.effect(channel.transferFrom(src.channel, position, count)).refineToOrDie[IOException]
+    def transferFrom(src: ScatteringByteOps, position: Long, count: Long)(implicit
+      trace: ZTraceElement
+    ): IO[IOException, Long] =
+      IO.attempt(channel.transferFrom(src.channel, position, count)).refineToOrDie[IOException]
 
     /**
      * Reads a sequence of bytes from this channel into the given buffer, starting at the given file position. This
@@ -86,9 +92,9 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
      * @param position
      *   The file position at which the transfer is to begin, must be >= 0
      */
-    def read(dst: ByteBuffer, position: Long): IO[IOException, Int] =
+    def read(dst: ByteBuffer, position: Long)(implicit trace: ZTraceElement): IO[IOException, Int] =
       dst
-        .withJavaBuffer[Any, Throwable, Int](buffer => IO.effect(channel.read(buffer, position)))
+        .withJavaBuffer[Any, Throwable, Int](buffer => IO.attempt(channel.read(buffer, position)))
         .refineToOrDie[IOException]
 
     /**
@@ -105,9 +111,9 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
      *   The file position at which the transfer is to begin, must be >= 0
      * @return
      */
-    def write(src: ByteBuffer, position: Long): IO[IOException, Int] =
+    def write(src: ByteBuffer, position: Long)(implicit trace: ZTraceElement): IO[IOException, Int] =
       src
-        .withJavaBuffer[Any, Throwable, Int](buffer => IO.effect(channel.write(buffer, position)))
+        .withJavaBuffer[Any, Throwable, Int](buffer => IO.attempt(channel.write(buffer, position)))
         .refineToOrDie[IOException]
 
     /**
@@ -129,8 +135,10 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
      * @param size
      *   The size of the region to be mapped, must be >= 0 and <= `Int.MaxValue`
      */
-    def map(mode: JFileChannel.MapMode, position: Long, size: Long): IO[IOException, MappedByteBuffer] =
-      IO.effect(new MappedByteBuffer(channel.map(mode, position, size)))
+    def map(mode: JFileChannel.MapMode, position: Long, size: Long)(implicit
+      trace: ZTraceElement
+    ): IO[IOException, MappedByteBuffer] =
+      IO.attempt(new MappedByteBuffer(channel.map(mode, position, size)))
         .refineToOrDie[IOException]
 
     /**
@@ -149,18 +157,21 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
       position: Long = 0L,
       size: Long = Long.MaxValue,
       shared: Boolean = false
-    ): IO[IOException, FileLock] =
-      IO.effect(new FileLock(channel.lock(position, size, shared))).refineToOrDie[IOException]
+    )(implicit trace: ZTraceElement): IO[IOException, FileLock] =
+      IO.attempt(new FileLock(channel.lock(position, size, shared))).refineToOrDie[IOException]
 
   }
 
-  override def useBlocking[R, E, A](f: BlockingFileOps => ZIO[R, E, A]): ZIO[R with Blocking, E, A] =
+  override def useBlocking[R, E, A](f: BlockingFileOps => ZIO[R, E, A])(implicit
+    trace: ZTraceElement
+  ): ZIO[R with Any, E, A] =
     nioBlocking(f(new BlockingOps))
 
   /**
    * Returns the current value of this channel's position.
    */
-  def position: IO[IOException, Long] = IO.effect(channel.position()).refineToOrDie[IOException]
+  def position(implicit trace: ZTraceElement): IO[IOException, Long] =
+    IO.attempt(channel.position()).refineToOrDie[IOException]
 
   /**
    * Sets this channel's position. Setting the position to a value that is greater than the file's current size is legal
@@ -172,13 +183,13 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
    * @param newPosition
    *   The new position, must be >= 0
    */
-  def position(newPosition: Long): IO[IOException, Unit] =
-    IO.effect(channel.position(newPosition)).unit.refineToOrDie[IOException]
+  def position(newPosition: Long)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+    IO.attempt(channel.position(newPosition)).unit.refineToOrDie[IOException]
 
   /**
    * Returns the current size of this channel's file.
    */
-  def size: IO[IOException, Long] = IO.effect(channel.size()).refineToOrDie[IOException]
+  def size(implicit trace: ZTraceElement): IO[IOException, Long] = IO.attempt(channel.size()).refineToOrDie[IOException]
 
   /**
    * Attempts to acquire a lock on the given region of this channel's file. This method does not block. An invocation
@@ -198,8 +209,8 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
     position: Long = 0L,
     size: Long = Long.MaxValue,
     shared: Boolean = false
-  ): IO[IOException, Option[FileLock]] =
-    ZIO.effect(Option(channel.tryLock(position, size, shared)).map(new FileLock(_))).refineToOrDie[IOException]
+  )(implicit trace: ZTraceElement): IO[IOException, Option[FileLock]] =
+    ZIO.attempt(Option(channel.tryLock(position, size, shared)).map(new FileLock(_))).refineToOrDie[IOException]
 
 }
 
@@ -220,8 +231,8 @@ object FileChannel {
     path: Path,
     options: Set[_ <: OpenOption],
     attrs: FileAttribute[_]*
-  ): Managed[IOException, FileChannel] =
-    IO.effect(new FileChannel(JFileChannel.open(path.javaPath, options.asJava, attrs: _*)))
+  )(implicit trace: ZTraceElement): Managed[IOException, FileChannel] =
+    IO.attempt(new FileChannel(JFileChannel.open(path.javaPath, options.asJava, attrs: _*)))
       .refineToOrDie[IOException]
       .toNioManaged
 
@@ -233,8 +244,8 @@ object FileChannel {
    * @param options
    *   Specifies how the file is opened
    */
-  def open(path: Path, options: OpenOption*): Managed[IOException, FileChannel] =
-    IO.effect(new FileChannel(JFileChannel.open(path.javaPath, options: _*)))
+  def open(path: Path, options: OpenOption*)(implicit trace: ZTraceElement): Managed[IOException, FileChannel] =
+    IO.attempt(new FileChannel(JFileChannel.open(path.javaPath, options: _*)))
       .refineToOrDie[IOException]
       .toNioManaged
 
