@@ -20,7 +20,7 @@ import scala.util.control.Exception._
 object ToUppercaseAsAService extends ZIOAppDefault {
 
   private val upperCaseIfier: ZPipeline[Any, Nothing, Char, Char] =
-    ZPipeline.identity[Char] >>> ZPipeline.map(_.toUpper)
+    ZPipeline.identity[Char] >>> ZPipeline.map[Char, Char](_.toUpper)
 
   private def handleConnection(
     socket: SocketChannel
