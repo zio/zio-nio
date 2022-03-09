@@ -139,20 +139,6 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
 
 object AsynchronousByteChannel {
 
-  private def completionHandlerCallback[A](
-    k: IO[IOException, A] => Unit
-  )(implicit trace: ZTraceElement): CompletionHandler[A, Any] =
-    new CompletionHandler[A, Any] {
-      def completed(result: A, u: Any): Unit = k(IO.succeedNow(result))
-
-      def failed(t: Throwable, u: Any): Unit =
-        t match {
-          case e: IOException => k(IO.fail(e))
-          case _              => k(IO.die(t))
-        }
-
-    }
-
   /**
    * Encapsulates an asynchronous channel callback into an effect value, with interruption support.
    *
@@ -161,10 +147,10 @@ object AsynchronousByteChannel {
   private[channels] def effectAsyncChannel[C <: JChannel, A](
     channel: C
   )(op: C => CompletionHandler[A, Any] => Any)(implicit trace: ZTraceElement): IO[IOException, A] =
-    IO.asyncInterrupt { k =>
-      op(channel)(completionHandlerCallback(k))
-      Left(IO.attempt(channel.close()).ignore)
-    }
+    Task(op(channel))
+      .flatMap(Task.effectAsyncWithCompletionHandler)
+      .refineToOrDie[IOException]
+      .onInterrupt(IO.effect(channel.close()).ignore)
 
 }
 
