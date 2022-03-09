@@ -99,25 +99,24 @@
 <span class="hljs-keyword">import</span> zio.nio.channels._
 <span class="hljs-keyword">import</span> zio.nio.file.<span class="hljs-type">Path</span>
 <span class="hljs-keyword">import</span> zio.stream.<span class="hljs-type">ZStream</span>
-<span class="hljs-keyword">import</span> zio.blocking.<span class="hljs-type">Blocking</span>
-<span class="hljs-keyword">import</span> zio.console
+<span class="hljs-keyword">import</span> zio.<span class="hljs-type">Console</span>
 <span class="hljs-keyword">import</span> zio.<span class="hljs-type">ZIO</span>
 
 <span class="hljs-comment">// dump a file encoded in ISO8859 to the console</span>
 
 <span class="hljs-type">FileChannel</span>.open(<span class="hljs-type">Path</span>(<span class="hljs-string">"iso8859.txt"</span>)).useNioBlockingOps { fileOps =&gt;
-  <span class="hljs-keyword">val</span> inStream: <span class="hljs-type">ZStream</span>[<span class="hljs-type">Blocking</span>, <span class="hljs-type">Exception</span>, <span class="hljs-type">Byte</span>] = <span class="hljs-type">ZStream</span>.repeatEffectChunkOption {
+  <span class="hljs-keyword">val</span> inStream: <span class="hljs-type">ZStream</span>[<span class="hljs-type">Any</span>, <span class="hljs-type">Exception</span>, <span class="hljs-type">Byte</span>] = <span class="hljs-type">ZStream</span>.repeatZIOChunkOption {
     fileOps.readChunk(<span class="hljs-number">1000</span>).asSomeError.flatMap { chunk =&gt;
       <span class="hljs-keyword">if</span> (chunk.isEmpty) <span class="hljs-type">ZIO</span>.fail(<span class="hljs-type">None</span>) <span class="hljs-keyword">else</span> <span class="hljs-type">ZIO</span>.succeed(chunk)
     }
   }
 
   <span class="hljs-comment">// apply decoding transducer</span>
-  <span class="hljs-keyword">val</span> charStream: <span class="hljs-type">ZStream</span>[<span class="hljs-type">Blocking</span>, <span class="hljs-type">Exception</span>, <span class="hljs-type">Char</span>] =
-    inStream.transduce(<span class="hljs-type">Charset</span>.<span class="hljs-type">Standard</span>.iso8859_1.newDecoder.transducer())
+  <span class="hljs-keyword">val</span> charStream: <span class="hljs-type">ZStream</span>[<span class="hljs-type">Any</span>, <span class="hljs-type">Exception</span>, <span class="hljs-type">Char</span>] =
+    inStream.via(<span class="hljs-type">Charset</span>.<span class="hljs-type">Standard</span>.iso8859_1.newDecoder.transducer())
 
-  console.putStrLn(<span class="hljs-string">"ISO8859 file contents:"</span>) *&gt;
-    charStream.foreachChunk(chars =&gt; console.putStr(chars.mkString))
+  <span class="hljs-type">Console</span>.printLine(<span class="hljs-string">"ISO8859 file contents:"</span>) *&gt;
+    charStream.runForeachChunk(chars =&gt; <span class="hljs-type">Console</span>.printLine(chars.mkString))
 }
 </code></pre>
 </span></div></article></div><div class="docs-prevnext"><a class="docs-prev button" href="/zio-nio/docs/essentials/essentials_resources"><span class="arrow-prev">← </span><span>Resource Management</span></a></div></div></div><nav class="onPageNav"><ul class="toc-headings"><li><a href="#charset"><code>Charset</code></a><ul class="toc-headings"><li><a href="#standard-charsets">Standard Charsets</a></li><li><a href="#example">Example</a></li></ul></li><li><a href="#stream-encoding-and-decoding">Stream Encoding and Decoding</a></li></ul></nav></div><footer class="nav-footer" id="footer"><section><div><div class="gitter-open-chat-button">Open Chat</div><script type="text/javascript">
