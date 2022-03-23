@@ -3,7 +3,7 @@ package file
 
 import zio.ZIO.attemptBlockingIO
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, UIO, ZIO, ZManaged, ZTraceElement}
+import zio.{IO, UIO, Scope, ZIO, ZTraceElement}
 
 import java.io.IOException
 import java.net.URI
@@ -38,7 +38,7 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) exten
 
   def getUserPrincipalLookupService: UserPrincipalLookupService = javaFileSystem.getUserPrincipalLookupService
 
-  def newWatchService(implicit trace: ZTraceElement): ZManaged[Any, IOException, WatchService] =
+  def newWatchService(implicit trace: ZTraceElement): ZIO[Scope, IOException, WatchService] =
     attemptBlockingIO(WatchService.fromJava(javaFileSystem.newWatchService())).toNioManaged
 
 }
@@ -63,17 +63,17 @@ object FileSystem {
 
   def newFileSystem(uri: URI, env: (String, Any)*)(implicit
     trace: ZTraceElement
-  ): ZManaged[Any, IOException, FileSystem] =
+  ): ZIO[Scope, IOException, FileSystem] =
     attemptBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(uri, env.toMap.asJava))).toNioManaged
 
   def newFileSystem(uri: URI, env: Map[String, _], loader: ClassLoader)(implicit
     trace: ZTraceElement
-  ): ZManaged[Any, Exception, FileSystem] =
+  ): ZIO[Scope, Exception, FileSystem] =
     attemptBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(uri, env.asJava, loader))).toNioManaged
 
   def newFileSystem(path: Path, loader: ClassLoader)(implicit
     trace: ZTraceElement
-  ): ZManaged[Any, IOException, FileSystem] =
+  ): ZIO[Scope, IOException, FileSystem] =
     attemptBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(path.javaPath, loader))).toNioManaged
 
 }

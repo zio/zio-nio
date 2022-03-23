@@ -16,35 +16,37 @@ import java.nio.file.{StandardWatchEventKinds, WatchEvent}
 object StreamDirWatch extends ZIOAppDefault {
 
   private def watch(dir: Path) =
-    WatchService.forDefaultFileSystem.use { service =>
-      for {
-        _ <- dir.registerTree(
-               watcher = service,
-               events = Set(
-                 StandardWatchEventKinds.ENTRY_CREATE,
-                 StandardWatchEventKinds.ENTRY_MODIFY,
-                 StandardWatchEventKinds.ENTRY_DELETE
-               ),
-               maxDepth = 100
-             )
-        _ <- Console.printLine(s"Watching directory '$dir'")
-        _ <- Console.printLine("")
-        _ <- service.stream.foreach { key =>
-               val eventProcess = { (event: WatchEvent[_]) =>
-                 val desc = event.kind() match {
-                   case StandardWatchEventKinds.ENTRY_CREATE => "Create"
-                   case StandardWatchEventKinds.ENTRY_MODIFY => "Modify"
-                   case StandardWatchEventKinds.ENTRY_DELETE => "Delete"
-                   case StandardWatchEventKinds.OVERFLOW     => "** Overflow **"
-                   case other                                => s"Unknown: $other"
+    ZIO.scoped(
+      WatchService.forDefaultFileSystem.flatMap { service =>
+        for {
+          _ <- dir.registerTree(
+                 watcher = service,
+                 events = Set(
+                   StandardWatchEventKinds.ENTRY_CREATE,
+                   StandardWatchEventKinds.ENTRY_MODIFY,
+                   StandardWatchEventKinds.ENTRY_DELETE
+                 ),
+                 maxDepth = 100
+               )
+          _ <- Console.printLine(s"Watching directory '$dir'")
+          _ <- Console.printLine("")
+          _ <- service.stream.foreach { key =>
+                 val eventProcess = { (event: WatchEvent[_]) =>
+                   val desc = event.kind() match {
+                     case StandardWatchEventKinds.ENTRY_CREATE => "Create"
+                     case StandardWatchEventKinds.ENTRY_MODIFY => "Modify"
+                     case StandardWatchEventKinds.ENTRY_DELETE => "Delete"
+                     case StandardWatchEventKinds.OVERFLOW     => "** Overflow **"
+                     case other                                => s"Unknown: $other"
+                   }
+                   val path = key.resolveEventPath(event).getOrElse("** PATH UNKNOWN **")
+                   Console.printLine(s"$desc, count: ${event.count()}, $path")
                  }
-                 val path = key.resolveEventPath(event).getOrElse("** PATH UNKNOWN **")
-                 Console.printLine(s"$desc, count: ${event.count()}, $path")
+                 ZIO.scoped(key.pollEventsManaged.flatMap(ZIO.foreachDiscard(_)(eventProcess)))
                }
-               key.pollEventsManaged.use(ZIO.foreachDiscard(_)(eventProcess))
-             }
-      } yield ()
-    }
+        } yield ()
+      }
+    )
 
   override def run: URIO[zio.ZEnv with ZIOAppArgs, ExitCode] =
     ZIO

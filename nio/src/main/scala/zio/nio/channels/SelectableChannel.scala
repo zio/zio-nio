@@ -4,7 +4,7 @@ package channels
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.channels.spi.SelectorProvider
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{Fiber, IO, Managed, UIO, ZIO, ZManaged, ZTraceElement}
+import zio.{Fiber, IO, Scope, UIO, ZIO, ZTraceElement}
 
 import java.io.IOException
 import java.net.{ServerSocket => JServerSocket, Socket => JSocket, SocketOption}
@@ -95,10 +95,10 @@ trait SelectableChannel extends BlockingChannel {
    * @param f
    *   Uses the `NonBlockingOps` appropriate for this channel type to produce non-blocking effects.
    */
-  final def useNonBlockingManaged[R, E >: IOException, A](f: NonBlockingOps => ZManaged[R, E, A])(implicit
+  final def useNonBlockingManaged[R, E >: IOException, A](f: NonBlockingOps => ZIO[Scope with R, E, A])(implicit
     trace: ZTraceElement
-  ): ZManaged[R, E, A] =
-    configureBlocking(false).toManaged *> f(makeNonBlockingOps)
+  ): ZIO[Scope with R, E, A] =
+    ZIO.scoped(configureBlocking(false)) *> f(makeNonBlockingOps)
 
 }
 
@@ -170,10 +170,10 @@ object SocketChannel {
 
   def fromJava(javaSocketChannel: JSocketChannel): SocketChannel = new SocketChannel(javaSocketChannel)
 
-  def open(implicit trace: ZTraceElement): Managed[IOException, SocketChannel] =
+  def open(implicit trace: ZTraceElement): ZIO[Scope, IOException, SocketChannel] =
     IO.attempt(new SocketChannel(JSocketChannel.open())).refineToOrDie[IOException].toNioManaged
 
-  def open(remote: SocketAddress)(implicit trace: ZTraceElement): Managed[IOException, SocketChannel] =
+  def open(remote: SocketAddress)(implicit trace: ZTraceElement): ZIO[Scope, IOException, SocketChannel] =
     IO.attempt(new SocketChannel(JSocketChannel.open(remote.jSocketAddress))).refineToOrDie[IOException].toNioManaged
 
 }
@@ -195,7 +195,7 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
      * @return
      *   The channel for the accepted socket connection.
      */
-    def accept(implicit trace: ZTraceElement): Managed[IOException, SocketChannel] =
+    def accept(implicit trace: ZTraceElement): ZIO[Scope, IOException, SocketChannel] =
       IO.attempt(new SocketChannel(channel.accept())).refineToOrDie[IOException].toNioManaged
 
     /**
@@ -225,13 +225,13 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
      * @return
      *   None if no connection is currently available to be accepted.
      */
-    def accept(implicit trace: ZTraceElement): Managed[IOException, Option[SocketChannel]] =
-      IO.attempt(Option(channel.accept()).map(new SocketChannel(_)))
-        .refineToOrDie[IOException]
-        .toManagedWith(IO.whenCase(_) { case Some(channel) =>
-          channel.close.ignore
-        })
-
+    def accept(implicit trace: ZTraceElement): ZIO[Scope, IOException, Option[SocketChannel]] =
+      ZIO.acquireRelease(
+        IO.attempt(Option(channel.accept()).map(new SocketChannel(_)))
+          .refineToOrDie[IOException]
+      )(IO.whenCase(_) { case Some(channel) =>
+        channel.close.ignore
+      })
   }
 
   override protected def makeNonBlockingOps: NonBlockingServerSocketOps = new NonBlockingServerSocketOps
@@ -257,7 +257,7 @@ final class ServerSocketChannel(override protected val channel: JServerSocketCha
 
 object ServerSocketChannel {
 
-  def open(implicit trace: ZTraceElement): Managed[IOException, ServerSocketChannel] =
+  def open(implicit trace: ZTraceElement): ZIO[Scope, IOException, ServerSocketChannel] =
     IO.attempt(new ServerSocketChannel(JServerSocketChannel.open())).refineToOrDie[IOException].toNioManaged
 
   def fromJava(javaChannel: JServerSocketChannel): ServerSocketChannel = new ServerSocketChannel(javaChannel)

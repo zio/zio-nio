@@ -92,11 +92,11 @@ final class CharsetDecoder private (val javaDecoder: j.CharsetDecoder) extends A
   )(implicit trace: ZTraceElement): ZPipeline[Any, j.CharacterCodingException, Byte, Char] = {
     def push(implicit
       trace: ZTraceElement
-    ): Managed[Nothing, Option[Chunk[Byte]] => IO[j.CharacterCodingException, Chunk[Char]]] =
+    ): ZIO[Scope, Nothing, Option[Chunk[Byte]] => IO[j.CharacterCodingException, Chunk[Char]]] =
       for {
-        _          <- reset.toManaged
-        byteBuffer <- Buffer.byte(bufSize).toManaged
-        charBuffer <- Buffer.char((bufSize.toFloat * this.averageCharsPerByte).round).toManaged
+        _          <- reset
+        byteBuffer <- Buffer.byte(bufSize)
+        charBuffer <- Buffer.char((bufSize.toFloat * this.averageCharsPerByte).round)
       } yield {
 
         def handleCoderResult(coderResult: CoderResult)(implicit trace: ZTraceElement) =

@@ -3,7 +3,7 @@ package zio.nio.file
 import zio.nio.BaseSpec
 import zio.test.Assertion._
 import zio.test._
-import zio.{Chunk, Clock, Random, Ref}
+import zio.{Chunk, Clock, Random, Ref, ZIO}
 
 object FilesSpec extends BaseSpec {
 
@@ -17,12 +17,14 @@ object FilesSpec extends BaseSpec {
         val sampleFileContent = Chunk.fromArray("createTempFileInManaged works!".getBytes)
         for {
           pathRef <- Ref.make[Option[Path]](None)
-          readBytes <- Files
+          readBytes <- ZIO.scoped(
+            Files
                          .createTempFileInManaged(dir = Path("."))
-                         .use { tmpFile =>
+                         .flatMap { tmpFile =>
                            pathRef.set(Some(tmpFile)) *> writeAndThenRead(tmpFile)(sampleFileContent)
                          }
-          Some(tmpFilePath)       <- pathRef.get
+    )
+          tmpFilePath <- pathRef.get.someOrFailException
           tmpFileExistsAfterUsage <- Files.exists(tmpFilePath)
         } yield assert(readBytes)(equalTo(sampleFileContent)) &&
           assert(tmpFileExistsAfterUsage)(isFalse)
@@ -31,12 +33,14 @@ object FilesSpec extends BaseSpec {
         val sampleFileContent = Chunk.fromArray("createTempFileManaged works!".getBytes)
         for {
           pathRef <- Ref.make[Option[Path]](None)
-          readBytes <- Files
+          readBytes <- ZIO.scoped(
+            Files
                          .createTempFileManaged()
-                         .use { tmpFile =>
+                         .flatMap { tmpFile =>
                            pathRef.set(Some(tmpFile)) *> writeAndThenRead(tmpFile)(sampleFileContent)
                          }
-          Some(tmpFilePath)       <- pathRef.get
+    )
+          tmpFilePath       <- pathRef.get.someOrFailException
           tmpFileExistsAfterUsage <- Files.exists(tmpFilePath)
         } yield assert(readBytes)(equalTo(sampleFileContent)) &&
           assert(tmpFileExistsAfterUsage)(isFalse)
@@ -45,16 +49,18 @@ object FilesSpec extends BaseSpec {
         val sampleFileContent = Chunk.fromArray("createTempDirectoryManaged works!".getBytes)
         for {
           pathRef <- Ref.make[Option[Path]](None)
-          readBytes <- Files
+          readBytes <- ZIO.scoped(
+            Files
                          .createTempDirectoryManaged(
                            prefix = None,
                            fileAttributes = Nil
                          )
-                         .use { tmpDir =>
+                         .flatMap { tmpDir =>
                            val sampleFile = tmpDir / "createTempDirectoryManaged"
                            pathRef.set(Some(tmpDir)) *> createAndWriteAndThenRead(sampleFile)(sampleFileContent)
                          }
-          Some(tmpFilePath)       <- pathRef.get
+    )
+          tmpFilePath       <- pathRef.get.someOrFailException
           tmpFileExistsAfterUsage <- Files.exists(tmpFilePath)
         } yield assert(readBytes)(equalTo(sampleFileContent)) &&
           assert(tmpFileExistsAfterUsage)(isFalse)
@@ -63,17 +69,19 @@ object FilesSpec extends BaseSpec {
         val sampleFileContent = Chunk.fromArray("createTempDirectoryManaged(dir) works!".getBytes)
         for {
           pathRef <- Ref.make[Option[Path]](None)
-          readBytes <- Files
+          readBytes <- ZIO.scoped(
+            Files
                          .createTempDirectoryManaged(
                            dir = Path("."),
                            prefix = None,
                            fileAttributes = Nil
                          )
-                         .use { tmpDir =>
+                         .flatMap { tmpDir =>
                            val sampleFile = tmpDir / "createTempDirectoryManaged2"
                            pathRef.set(Some(tmpDir)) *> createAndWriteAndThenRead(sampleFile)(sampleFileContent)
                          }
-          Some(tmpFilePath)       <- pathRef.get
+    )
+          tmpFilePath       <- pathRef.get.someOrFailException
           tmpFileExistsAfterUsage <- Files.exists(tmpFilePath)
         } yield assert(readBytes)(equalTo(sampleFileContent)) &&
           assert(tmpFileExistsAfterUsage)(isFalse)

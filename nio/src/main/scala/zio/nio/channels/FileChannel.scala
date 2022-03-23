@@ -4,7 +4,7 @@ import com.github.ghik.silencer.silent
 import zio.nio.file.Path
 import zio.nio.{ByteBuffer, IOCloseableManagement, MappedByteBuffer}
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, Managed, ZIO, ZTraceElement}
+import zio.{IO, Scope, ZIO, ZTraceElement}
 
 import java.io.IOException
 import java.nio.channels.{FileChannel => JFileChannel}
@@ -231,7 +231,7 @@ object FileChannel {
     path: Path,
     options: Set[_ <: OpenOption],
     attrs: FileAttribute[_]*
-  )(implicit trace: ZTraceElement): Managed[IOException, FileChannel] =
+  )(implicit trace: ZTraceElement): ZIO[Scope, IOException, FileChannel] =
     IO.attempt(new FileChannel(JFileChannel.open(path.javaPath, options.asJava, attrs: _*)))
       .refineToOrDie[IOException]
       .toNioManaged
@@ -244,7 +244,7 @@ object FileChannel {
    * @param options
    *   Specifies how the file is opened
    */
-  def open(path: Path, options: OpenOption*)(implicit trace: ZTraceElement): Managed[IOException, FileChannel] =
+  def open(path: Path, options: OpenOption*)(implicit trace: ZTraceElement): ZIO[Scope, IOException, FileChannel] =
     IO.attempt(new FileChannel(JFileChannel.open(path.javaPath, options: _*)))
       .refineToOrDie[IOException]
       .toNioManaged

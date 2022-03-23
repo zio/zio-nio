@@ -18,36 +18,43 @@ object ChannelSpec extends BaseSpec {
   ] =
     suite("Channel")(
       test("localAddress") {
-        SocketChannel.open.use { con =>
-          for {
-            _            <- con.bindAuto
-            localAddress <- con.localAddress
-          } yield assert(localAddress)(isSome(isSubtype[InetSocketAddress](anything)))
-        }
+        ZIO.scoped(
+          SocketChannel.open.flatMap { con =>
+            for {
+              _            <- con.bindAuto
+              localAddress <- con.localAddress
+            } yield assert(localAddress)(isSome(isSubtype[InetSocketAddress](anything)))
+          }
+        )
       },
       suite("AsynchronousSocketChannel")(
         test("read/write") {
           def echoServer(started: Promise[Nothing, SocketAddress])(implicit trace: ZTraceElement): IO[Exception, Unit] =
             for {
               sink <- Buffer.byte(3)
-              _ <- AsynchronousServerSocketChannel.open.use { server =>
+              _ <- ZIO.scoped(
+                AsynchronousServerSocketChannel.open.flatMap { server =>
                      for {
                        _    <- server.bindAuto()
                        addr <- server.localAddress.flatMap(opt => IO.attempt(opt.get).orDie)
                        _    <- started.succeed(addr)
-                       _ <- server.accept.use { worker =>
+                       _ <- ZIO.scoped(
+                              server.accept.flatMap { worker =>
                               worker.read(sink) *>
                                 sink.flip *>
                                 worker.write(sink)
                             }
+                            )
                      } yield ()
-                   }.fork
+                   }
+                  ).fork
             } yield ()
 
           def echoClient(address: SocketAddress)(implicit trace: ZTraceElement): IO[Exception, Boolean] =
             for {
               src <- Buffer.byte(3)
-              result <- AsynchronousSocketChannel.open.use { client =>
+              result <- ZIO.scoped(
+              AsynchronousSocketChannel.open.flatMap { client =>
                           for {
                             _        <- client.connect(address)
                             sent     <- src.array
@@ -58,6 +65,7 @@ object ChannelSpec extends BaseSpec {
                             received <- src.array
                           } yield sent.sameElements(received)
                         }
+      )
             } yield result
 
           for {
@@ -72,28 +80,32 @@ object ChannelSpec extends BaseSpec {
             trace: ZTraceElement
           ): IO[Exception, Fiber[Exception, Boolean]] =
             for {
-              result <- AsynchronousServerSocketChannel.open.use { server =>
+              result <- ZIO.scoped(
+                AsynchronousServerSocketChannel.open.flatMap { server =>
                           for {
                             _    <- server.bindAuto()
                             addr <- server.localAddress.flatMap(opt => IO.attempt(opt.get).orDie)
                             _    <- started.succeed(addr)
-                            result <- server.accept
-                                        .use(worker => worker.readChunk(3) *> worker.readChunk(3) *> ZIO.succeed(false))
+                            result <- ZIO.scoped(
+                              server.accept
+                                        .flatMap(worker => worker.readChunk(3) *> worker.readChunk(3) *> ZIO.succeed(false))
+                                      )
                                         .catchSome { case _: java.io.EOFException =>
                                           ZIO.succeed(true)
                                         }
                           } yield result
-                        }.fork
+                        }).fork
             } yield result
 
           def client(address: SocketAddress)(implicit trace: ZTraceElement): IO[Exception, Unit] =
             for {
-              _ <- AsynchronousSocketChannel.open.use { client =>
+              _ <- ZIO.scoped(AsynchronousSocketChannel.open.flatMap { client =>
                      for {
                        _ <- client.connect(address)
                        _  = client.writeChunk(Chunk.fromArray(Array[Byte](1, 1, 1)))
                      } yield ()
                    }
+              )
             } yield ()
 
           for {
@@ -106,62 +118,70 @@ object ChannelSpec extends BaseSpec {
         },
         test("close channel unbind port") {
           def client(address: SocketAddress)(implicit trace: ZTraceElement): IO[Exception, Unit] =
-            AsynchronousSocketChannel.open.use {
+            ZIO.scoped(AsynchronousSocketChannel.open.flatMap {
               _.connect(address)
             }
+            )
 
           def server(
             started: Promise[Nothing, SocketAddress]
-          )(implicit trace: ZTraceElement): Managed[IOException, Fiber[Exception, Unit]] =
+          )(implicit trace: ZTraceElement): ZIO[Scope, IOException, Fiber[Exception, Unit]] =
             for {
               server <- AsynchronousServerSocketChannel.open
-              _      <- server.bindAuto().toManaged
-              addr   <- server.localAddress.someOrElseZIO(IO.die(new NoSuchElementException)).toManaged
-              _      <- started.succeed(addr).toManaged
+              _      <- server.bindAuto()
+              addr   <- server.localAddress.someOrElseZIO(IO.die(new NoSuchElementException))
+              _      <- started.succeed(addr)
               worker <- server.accept.unit.fork
             } yield worker
 
           for {
             serverStarted1 <- Promise.make[Nothing, SocketAddress]
-            _ <- server(serverStarted1).use { s1 =>
+            _ <- ZIO.scoped(server(serverStarted1).flatMap { s1 =>
                    serverStarted1.await.flatMap(client).zipRight(s1.join)
                  }
+            )
             serverStarted2 <- Promise.make[Nothing, SocketAddress]
-            _ <- server(serverStarted2).use { s2 =>
+            _ <- ZIO.scoped(server(serverStarted2).flatMap { s2 =>
                    serverStarted2.await.flatMap(client).zipRight(s2.join)
                  }
+            )
           } yield assertCompletes
         },
         test("read can be interrupted") {
           live {
+            ZIO.scoped(
             AsynchronousServerSocketChannel.open
-              .tapZIO(_.bindAuto())
-              .use { serverChannel =>
+              .tap(_.bindAuto())
+              .flatMap { serverChannel =>
                 for {
                   serverAddress <-
                     serverChannel.localAddress.someOrElseZIO(ZIO.dieMessage("Local address must be bound"))
                   promise <- Promise.make[Nothing, Unit]
-                  fiber <- AsynchronousSocketChannel.open
-                             .tapZIO(_.connect(serverAddress))
-                             .use(channel => promise.succeed(()) *> channel.readChunk(1))
+                  fiber <- ZIO.scoped(
+                    AsynchronousSocketChannel.open
+                             .tap(_.connect(serverAddress))
+                             .flatMap(channel => promise.succeed(()) *> channel.readChunk(1))
+            )
                              .fork
                   _    <- promise.await
                   _    <- ZIO.sleep(500.milliseconds)
                   exit <- fiber.interrupt
                 } yield assert(exit)(isInterrupted)
-
               }
+            )
           }
         },
         test("accept can be interrupted") {
           live {
-            AsynchronousServerSocketChannel.open.tapZIO(_.bindAuto()).use { serverChannel =>
+            ZIO.scoped(
+            AsynchronousServerSocketChannel.open.tap(_.bindAuto()).flatMap { serverChannel =>
               for {
-                fiber <- serverChannel.accept.useNow.fork
+                fiber <- ZIO.scoped(serverChannel.accept).fork
                 _     <- ZIO.sleep(500.milliseconds)
                 exit  <- fiber.interrupt
               } yield assert(exit)(isInterrupted)
             }
+      )
           }
         }
       ),
@@ -182,7 +202,7 @@ object ChannelSpec extends BaseSpec {
           live {
             for {
               promise <- Promise.make[Nothing, Unit]
-              fiber <- Pipe.open.toManaged
+              fiber <- Pipe.open
                          .flatMap(_.source)
                          .useNioBlockingOps(ops => promise.succeed(()) *> ops.readChunk(1))
                          .fork
@@ -238,15 +258,17 @@ object ChannelSpec extends BaseSpec {
         },
         test("accept can be interrupted") {
           live {
-            ServerSocketChannel.open.tapZIO(_.bindAuto()).use { serverChannel =>
+            ZIO.scoped(
+            ServerSocketChannel.open.tap(_.bindAuto()).flatMap { serverChannel =>
               for {
                 promise <- Promise.make[Nothing, Unit]
-                fiber   <- serverChannel.useBlocking(ops => promise.succeed(()) *> ops.accept.useNow).fork
+                fiber   <- serverChannel.useBlocking(ops => promise.succeed(()) *> ZIO.scoped(ops.accept)).fork
                 _       <- promise.await
                 _       <- ZIO.sleep(500.milliseconds)
                 exit    <- fiber.interrupt
               } yield assert(exit)(isInterrupted)
             }
+            )
           }
         }
       )

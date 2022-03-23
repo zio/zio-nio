@@ -4,7 +4,7 @@ package channels
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.stream.{Stream, ZStream}
-import zio.{Chunk, IO, UIO, ZTraceElement}
+import zio.{Chunk, IO, UIO, ZIO, ZTraceElement}
 
 import java.io.{EOFException, IOException}
 import java.nio.channels.{ScatteringByteChannel => JScatteringByteChannel}
@@ -93,8 +93,8 @@ trait ScatteringByteOps {
   def stream(
     bufferConstruct: UIO[ByteBuffer]
   )(implicit trace: ZTraceElement): Stream[IOException, Byte] =
-    ZStream.unwrapManaged {
-      bufferConstruct.toManaged.map { buffer =>
+    ZStream.unwrapScoped {
+      ZIO.scoped(bufferConstruct).map { buffer =>
         val doRead = for {
           _     <- read(buffer)
           _     <- buffer.flip

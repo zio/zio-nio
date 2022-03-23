@@ -74,8 +74,8 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
     ZSink.fromPush {
       val bufferConstruct = bufferConstruct0
       for {
-        buffer   <- bufferConstruct.toManaged
-        countRef <- Ref.makeManaged(0L)
+        buffer   <- bufferConstruct
+        countRef <- Ref.make(0L)
       } yield (_: Option[Chunk[Byte]]).map { chunk =>
         def doWrite(total: Int, c: Chunk[Byte])(implicit
           trace: ZTraceElement
@@ -118,8 +118,8 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
   def stream(
     bufferConstruct: UIO[ByteBuffer]
   )(implicit trace: ZTraceElement): Stream[IOException, Byte] =
-    ZStream.unwrapManaged {
-      bufferConstruct.toManaged.map { buffer =>
+    ZStream.unwrapScoped {
+      bufferConstruct.map { buffer =>
         val doRead = for {
           _     <- read(buffer)
           _     <- buffer.flip
@@ -174,7 +174,7 @@ final class AsynchronousServerSocketChannel(protected val channel: JAsynchronous
   /**
    * Accepts a connection.
    */
-  def accept(implicit trace: ZTraceElement): Managed[IOException, AsynchronousSocketChannel] =
+  def accept(implicit trace: ZTraceElement): ZIO[Scope, IOException, AsynchronousSocketChannel] =
     AsynchronousByteChannel
       .effectAsyncChannel[JAsynchronousServerSocketChannel, JAsynchronousSocketChannel](channel)(c => c.accept((), _))
       .map(AsynchronousSocketChannel.fromJava)
@@ -193,14 +193,14 @@ final class AsynchronousServerSocketChannel(protected val channel: JAsynchronous
 
 object AsynchronousServerSocketChannel {
 
-  def open(implicit trace: ZTraceElement): Managed[IOException, AsynchronousServerSocketChannel] =
+  def open(implicit trace: ZTraceElement): ZIO[Scope, IOException, AsynchronousServerSocketChannel] =
     IO.attempt(new AsynchronousServerSocketChannel(JAsynchronousServerSocketChannel.open()))
       .refineToOrDie[IOException]
       .toNioManaged
 
   def open(
     channelGroup: AsynchronousChannelGroup
-  )(implicit trace: ZTraceElement): Managed[IOException, AsynchronousServerSocketChannel] =
+  )(implicit trace: ZTraceElement): ZIO[Scope, IOException, AsynchronousServerSocketChannel] =
     IO.attempt(new AsynchronousServerSocketChannel(JAsynchronousServerSocketChannel.open(channelGroup.channelGroup)))
       .refineToOrDie[IOException]
       .toNioManaged
@@ -349,14 +349,14 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
 
 object AsynchronousSocketChannel {
 
-  def open(implicit trace: ZTraceElement): Managed[IOException, AsynchronousSocketChannel] =
+  def open(implicit trace: ZTraceElement): ZIO[Scope, IOException, AsynchronousSocketChannel] =
     IO.attempt(new AsynchronousSocketChannel(JAsynchronousSocketChannel.open()))
       .refineToOrDie[IOException]
       .toNioManaged
 
   def open(
     channelGroup: AsynchronousChannelGroup
-  )(implicit trace: ZTraceElement): Managed[IOException, AsynchronousSocketChannel] =
+  )(implicit trace: ZTraceElement): ZIO[Scope, IOException, AsynchronousSocketChannel] =
     IO.attempt(new AsynchronousSocketChannel(JAsynchronousSocketChannel.open(channelGroup.channelGroup)))
       .refineToOrDie[IOException]
       .toNioManaged

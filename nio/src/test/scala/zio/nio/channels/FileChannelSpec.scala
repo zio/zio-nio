@@ -31,7 +31,8 @@ object FileChannelSpec extends BaseSpec {
   ] =
     suite("FileChannelSpec")(
       test("asynchronous file buffer read") {
-        AsynchronousFileChannel.open(readFile, StandardOpenOption.READ).use { channel =>
+        ZIO.scoped(
+        AsynchronousFileChannel.open(readFile, StandardOpenOption.READ).flatMap { channel =>
           for {
             buffer <- Buffer.byte(16)
             _      <- channel.read(buffer, 0)
@@ -40,32 +41,36 @@ object FileChannelSpec extends BaseSpec {
             text    = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
           } yield assert(text)(equalTo(readFileContents))
         }
+    )
       },
       test("asynchronous file chunk read") {
-        AsynchronousFileChannel.open(readFile, StandardOpenOption.READ).use { channel =>
+        ZIO.scoped(
+        AsynchronousFileChannel.open(readFile, StandardOpenOption.READ).flatMap { channel =>
           for {
             bytes <- channel.readChunk(500, 0L)
             chars <- Charset.Standard.utf8.decodeChunk(bytes)
           } yield assert(chars.mkString)(equalTo(readFileContents))
         }
+    )
       },
       test("asynchronous file write") {
         val path = Path("nio/src/test/resources/async_file_write_test.txt")
+        ZIO.scoped(
         AsynchronousFileChannel
           .open(
             path,
             StandardOpenOption.CREATE,
             StandardOpenOption.WRITE
           )
-          .use { channel =>
+          .flatMap { channel =>
             for {
               buffer <- Buffer.byte(Chunk.fromArray("Hello World".getBytes))
               _      <- channel.write(buffer, 0)
               result <- loadViaSource(path)
               _      <- Files.delete(path)
             } yield assert(result.size)(equalTo(1)) && assert(result.head)(equalTo(readFileContents))
-
           }
+    )
       },
       test("memory mapped buffer") {
         for {
