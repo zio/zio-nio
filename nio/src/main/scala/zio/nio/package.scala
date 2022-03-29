@@ -1,7 +1,6 @@
 package zio
 
 import com.github.ghik.silencer.silent
-import zio.ZManaged.ReleaseMap
 import zio.stream.{ZChannel, ZPipeline, ZSink, ZStream}
 
 import java.io.EOFException
@@ -48,26 +47,8 @@ package object nio {
     private val acquire: ZIO[R, E, A]
   ) extends AnyVal {
 
-    def toNioManaged(implicit trace: ZTraceElement): ZManaged[R, E, A] =
-      ZManaged.acquireReleaseInterruptibleWith(acquire)(_.close.ignore)
+    def toNioScoped(implicit trace: ZTraceElement): ZIO[R with Scope, E, A] =
+      acquire.tap(a => ZIO.addFinalizer(a.close.ignore))
 
-  }
-
-  implicit final class ManagedOps[-R, +E, +A](private val managed: ZManaged[R, E, A]) extends AnyVal {
-
-    /**
-     * Use this managed resource in an effect running in a forked fiber. The resource will be released on the forked
-     * fiber after the effect exits, whether it succeeds, fails or is interrupted.
-     *
-     * @param f
-     *   The effect to run in a forked fiber. The resource is only valid within this effect.
-     */
-    def useForked[R2 <: R, E2 >: E, B](
-      f: A => ZIO[R2, E2, B]
-    )(implicit trace: ZTraceElement): ZIO[R2, E, Fiber[E2, B]] = ReleaseMap.make.flatMap { releaseMap =>
-      managed.zio.flatMap { case (finalizer, a: A) =>
-        f(a).onExit(finalizer).fork
-      }
-    }
   }
 }

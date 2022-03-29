@@ -33,9 +33,11 @@ import zio.nio.file.Path
 import java.io.IOException
 
 val read100: ZIO[Any, Option[IOException], Chunk[Byte]] =
-  FileChannel.open(Path("foo.txt"))
-    .useNioBlockingOps(_.readChunk(100))
-    .eofCheck
+  ZIO.scoped {
+    FileChannel.open(Path("foo.txt"))
+      .flatMapNioBlockingOps(_.readChunk(100))
+      .eofCheck
+  }
 ```
 
 End-of-stream will be signalled with `None`. Any errors will be wrapped in `Some`.

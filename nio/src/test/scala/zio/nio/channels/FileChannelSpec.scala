@@ -24,14 +24,10 @@ object FileChannelSpec extends BaseSpec {
       .acquireReleaseWith(s => ZIO.succeed(s.close()))(s => ZIO.attemptBlocking(s.getLines().toList))
       .orDie
 
-  override def spec: Spec[
-    Annotations with Live with Sized with TestClock with TestConfig with TestConsole with TestRandom with TestSystem with Clock with zio.Console with zio.System with Random,
-    TestFailure[Any],
-    TestSuccess
-  ] =
+  override def spec =
     suite("FileChannelSpec")(
       test("asynchronous file buffer read") {
-        AsynchronousFileChannel.open(readFile, StandardOpenOption.READ).use { channel =>
+        AsynchronousFileChannel.open(readFile, StandardOpenOption.READ).flatMap { channel =>
           for {
             buffer <- Buffer.byte(16)
             _      <- channel.read(buffer, 0)
@@ -42,7 +38,7 @@ object FileChannelSpec extends BaseSpec {
         }
       },
       test("asynchronous file chunk read") {
-        AsynchronousFileChannel.open(readFile, StandardOpenOption.READ).use { channel =>
+        AsynchronousFileChannel.open(readFile, StandardOpenOption.READ).flatMap { channel =>
           for {
             bytes <- channel.readChunk(500, 0L)
             chars <- Charset.Standard.utf8.decodeChunk(bytes)
@@ -57,7 +53,7 @@ object FileChannelSpec extends BaseSpec {
             StandardOpenOption.CREATE,
             StandardOpenOption.WRITE
           )
-          .use { channel =>
+          .flatMap { channel =>
             for {
               buffer <- Buffer.byte(Chunk.fromArray("Hello World".getBytes))
               _      <- channel.write(buffer, 0)
@@ -71,7 +67,7 @@ object FileChannelSpec extends BaseSpec {
         for {
           result <- FileChannel
                       .open(readFile, StandardOpenOption.READ)
-                      .useNioBlockingOps { ops =>
+                      .flatMapNioBlockingOps { ops =>
                         for {
                           buffer <- ops.map(FileChannel.MapMode.READ_ONLY, 0L, 6L)
                           bytes  <- buffer.getChunk()
@@ -83,7 +79,7 @@ object FileChannelSpec extends BaseSpec {
       test("end of stream") {
         FileChannel
           .open(readFile, StandardOpenOption.READ)
-          .useNioBlocking { (channel, ops) =>
+          .flatMapNioBlocking { (channel, ops) =>
             for {
               size <- channel.size
               _    <- ops.readChunk(size.toInt)
@@ -96,7 +92,7 @@ object FileChannelSpec extends BaseSpec {
       test("stream reading") {
         FileChannel
           .open(readFile, StandardOpenOption.READ)
-          .useNioBlockingOps {
+          .flatMapNioBlockingOps {
             _.stream().via(Charset.Standard.utf8.newDecoder.transducer()).runCollect.map(_.mkString)
           }
           .map(assert(_)(equalTo(readFileContents)))
@@ -109,7 +105,7 @@ object FileChannelSpec extends BaseSpec {
         val file   = Path("nio/src/test/resources/sink_write_test.txt")
         FileChannel
           .open(file, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW)
-          .useNioBlockingOps(channel => stream.run(channel.sink()))
+          .flatMapNioBlockingOps(channel => stream.run(channel.sink()))
           .zipRight(loadViaSource(file).ensuring(Files.delete(file).orDie))
           .map(lines => assert(lines.mkString("\n"))(equalTo(testData)))
       }

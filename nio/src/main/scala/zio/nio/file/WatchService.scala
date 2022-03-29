@@ -56,24 +56,24 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
    * Retrieves and removes all pending events for this watch key.
    *
    * This does not block, it will immediately return an empty list if there are no events pending. Typically, this key
-   * should be reset after processing the returned events, the `pollEventsManaged` method can be used to do this
+   * should be reset after processing the returned events, the `pollEventsScoped` method can be used to do this
    * automatically and reliably.
    */
   def pollEvents(implicit trace: ZTraceElement): UIO[List[WatchEvent[_]]] =
     UIO.succeed(javaKey.pollEvents().asScala.toList)
 
   /**
-   * Retrieves and removes all pending events for this watch key as a managed resource.
+   * Retrieves and removes all pending events for this watch key as a scoped resource.
    *
-   * This does not block, it will immediately return an empty list if there are no events pending. When the returned
-   * `Managed` completed, this key will be '''reset'''.
+   * This does not block, it will immediately return an empty list if there are no events pending. When the `Scope` is
+   * closed, this key will be '''reset'''.
    */
-  def pollEventsManaged(implicit trace: ZTraceElement): Managed[Nothing, List[WatchEvent[_]]] =
-    pollEvents.toManaged.ensuring(reset)
+  def pollEventsScoped(implicit trace: ZTraceElement): ZIO[Scope, Nothing, List[WatchEvent[_]]] =
+    pollEvents.withFinalizer(reset)
 
   /**
    * Resets this watch key, making it eligible to be re-queued in the `WatchService`. A key is typically reset after all
-   * the pending events retrieved from `pollEvents` have been processed. Use `pollEventsManaged` to automatically and
+   * the pending events retrieved from `pollEvents` have been processed. Use `pollEventsScop[ed` to automatically and
    * reliably perform a reset.
    */
   def reset(implicit trace: ZTraceElement): UIO[Boolean] = UIO.succeed(javaKey.reset())
@@ -161,7 +161,7 @@ final class WatchService private (private[file] val javaWatchService: JWatchServ
 
 object WatchService {
 
-  def forDefaultFileSystem(implicit trace: ZTraceElement): ZManaged[Any, IOException, WatchService] =
+  def forDefaultFileSystem(implicit trace: ZTraceElement): ZIO[Scope, IOException, WatchService] =
     FileSystem.default.newWatchService
 
   def fromJava(javaWatchService: JWatchService): WatchService = new WatchService(javaWatchService)

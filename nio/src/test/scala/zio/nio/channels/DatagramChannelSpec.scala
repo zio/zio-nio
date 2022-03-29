@@ -19,31 +19,35 @@ object DatagramChannelSpec extends BaseSpec {
         def echoServer(started: Promise[Nothing, SocketAddress])(implicit trace: ZTraceElement): UIO[Unit] =
           for {
             sink <- Buffer.byte(3)
-            _ <- DatagramChannel.open.useNioBlocking { (server, ops) =>
-                   for {
-                     _    <- server.bindAuto
-                     addr <- server.localAddress.someOrElseZIO(ZIO.dieMessage("Must have local address"))
-                     _    <- started.succeed(addr)
-                     addr <- ops.receive(sink)
-                     _    <- sink.flip
-                     _    <- ops.send(sink, addr)
-                   } yield ()
+            _ <- ZIO.scoped {
+                   DatagramChannel.open.flatMapNioBlocking { (server, ops) =>
+                     for {
+                       _    <- server.bindAuto
+                       addr <- server.localAddress.someOrElseZIO(ZIO.dieMessage("Must have local address"))
+                       _    <- started.succeed(addr)
+                       addr <- ops.receive(sink)
+                       _    <- sink.flip
+                       _    <- ops.send(sink, addr)
+                     } yield ()
+                   }
                  }.fork
           } yield ()
 
         def echoClient(address: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Boolean] =
           for {
             src <- Buffer.byte(3)
-            result <- DatagramChannel.open.useNioBlockingOps { client =>
-                        for {
-                          _        <- client.connect(address)
-                          sent     <- src.array
-                          _         = sent.update(0, 1)
-                          _        <- client.send(src, address)
-                          _        <- src.flip
-                          _        <- client.read(src)
-                          received <- src.array
-                        } yield sent.sameElements(received)
+            result <- ZIO.scoped {
+                        DatagramChannel.open.flatMapNioBlockingOps { client =>
+                          for {
+                            _        <- client.connect(address)
+                            sent     <- src.array
+                            _         = sent.update(0, 1)
+                            _        <- client.send(src, address)
+                            _        <- src.flip
+                            _        <- client.read(src)
+                            received <- src.array
+                          } yield sent.sameElements(received)
+                        }
                       }
           } yield result
 
@@ -56,19 +60,23 @@ object DatagramChannelSpec extends BaseSpec {
       },
       test("close channel unbind port") {
         def client(address: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Unit] =
-          DatagramChannel.open.useNioBlockingOps(_.connect(address).unit)
+          ZIO.scoped {
+            DatagramChannel.open.flatMapNioBlockingOps(_.connect(address).unit)
+          }
 
         def server(
           address: Option[SocketAddress],
           started: Promise[Nothing, SocketAddress]
         )(implicit trace: ZTraceElement): UIO[Fiber[IOException, Unit]] =
           for {
-            worker <- DatagramChannel.open.useNioBlocking { (server, _) =>
-                        for {
-                          _    <- server.bind(address)
-                          addr <- server.localAddress.someOrElseZIO(ZIO.dieMessage("Local address must be bound"))
-                          _    <- started.succeed(addr)
-                        } yield ()
+            worker <- ZIO.scoped {
+                        DatagramChannel.open.flatMapNioBlocking { (server, _) =>
+                          for {
+                            _    <- server.bind(address)
+                            addr <- server.localAddress.someOrElseZIO(ZIO.dieMessage("Local address must be bound"))
+                            _    <- started.succeed(addr)
+                          } yield ()
+                        }
                       }.fork
           } yield worker
 

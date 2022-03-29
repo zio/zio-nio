@@ -16,18 +16,20 @@ import zio.Console._
 
 ## Basic operations 
 
-Opening a file for a given path (with no additional open attributes) returns a `ZManaged` instance on which we're running the intended operations. `ZManaged` makes sure that the channel gets closed afterwards:
+Opening a file for a given path (with no additional open attributes) returns a scoped `ZIO` instance on which we're running the intended operations. `Scope` makes sure that the channel gets closed afterwards:
 
 ```scala mdoc:silent
 import java.nio.file.StandardOpenOption
 
 val path = Path("file.txt")
-val channelM = AsynchronousFileChannel.open(
-  path, 
-  StandardOpenOption.READ,
-  StandardOpenOption.WRITE
-).use { channel =>
-  readWriteOp(channel) *> lockOp(channel)
+val channelM = ZIO.scoped {
+  AsynchronousFileChannel.open(
+    path, 
+    StandardOpenOption.READ,
+    StandardOpenOption.WRITE
+  ).flatMap { channel =>
+    readWriteOp(channel) *> lockOp(channel)
+  }
 }
 ```
 
@@ -54,11 +56,11 @@ val lockOp = (channel: AsynchronousFileChannel) =>
     isShared     <- channel.lock().acquireReleaseWith(_.release.ignore)(l => IO.succeed(l.isShared))
     _            <- printLine(isShared.toString)                                      // false
 
-    managed      = Managed.acquireReleaseWith(channel.lock(position = 0, size = 10, shared = false))(_.release.ignore)
-    isOverlaping <- managed.use(l => IO.succeed(l.overlaps(5, 20)))
+    scoped      = ZIO.acquireRelease(channel.lock(position = 0, size = 10, shared = false))(_.release.ignore)
+    isOverlaping <- ZIO.scoped(scoped.flatMap(l => IO.succeed(l.overlaps(5, 20))))
     _            <- printLine(isOverlaping.toString)                                  // true
   } yield ()
 ```
 
 Also it's worth mentioning that we are treating `FileLock` as a resource here. 
-For demonstration purposes we handled it in two different ways: using `bracket` and creating `Managed` for this.
+For demonstration purposes we handled it in two different ways: using `acquireRelease` and creating a scoped `ZIO` for this.

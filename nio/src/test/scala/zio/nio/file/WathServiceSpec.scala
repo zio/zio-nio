@@ -9,10 +9,10 @@ import java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
 
 object WathServiceSpec extends BaseSpec {
 
-  override def spec: Spec[Any, TestFailure[IOException], TestSuccess] =
+  override def spec =
     suite("WatchServiceSpec")(
       test("Watch Service register")(
-        FileSystem.default.newWatchService.use { watchService =>
+        FileSystem.default.newWatchService.flatMap { watchService =>
           for {
             watchKey <- Path("nio/src/test/resources").register(watchService, ENTRY_CREATE)
             watchable = watchKey.watchable

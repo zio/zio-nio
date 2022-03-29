@@ -11,16 +11,12 @@ import scala.io.Source
 
 object ScatterGatherChannelSpec extends BaseSpec {
 
-  override def spec: Spec[
-    Any with Annotations with Live with Sized with TestClock with TestConfig with TestConsole with TestRandom with TestSystem with Clock with zio.Console with zio.System with Random,
-    TestFailure[Any],
-    TestSuccess
-  ] =
+  override def spec =
     suite("ScatterGatherChannelSpec")(
       test("scattering read") {
         FileChannel
           .open(Path("nio/src/test/resources/scattering_read_test.txt"), StandardOpenOption.READ)
-          .useNioBlockingOps { ops =>
+          .flatMapNioBlockingOps { ops =>
             for {
               buffs <- IO.collectAll(List(Buffer.byte(5), Buffer.byte(5)))
               _     <- ops.read(buffs)
@@ -39,7 +35,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
         val file = Path("nio/src/test/resources/gathering_write_test.txt")
         FileChannel
           .open(file, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
-          .useNioBlockingOps { ops =>
+          .flatMapNioBlockingOps { ops =>
             for {
               buffs <- IO.collectAll(
                          List(
@@ -51,7 +47,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
               result = Source.fromFile(file.toFile).getLines().toSeq
             } yield assert(result)(equalTo(Seq("HelloWorld")))
           }
-          .ensuring(IO.effectTotal(Files.delete(file.javaPath)))
+          .ensuring(IO.succeed(Files.delete(file.javaPath)))
       }
     )
 }

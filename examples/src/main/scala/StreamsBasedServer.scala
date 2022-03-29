@@ -3,13 +3,13 @@ package zio.nio.examples
 import zio.nio.InetSocketAddress
 import zio.nio.channels.AsynchronousServerSocketChannel
 import zio.stream._
-import zio.{Clock, Console, ExitCode, Managed, RIO, URIO, ZIO, ZIOAppDefault, ZTraceElement, durationInt}
+import zio.{Clock, Console, ExitCode, RIO, Scope, URIO, ZIO, ZIOAppDefault, ZTraceElement, durationInt}
 
 object StreamsBasedServer extends ZIOAppDefault {
 
   def run: URIO[Console with Clock with Console, ExitCode] =
     ZStream
-      .managed(server(8080))
+      .scoped(server(8080))
       .flatMap(handleConnections(_) { chunk =>
         Console.printLine(s"Read data: ${chunk.mkString}") *>
           Clock.sleep(2.seconds) *>
@@ -19,34 +19,33 @@ object StreamsBasedServer extends ZIOAppDefault {
       .orDie
       .exitCode
 
-  def server(port: Int)(implicit trace: ZTraceElement): Managed[Exception, AsynchronousServerSocketChannel] =
+  def server(port: Int)(implicit trace: ZTraceElement): ZIO[Scope, Exception, AsynchronousServerSocketChannel] =
     for {
       server        <- AsynchronousServerSocketChannel.open
-      socketAddress <- InetSocketAddress.wildCard(port).toManaged
-      _             <- server.bindTo(socketAddress).toManaged
+      socketAddress <- InetSocketAddress.wildCard(port)
+      _             <- server.bindTo(socketAddress)
     } yield server
 
   def handleConnections[R <: Console](
     server: AsynchronousServerSocketChannel
   )(f: String => RIO[R, Unit])(implicit trace: ZTraceElement): ZStream[R, Throwable, Unit] =
     ZStream
-      .repeatZIO(server.accept.preallocate)
-      .map(conn => ZStream.managed(conn.ensuring(Console.printLine("Connection closed").ignore).withEarlyRelease))
-      .flatMapPar[R, Throwable, Unit](16) { connection =>
-        connection.mapZIO { case (closeConn, channel) =>
-          for {
-            _ <- Console.printLine("Received connection")
-            data <- ZStream
-                      .fromZIOOption(
-                        channel.readChunk(64).tap(_ => Console.printLine("Read chunk")).orElse(ZIO.fail(None))
-                      )
-                      .flattenChunks
-                      .take(4)
-                      .via(ZPipeline.utf8Decode)
-                      .run(Sink.foldLeft("")(_ + (_: String)))
-            _ <- closeConn
-            _ <- f(data)
-          } yield ()
-        }
+      .scoped(server.accept)
+      .forever
+      .mapZIOPar[R, Throwable, Unit](16) { channel =>
+        for {
+          _ <- Console.printLine("Received connection")
+          data <- ZStream
+                    .fromZIOOption(
+                      channel.readChunk(64).tap(_ => Console.printLine("Read chunk")).orElse(ZIO.fail(None))
+                    )
+                    .flattenChunks
+                    .take(4)
+                    .via(ZPipeline.utf8Decode)
+                    .run(Sink.foldLeft("")(_ + (_: String)))
+          _ <- channel.close
+          _ <- Console.printLine("Connection closed")
+          _ <- f(data)
+        } yield ()
       }
 }

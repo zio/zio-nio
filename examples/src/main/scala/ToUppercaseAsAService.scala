@@ -3,7 +3,7 @@ package nio
 package examples
 
 import zio._
-import zio.nio.channels.{ManagedBlockingNioOps, ServerSocketChannel, SocketChannel}
+import zio.nio.channels.{BlockingNioOps, ServerSocketChannel, SocketChannel}
 import zio.nio.charset.Charset
 import zio.stream._
 
@@ -33,7 +33,7 @@ object ToUppercaseAsAService extends ZIOAppDefault {
         upperCaseIfier >>>
         Charset.Standard.utf8.newEncoder.transducer()
     Console.printLine("Connection accepted") *>
-      socket.useBlocking { ops =>
+      socket.flatMapBlocking { ops =>
         ops
           .stream()
           .via(transducer)
@@ -54,11 +54,13 @@ object ToUppercaseAsAService extends ZIOAppDefault {
 
     portEff
       .flatMap(port =>
-        ServerSocketChannel.open.useNioBlocking { (serverChannel, ops) =>
-          InetSocketAddress.wildCard(port).flatMap { socketAddress =>
-            serverChannel.bindTo(socketAddress) *>
-              Console.printLine(s"Listening on $socketAddress") *>
-              ops.acceptAndFork(handleConnection).forever
+        ZIO.scoped {
+          ServerSocketChannel.open.flatMapNioBlocking { (serverChannel, ops) =>
+            InetSocketAddress.wildCard(port).flatMap { socketAddress =>
+              serverChannel.bindTo(socketAddress) *>
+                Console.printLine(s"Listening on $socketAddress") *>
+                ops.acceptAndFork(handleConnection).forever
+            }
           }
         }
       )
