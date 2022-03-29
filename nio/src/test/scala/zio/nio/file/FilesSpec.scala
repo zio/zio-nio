@@ -7,7 +7,7 @@ import zio.{Chunk, Clock, Random, Ref, ZIO}
 
 object FilesSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: Spec[Any, TestFailure[Serializable], TestSuccess] =
     suite("FilesSpec")(
       test("createTempFileInScoped cleans up temp file") {
         val sampleFileContent = Chunk.fromArray("createTempFileInScoped works!".getBytes)

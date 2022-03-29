@@ -1,5 +1,6 @@
 package zio.nio.file
 
+import zio.Scope
 import zio.nio.BaseSpec
 import zio.test.Assertion._
 import zio.test._
@@ -9,7 +10,7 @@ import java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
 
 object WathServiceSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: Spec[Scope, TestFailure[IOException], TestSuccess] =
     suite("WatchServiceSpec")(
       test("Watch Service register")(
         FileSystem.default.newWatchService.flatMap { watchService =>
