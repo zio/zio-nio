@@ -3,7 +3,7 @@ package file
 
 import zio.ZIO.attemptBlockingIO
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, UIO, ZIO, ZManaged, ZTraceElement}
+import zio.{IO, Scope, UIO, ZIO, ZTraceElement}
 
 import java.io.IOException
 import java.net.URI
@@ -38,8 +38,8 @@ final class FileSystem private (private val javaFileSystem: jf.FileSystem) exten
 
   def getUserPrincipalLookupService: UserPrincipalLookupService = javaFileSystem.getUserPrincipalLookupService
 
-  def newWatchService(implicit trace: ZTraceElement): ZManaged[Any, IOException, WatchService] =
-    attemptBlockingIO(WatchService.fromJava(javaFileSystem.newWatchService())).toNioManaged
+  def newWatchService(implicit trace: ZTraceElement): ZIO[Scope, IOException, WatchService] =
+    attemptBlockingIO(WatchService.fromJava(javaFileSystem.newWatchService())).toNioScoped
 
 }
 
@@ -63,17 +63,17 @@ object FileSystem {
 
   def newFileSystem(uri: URI, env: (String, Any)*)(implicit
     trace: ZTraceElement
-  ): ZManaged[Any, IOException, FileSystem] =
-    attemptBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(uri, env.toMap.asJava))).toNioManaged
+  ): ZIO[Scope, IOException, FileSystem] =
+    attemptBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(uri, env.toMap.asJava))).toNioScoped
 
   def newFileSystem(uri: URI, env: Map[String, _], loader: ClassLoader)(implicit
     trace: ZTraceElement
-  ): ZManaged[Any, Exception, FileSystem] =
-    attemptBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(uri, env.asJava, loader))).toNioManaged
+  ): ZIO[Scope, Exception, FileSystem] =
+    attemptBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(uri, env.asJava, loader))).toNioScoped
 
   def newFileSystem(path: Path, loader: ClassLoader)(implicit
     trace: ZTraceElement
-  ): ZManaged[Any, IOException, FileSystem] =
-    attemptBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(path.javaPath, loader))).toNioManaged
+  ): ZIO[Scope, IOException, FileSystem] =
+    attemptBlockingIO(new FileSystem(jf.FileSystems.newFileSystem(path.javaPath, loader))).toNioScoped
 
 }

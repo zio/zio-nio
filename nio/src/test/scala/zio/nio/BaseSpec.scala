@@ -1,8 +1,8 @@
 package zio.nio
 
 import zio._
-import zio.test.{DefaultRunnableSpec, Live, TestAspect, TestAspectAtLeastR}
+import zio.test.{Live, TestAspect, TestAspectAtLeastR, ZIOSpecDefault}
 
-trait BaseSpec extends DefaultRunnableSpec {
-  override def aspects: List[TestAspectAtLeastR[Live]] = List(TestAspect.timeout(60.seconds))
+trait BaseSpec extends ZIOSpecDefault {
+  override def aspects: Chunk[TestAspectAtLeastR[Live]] = Chunk(TestAspect.timeout(60.seconds))
 }

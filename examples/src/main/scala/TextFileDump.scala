@@ -2,7 +2,7 @@ package zio
 package nio
 package examples
 
-import zio.nio.channels.{FileChannel, ManagedBlockingNioOps}
+import zio.nio.channels.{BlockingNioOps, FileChannel}
 import zio.nio.charset.Charset
 import zio.nio.file.Path
 import zio.stream.ZStream
@@ -36,18 +36,20 @@ object TextFileDump extends ZIOAppDefault {
   private def dump(charset: Charset, file: Path)(implicit
     trace: ZTraceElement
   ): ZIO[Console with Any, Exception, Unit] =
-    FileChannel.open(file).useNioBlockingOps { fileOps =>
-      val inStream: ZStream[Any, Exception, Byte] = ZStream.repeatZIOChunkOption {
-        fileOps.readChunk(1000).asSomeError.flatMap { chunk =>
-          if (chunk.isEmpty) ZIO.fail(None) else ZIO.succeed(chunk)
+    ZIO.scoped {
+      FileChannel.open(file).flatMapNioBlockingOps { fileOps =>
+        val inStream: ZStream[Any, Exception, Byte] = ZStream.repeatZIOChunkOption {
+          fileOps.readChunk(1000).asSomeError.flatMap { chunk =>
+            if (chunk.isEmpty) ZIO.fail(None) else ZIO.succeed(chunk)
+          }
         }
+
+        // apply decoding pipeline
+        val charStream: ZStream[Any, Exception, Char] =
+          inStream.via(charset.newDecoder.transducer())
+
+        charStream.runForeachChunk(chars => Console.print(chars.mkString))
       }
-
-      // apply decoding pipeline
-      val charStream: ZStream[Any, Exception, Char] =
-        inStream.via(charset.newDecoder.transducer())
-
-      charStream.runForeachChunk(chars => Console.print(chars.mkString))
     }
 
 }

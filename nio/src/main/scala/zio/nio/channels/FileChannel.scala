@@ -4,7 +4,7 @@ import com.github.ghik.silencer.silent
 import zio.nio.file.Path
 import zio.nio.{ByteBuffer, IOCloseableManagement, MappedByteBuffer}
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, Managed, ZIO, ZTraceElement}
+import zio.{IO, Scope, ZIO, ZTraceElement}
 
 import java.io.IOException
 import java.nio.channels.{FileChannel => JFileChannel}
@@ -162,7 +162,7 @@ final class FileChannel private[channels] (protected val channel: JFileChannel) 
 
   }
 
-  override def useBlocking[R, E, A](f: BlockingFileOps => ZIO[R, E, A])(implicit
+  override def flatMapBlocking[R, E, A](f: BlockingFileOps => ZIO[R, E, A])(implicit
     trace: ZTraceElement
   ): ZIO[R with Any, E, A] =
     nioBlocking(f(new BlockingOps))
@@ -231,10 +231,10 @@ object FileChannel {
     path: Path,
     options: Set[_ <: OpenOption],
     attrs: FileAttribute[_]*
-  )(implicit trace: ZTraceElement): Managed[IOException, FileChannel] =
+  )(implicit trace: ZTraceElement): ZIO[Scope, IOException, FileChannel] =
     IO.attempt(new FileChannel(JFileChannel.open(path.javaPath, options.asJava, attrs: _*)))
       .refineToOrDie[IOException]
-      .toNioManaged
+      .toNioScoped
 
   /**
    * Opens or creates a file, returning a file channel to access the file.
@@ -244,10 +244,10 @@ object FileChannel {
    * @param options
    *   Specifies how the file is opened
    */
-  def open(path: Path, options: OpenOption*)(implicit trace: ZTraceElement): Managed[IOException, FileChannel] =
+  def open(path: Path, options: OpenOption*)(implicit trace: ZTraceElement): ZIO[Scope, IOException, FileChannel] =
     IO.attempt(new FileChannel(JFileChannel.open(path.javaPath, options: _*)))
       .refineToOrDie[IOException]
-      .toNioManaged
+      .toNioScoped
 
   def fromJava(javaFileChannel: JFileChannel): FileChannel = new FileChannel(javaFileChannel)
 

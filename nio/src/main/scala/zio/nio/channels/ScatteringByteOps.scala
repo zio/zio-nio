@@ -93,8 +93,8 @@ trait ScatteringByteOps {
   def stream(
     bufferConstruct: UIO[ByteBuffer]
   )(implicit trace: ZTraceElement): Stream[IOException, Byte] =
-    ZStream.unwrapManaged {
-      bufferConstruct.toManaged.map { buffer =>
+    ZStream.unwrap {
+      bufferConstruct.map { buffer =>
         val doRead = for {
           _     <- read(buffer)
           _     <- buffer.flip

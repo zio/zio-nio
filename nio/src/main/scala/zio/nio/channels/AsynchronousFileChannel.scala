@@ -112,10 +112,10 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
   def stream(position: Long, bufferConstruct: UIO[ByteBuffer])(implicit
     trace: ZTraceElement
   ): Stream[IOException, Byte] =
-    ZStream.unwrapManaged {
+    ZStream.unwrapScoped {
       for {
-        posRef <- Ref.makeManaged(position)
-        buffer <- bufferConstruct.toManaged
+        posRef <- Ref.make(position)
+        buffer <- bufferConstruct
       } yield {
         val doRead = for {
           pos   <- posRef.get
@@ -150,8 +150,8 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
   )(implicit trace: ZTraceElement): ZSink[Clock, IOException, Byte, Byte, Long] =
     ZSink.fromPush {
       for {
-        buffer <- bufferConstruct.toManaged
-        posRef <- Ref.makeManaged(position)
+        buffer <- bufferConstruct
+        posRef <- Ref.make(position)
       } yield (_: Option[Chunk[Byte]]).map { chunk =>
         def doWrite(currentPos: Long, c: Chunk[Byte])(implicit trace: ZTraceElement): ZIO[Clock, IOException, Long] = {
           val x = for {
@@ -193,23 +193,23 @@ object AsynchronousFileChannel {
 
   def open(file: Path, options: OpenOption*)(implicit
     trace: ZTraceElement
-  ): Managed[IOException, AsynchronousFileChannel] =
+  ): ZIO[Scope, IOException, AsynchronousFileChannel] =
     IO.attempt(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*)))
       .refineToOrDie[IOException]
-      .toNioManaged
+      .toNioScoped
 
   def open(
     file: Path,
     options: Set[OpenOption],
     executor: Option[ExecutionContextExecutorService],
     attrs: Set[FileAttribute[_]]
-  )(implicit trace: ZTraceElement): Managed[IOException, AsynchronousFileChannel] =
+  )(implicit trace: ZTraceElement): ZIO[Scope, IOException, AsynchronousFileChannel] =
     IO.attempt(
       new AsynchronousFileChannel(
         JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
       )
     ).refineToOrDie[IOException]
-      .toNioManaged
+      .toNioScoped
 
   def fromJava(javaAsynchronousFileChannel: JAsynchronousFileChannel): AsynchronousFileChannel =
     new AsynchronousFileChannel(javaAsynchronousFileChannel)

@@ -57,7 +57,8 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
         } yield assert(result)(dies(anything))
       },
       test("companion object create instance using executor and initial size") {
-        ZIO(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
+        ZIO
+          .attempt(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
           .acquireReleaseWith(executor => ZIO.succeed(executor.shutdown())) { executor =>
             AsynchronousChannelGroup(executor, 1).exit.map(result => assert(result.toEither)(isRight(anything)))
           }
@@ -73,7 +74,8 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
         } yield assert(result)(dies(isSubtype[NullPointerException](anything)))
       },
       test("companion object create instance using executor service") {
-        ZIO(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
+        ZIO
+          .attempt(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
           .acquireReleaseWith(executor => ZIO.succeed(executor.shutdown())) { executor =>
             AsynchronousChannelGroup(executor).exit.map(result => assert(result.toEither)(isRight(anything)))
           }
@@ -114,6 +116,8 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
     def providedFixture(f: ClassFixture => ZIO[Any, Throwable, TestResult])(implicit
       trace: ZTraceElement
     ): ZIO[Any, Throwable, TestResult] =
-      ZIO(ClassFixture()).acquireReleaseWith(fixture => ZIO.succeed(fixture.cleanFixture()))(fixture => f(fixture))
+      ZIO
+        .attempt(ClassFixture())
+        .acquireReleaseWith(fixture => ZIO.succeed(fixture.cleanFixture()))(fixture => f(fixture))
   }
 }

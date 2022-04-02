@@ -4,7 +4,7 @@ import zio.ZIO.attemptBlocking
 import zio.nio.charset.Charset
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.stream.{ZSink, ZStream}
-import zio.{Chunk, ZIO, ZManaged, ZTraceElement}
+import zio.{Chunk, Scope, ZIO, ZTraceElement}
 
 import java.io.IOException
 import java.nio.file.attribute._
@@ -27,20 +27,20 @@ object Files {
   def newDirectoryStream(dir: Path, glob: String = "*")(implicit
     trace: ZTraceElement
   ): ZStream[Any, IOException, Path] = {
-    val managed = ZManaged
+    val scoped = ZIO
       .fromAutoCloseable(attemptBlocking(JFiles.newDirectoryStream(dir.javaPath, glob)))
       .map(_.iterator())
-    ZStream.fromJavaIteratorManaged(managed).map(Path.fromJava).refineToOrDie[IOException]
+    ZStream.fromJavaIteratorScoped(scoped).map(Path.fromJava).refineToOrDie[IOException]
   }
 
   def newDirectoryStream(dir: Path, filter: Path => Boolean)(implicit
     trace: ZTraceElement
   ): ZStream[Any, IOException, Path] = {
     val javaFilter: DirectoryStream.Filter[_ >: JPath] = javaPath => filter(Path.fromJava(javaPath))
-    val managed = ZManaged
+    val scoped = ZIO
       .fromAutoCloseable(attemptBlocking(JFiles.newDirectoryStream(dir.javaPath, javaFilter)))
       .map(_.iterator())
-    ZStream.fromJavaIteratorManaged(managed).map(Path.fromJava).refineToOrDie[IOException]
+    ZStream.fromJavaIteratorScoped(scoped).map(Path.fromJava).refineToOrDie[IOException]
   }
 
   def createFile(path: Path, attrs: FileAttribute[_]*)(implicit trace: ZTraceElement): ZIO[Any, IOException, Unit] =
@@ -65,15 +65,13 @@ object Files {
     attemptBlocking(Path.fromJava(JFiles.createTempFile(dir.javaPath, prefix.orNull, suffix, fileAttributes.toSeq: _*)))
       .refineToOrDie[IOException]
 
-  def createTempFileInManaged(
+  def createTempFileInScoped(
     dir: Path,
     suffix: String = ".tmp",
     prefix: Option[String] = None,
     fileAttributes: Iterable[FileAttribute[_]] = Nil
-  )(implicit trace: ZTraceElement): ZManaged[Any, IOException, Path] =
-    ZManaged.acquireReleaseWith(createTempFileIn(dir, suffix, prefix, fileAttributes))(release =
-      deleteIfExists(_).ignore
-    )
+  )(implicit trace: ZTraceElement): ZIO[Scope, IOException, Path] =
+    ZIO.acquireRelease(createTempFileIn(dir, suffix, prefix, fileAttributes))(release = deleteIfExists(_).ignore)
 
   def createTempFile(
     suffix: String = ".tmp",
@@ -83,12 +81,12 @@ object Files {
     attemptBlocking(Path.fromJava(JFiles.createTempFile(prefix.orNull, suffix, fileAttributes.toSeq: _*)))
       .refineToOrDie[IOException]
 
-  def createTempFileManaged(
+  def createTempFileScoped(
     suffix: String = ".tmp",
     prefix: Option[String] = None,
     fileAttributes: Iterable[FileAttribute[_]] = Nil
-  )(implicit trace: ZTraceElement): ZManaged[Any, IOException, Path] =
-    ZManaged.acquireReleaseWith(createTempFile(suffix, prefix, fileAttributes))(release = deleteIfExists(_).ignore)
+  )(implicit trace: ZTraceElement): ZIO[Scope, IOException, Path] =
+    ZIO.acquireRelease(createTempFile(suffix, prefix, fileAttributes))(release = deleteIfExists(_).ignore)
 
   def createTempDirectory(
     dir: Path,
@@ -98,12 +96,12 @@ object Files {
     attemptBlocking(Path.fromJava(JFiles.createTempDirectory(dir.javaPath, prefix.orNull, fileAttributes.toSeq: _*)))
       .refineToOrDie[IOException]
 
-  def createTempDirectoryManaged(
+  def createTempDirectoryScoped(
     dir: Path,
     prefix: Option[String],
     fileAttributes: Iterable[FileAttribute[_]]
-  )(implicit trace: ZTraceElement): ZManaged[Any, IOException, Path] =
-    ZManaged.acquireReleaseWith(createTempDirectory(dir, prefix, fileAttributes))(release = deleteRecursive(_).ignore)
+  )(implicit trace: ZTraceElement): ZIO[Scope, IOException, Path] =
+    ZIO.acquireRelease(createTempDirectory(dir, prefix, fileAttributes))(release = deleteRecursive(_).ignore)
 
   def createTempDirectory(
     prefix: Option[String],
@@ -112,11 +110,11 @@ object Files {
     attemptBlocking(Path.fromJava(JFiles.createTempDirectory(prefix.orNull, fileAttributes.toSeq: _*)))
       .refineToOrDie[IOException]
 
-  def createTempDirectoryManaged(
+  def createTempDirectoryScoped(
     prefix: Option[String],
     fileAttributes: Iterable[FileAttribute[_]]
-  )(implicit trace: ZTraceElement): ZManaged[Any, IOException, Path] =
-    ZManaged.acquireReleaseWith(createTempDirectory(prefix, fileAttributes))(release = deleteRecursive(_).ignore)
+  )(implicit trace: ZTraceElement): ZIO[Scope, IOException, Path] =
+    ZIO.acquireRelease(createTempDirectory(prefix, fileAttributes))(release = deleteRecursive(_).ignore)
 
   def createSymbolicLink(
     link: Path,
@@ -344,15 +342,15 @@ object Files {
     trace: ZTraceElement
   ): ZStream[Any, IOException, String] =
     ZStream
-      .fromJavaStreamManaged(
-        ZManaged.fromAutoCloseable(attemptBlocking(JFiles.lines(path.javaPath, charset.javaCharset)))
+      .fromJavaStreamScoped(
+        ZIO.fromAutoCloseable(attemptBlocking(JFiles.lines(path.javaPath, charset.javaCharset)))
       )
       .refineToOrDie[IOException]
 
   def list(path: Path)(implicit trace: ZTraceElement): ZStream[Any, IOException, Path] =
     ZStream
-      .fromJavaStreamManaged(
-        ZManaged.fromAutoCloseable(attemptBlocking(JFiles.list(path.javaPath)))
+      .fromJavaStreamScoped(
+        ZIO.fromAutoCloseable(attemptBlocking(JFiles.list(path.javaPath)))
       )
       .map(Path.fromJava)
       .refineToOrDie[IOException]
@@ -363,8 +361,8 @@ object Files {
     visitOptions: Set[FileVisitOption] = Set.empty
   )(implicit trace: ZTraceElement): ZStream[Any, IOException, Path] =
     ZStream
-      .fromJavaStreamManaged(
-        ZManaged.fromAutoCloseable(attemptBlocking(JFiles.walk(path.javaPath, maxDepth, visitOptions.toSeq: _*)))
+      .fromJavaStreamScoped(
+        ZIO.fromAutoCloseable(attemptBlocking(JFiles.walk(path.javaPath, maxDepth, visitOptions.toSeq: _*)))
       )
       .map(Path.fromJava)
       .refineToOrDie[IOException]
@@ -374,8 +372,8 @@ object Files {
   )(implicit trace: ZTraceElement): ZStream[Any, IOException, Path] = {
     val matcher: BiPredicate[JPath, BasicFileAttributes] = (path, attr) => test(Path.fromJava(path), attr)
     ZStream
-      .fromJavaStreamManaged(
-        ZManaged.fromAutoCloseable(
+      .fromJavaStreamScoped(
+        ZIO.fromAutoCloseable(
           attemptBlocking(JFiles.find(path.javaPath, maxDepth, matcher, visitOptions.toSeq: _*))
         )
       )
@@ -388,8 +386,10 @@ object Files {
     target: Path,
     options: CopyOption*
   )(implicit trace: ZTraceElement): ZIO[Any, IOException, Long] =
-    in.toInputStream
-      .use(inputStream => attemptBlocking(JFiles.copy(inputStream, target.javaPath, options: _*)))
-      .refineToOrDie[IOException]
+    ZIO.scoped {
+      in.toInputStream
+        .flatMap(inputStream => attemptBlocking(JFiles.copy(inputStream, target.javaPath, options: _*)))
+        .refineToOrDie[IOException]
+    }
 
 }

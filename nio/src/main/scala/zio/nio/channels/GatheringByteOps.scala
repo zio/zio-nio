@@ -40,11 +40,11 @@ trait GatheringByteOps {
           for {
             _     <- write(buffers)
             pairs <- IO.foreach(buffers)(b => b.hasRemaining.map(_ -> b))
-            r <- {
+            _ <- {
               val remaining = pairs.dropWhile(!_._1).map(_._2)
               go(remaining).unless(remaining.isEmpty)
             }
-          } yield r
+          } yield ()
         go(bs)
       }
     } yield ()
@@ -73,8 +73,8 @@ trait GatheringByteOps {
   )(implicit trace: ZTraceElement): ZSink[Clock, IOException, Byte, Byte, Long] =
     ZSink.fromPush {
       for {
-        buffer   <- bufferConstruct.toManaged
-        countRef <- Ref.makeManaged(0L)
+        buffer   <- bufferConstruct
+        countRef <- Ref.make(0L)
       } yield (_: Option[Chunk[Byte]]).map { chunk =>
         def doWrite(total: Int, c: Chunk[Byte])(implicit trace: ZTraceElement): ZIO[Clock, IOException, Int] = {
           val x = for {

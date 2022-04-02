@@ -2,18 +2,18 @@ package zio.nio
 package channels
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, Managed, ZTraceElement}
+import zio.{IO, Scope, ZIO, ZTraceElement}
 
 import java.io.IOException
 import java.nio.channels.{Pipe => JPipe}
 
 final class Pipe private (private val pipe: JPipe)(implicit trace: ZTraceElement) {
 
-  def source(implicit trace: ZTraceElement): Managed[Nothing, Pipe.SourceChannel] =
-    IO.succeed(new channels.Pipe.SourceChannel(pipe.source())).toNioManaged
+  def source(implicit trace: ZTraceElement): ZIO[Scope, Nothing, Pipe.SourceChannel] =
+    IO.succeed(new channels.Pipe.SourceChannel(pipe.source())).toNioScoped
 
-  def sink(implicit trace: ZTraceElement): Managed[Nothing, Pipe.SinkChannel] =
-    IO.succeed(new Pipe.SinkChannel(pipe.sink())).toNioManaged
+  def sink(implicit trace: ZTraceElement): ZIO[Scope, Nothing, Pipe.SinkChannel] =
+    IO.succeed(new Pipe.SinkChannel(pipe.sink())).toNioScoped
 
 }
 

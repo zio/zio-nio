@@ -20,7 +20,7 @@ object SelectorSpec extends BaseSpec {
       test("read/write") {
         for {
           started     <- Promise.make[Nothing, SocketAddress]
-          serverFiber <- server(started).useNow.fork
+          serverFiber <- ZIO.scoped(server(started)).fork
           addr        <- started.await
           clientFiber <- client(addr).fork
           _           <- serverFiber.join
@@ -29,12 +29,14 @@ object SelectorSpec extends BaseSpec {
       },
       test("select is interruptible") {
         live {
-          Selector.open.use { selector =>
-            for {
-              fiber <- selector.select.fork
-              _     <- ZIO.sleep(500.milliseconds)
-              exit  <- fiber.interrupt
-            } yield assert(exit)(isInterrupted)
+          ZIO.scoped {
+            Selector.open.flatMap { selector =>
+              for {
+                fiber <- selector.select.fork
+                _     <- ZIO.sleep(500.milliseconds)
+                exit  <- fiber.interrupt
+              } yield assert(exit)(isInterrupted)
+            }
           }
         }
       }
@@ -49,9 +51,9 @@ object SelectorSpec extends BaseSpec {
 
   def server(
     started: Promise[Nothing, SocketAddress]
-  )(implicit trace: ZTraceElement): ZManaged[Clock, Exception, Unit] = {
+  )(implicit trace: ZTraceElement): ZIO[Clock with Scope, Exception, Unit] = {
     def serverLoop(
-      scope: Managed.Scope,
+      scope: Scope,
       selector: Selector,
       buffer: ByteBuffer
     )(implicit trace: ZTraceElement): ZIO[Any, Exception, Unit] =
@@ -62,14 +64,14 @@ object SelectorSpec extends BaseSpec {
                  {
                    case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
                      for {
-                       scopeResult     <- scope(channel.useNonBlockingManaged(_.accept))
-                       (_, maybeClient) = scopeResult
+                       scopeResult <- scope.extend(channel.flatMapNonBlocking(_.accept))
+                       maybeClient  = scopeResult
                        _ <- IO.whenCase(maybeClient) { case Some(client) =>
                               client.configureBlocking(false) *> client.register(selector, Set(Operation.Read))
                             }
                      } yield ()
                    case channel: SocketChannel if readyOps(Operation.Read) =>
-                     channel.useNonBlocking { client =>
+                     channel.flatMapNonBlocking { client =>
                        for {
                          _ <- client.read(buffer)
                          _ <- buffer.flip
@@ -86,26 +88,24 @@ object SelectorSpec extends BaseSpec {
       } yield ()
 
     for {
-      scope    <- Managed.scope
+      scope    <- ZIO.scope
       selector <- Selector.open
       channel  <- ServerSocketChannel.open
-      _ <- Managed.fromZIO {
-             for {
-               _      <- channel.bindAuto()
-               _      <- channel.configureBlocking(false)
-               _      <- channel.register(selector, Set(Operation.Accept))
-               buffer <- Buffer.byte(256)
-               addr   <- channel.localAddress
-               _      <- started.succeed(addr)
+      _ <- for {
+             _      <- channel.bindAuto()
+             _      <- channel.configureBlocking(false)
+             _      <- channel.register(selector, Set(Operation.Accept))
+             buffer <- Buffer.byte(256)
+             addr   <- channel.localAddress
+             _      <- started.succeed(addr)
 
-               /*
-                *  we need to run the server loop twice:
-                *  1. to accept the client request
-                *  2. to read from the client channel
-                */
-               _ <- serverLoop(scope, selector, buffer).repeat(Schedule.once)
-             } yield ()
-           }
+             /*
+              *  we need to run the server loop twice:
+              *  1. to accept the client request
+              *  2. to read from the client channel
+              */
+             _ <- serverLoop(scope, selector, buffer).repeat(Schedule.once)
+           } yield ()
     } yield ()
   }
 
@@ -113,15 +113,17 @@ object SelectorSpec extends BaseSpec {
     val bytes = Chunk.fromArray("Hello world".getBytes)
     for {
       buffer <- Buffer.byte(bytes)
-      text <- SocketChannel.open(address).useNioBlockingOps { client =>
-                for {
-                  _     <- client.write(buffer)
-                  _     <- buffer.clear
-                  _     <- client.read(buffer)
-                  array <- buffer.array
-                  text   = byteArrayToString(array)
-                  _     <- buffer.clear
-                } yield text
+      text <- ZIO.scoped {
+                SocketChannel.open(address).flatMapNioBlockingOps { client =>
+                  for {
+                    _     <- client.write(buffer)
+                    _     <- buffer.clear
+                    _     <- client.read(buffer)
+                    array <- buffer.array
+                    text   = byteArrayToString(array)
+                    _     <- buffer.clear
+                  } yield text
+                }
               }
     } yield text
   }

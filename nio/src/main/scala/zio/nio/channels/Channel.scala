@@ -47,7 +47,7 @@ trait BlockingChannel extends Channel {
    *   Given a `BlockingOps` argument appropriate for this channel type, produces an effect value containing blocking
    *   operations.
    */
-  def useBlocking[R, E >: IOException, A](f: BlockingOps => ZIO[R, E, A])(implicit
+  def flatMapBlocking[R, E >: IOException, A](f: BlockingOps => ZIO[R, E, A])(implicit
     trace: ZTraceElement
   ): ZIO[R with Any, E, A]
 
