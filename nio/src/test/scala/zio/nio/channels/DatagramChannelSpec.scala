@@ -1,15 +1,15 @@
 package zio.nio.channels
 
+import zio._
 import zio.nio._
 import zio.test.Assertion._
 import zio.test._
-import zio._
 
 import java.io.IOException
 
 object DatagramChannelSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: ZSpec[Environment with TestEnvironment with ZIOAppArgs with Scope, Any] =
     suite("DatagramChannelSpec")(
       test("read/write") {
         def echoServer(started: Promise[Nothing, SocketAddress])(implicit trace: ZTraceElement): UIO[Unit] =
