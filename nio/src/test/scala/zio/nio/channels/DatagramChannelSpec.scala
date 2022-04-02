@@ -9,7 +9,7 @@ import java.io.IOException
 
 object DatagramChannelSpec extends BaseSpec {
 
-  override def spec: ZSpec[Environment with TestEnvironment with ZIOAppArgs with Scope, Any] =
+  override def spec: ZSpec[TestEnvironment with Scope, Any] =
     suite("DatagramChannelSpec")(
       test("read/write") {
         def echoServer(started: Promise[Nothing, SocketAddress])(implicit trace: ZTraceElement): UIO[Unit] =

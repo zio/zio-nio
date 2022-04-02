@@ -11,7 +11,7 @@ import java.nio.channels.CancelledKeyException
 
 object SelectorSpec extends BaseSpec {
 
-  override def spec: Spec[Live, TestFailure[IOException], TestSuccess] =
+  override def spec: ZSpec[TestEnvironment with Scope, Any] =
     suite("SelectorSpec")(
       test("read/write") {
         for {
