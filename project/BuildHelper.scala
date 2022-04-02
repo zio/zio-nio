@@ -47,7 +47,7 @@ object BuildHelper {
     "-language:existentials",
     "-explaintypes",
     "-Yrangepos",
-    "-Xlint:_,-missing-interpolator,-type-parameter-shadow",
+    "-Xlint:_,-missing-interpolator,-type-parameter-shadow,-infer-any",
     "-Ywarn-numeric-widen",
     "-Ywarn-value-discard"
   )
