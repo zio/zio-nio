@@ -24,7 +24,7 @@ object ToUppercaseAsAService extends ZIOAppDefault {
 
   private def handleConnection(
     socket: SocketChannel
-  )(implicit trace: ZTraceElement): ZIO[Any with Console with Clock, IOException, Long] = {
+  )(implicit trace: ZTraceElement): ZIO[Any, IOException, Long] = {
 
     // this does the processing of the characters received over the channel via a pipeline
     // the stream of bytes from the channel is piped, then written back to the same channel's sink
@@ -45,7 +45,7 @@ object ToUppercaseAsAService extends ZIOAppDefault {
       }
   }
 
-  override def run: URIO[zio.ZEnv with ZIOAppArgs, ExitCode] = {
+  override def run: URIO[ZIOAppArgs, ExitCode] = {
     val portEff = ZIO.serviceWith[ZIOAppArgs](
       _.getArgs.toList.headOption
         .flatMap(s => catching(classOf[IllegalArgumentException]).opt(s.toInt))

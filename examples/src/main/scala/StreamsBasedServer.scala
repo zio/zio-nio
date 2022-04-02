@@ -3,11 +3,11 @@ package zio.nio.examples
 import zio.nio.InetSocketAddress
 import zio.nio.channels.AsynchronousServerSocketChannel
 import zio.stream._
-import zio.{Clock, Console, ExitCode, RIO, Scope, URIO, ZIO, ZIOAppDefault, ZTraceElement, durationInt}
+import zio.{Clock, Console, ExitCode, RIO, Scope, UIO, ZIO, ZIOAppDefault, ZTraceElement, durationInt}
 
 object StreamsBasedServer extends ZIOAppDefault {
 
-  def run: URIO[Console with Clock with Console, ExitCode] =
+  def run: UIO[ExitCode] =
     ZStream
       .scoped(server(8080))
       .flatMap(handleConnections(_) { chunk =>
@@ -26,7 +26,7 @@ object StreamsBasedServer extends ZIOAppDefault {
       _             <- server.bindTo(socketAddress)
     } yield server
 
-  def handleConnections[R <: Console](
+  def handleConnections[R](
     server: AsynchronousServerSocketChannel
   )(f: String => RIO[R, Unit])(implicit trace: ZTraceElement): ZStream[R, Throwable, Unit] =
     ZStream

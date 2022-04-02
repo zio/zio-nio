@@ -2,18 +2,14 @@ package zio.nio.channels
 
 import zio.nio._
 import zio.test.Assertion._
-import zio.test.{Live, TestClock, TestConsole, TestRandom, TestSystem, _}
-import zio.{Clock, Random, _}
+import zio.test._
+import zio._
 
 import java.io.IOException
 
 object DatagramChannelSpec extends BaseSpec {
 
-  override def spec: Spec[
-    Annotations with Live with Sized with TestClock with TestConfig with TestConsole with TestRandom with TestSystem with Clock with zio.Console with zio.System with Random,
-    TestFailure[Any],
-    TestSuccess
-  ] =
+  override def spec =
     suite("DatagramChannelSpec")(
       test("read/write") {
         def echoServer(started: Promise[Nothing, SocketAddress])(implicit trace: ZTraceElement): UIO[Unit] =

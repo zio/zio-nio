@@ -132,7 +132,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
       }
     }
 
-  def sink(position: Long)(implicit trace: ZTraceElement): ZSink[Clock, IOException, Byte, Byte, Long] =
+  def sink(position: Long)(implicit trace: ZTraceElement): ZSink[Any, IOException, Byte, Byte, Long] =
     sink(position, Buffer.byte(5000))
 
   /**
@@ -147,13 +147,13 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
   def sink(
     position: Long,
     bufferConstruct: UIO[ByteBuffer]
-  )(implicit trace: ZTraceElement): ZSink[Clock, IOException, Byte, Byte, Long] =
+  )(implicit trace: ZTraceElement): ZSink[Any, IOException, Byte, Byte, Long] =
     ZSink.fromPush {
       for {
         buffer <- bufferConstruct
         posRef <- Ref.make(position)
       } yield (_: Option[Chunk[Byte]]).map { chunk =>
-        def doWrite(currentPos: Long, c: Chunk[Byte])(implicit trace: ZTraceElement): ZIO[Clock, IOException, Long] = {
+        def doWrite(currentPos: Long, c: Chunk[Byte])(implicit trace: ZTraceElement): ZIO[Any, IOException, Long] = {
           val x = for {
             remaining <- buffer.putChunk(c)
             _         <- buffer.flip

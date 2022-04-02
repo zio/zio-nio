@@ -54,13 +54,13 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
    *
    * More than one write operation may be performed to write out the entire chunk.
    */
-  final def writeChunk(chunk: Chunk[Byte])(implicit trace: ZTraceElement): ZIO[Clock, IOException, Unit] =
+  final def writeChunk(chunk: Chunk[Byte])(implicit trace: ZTraceElement): ZIO[Any, IOException, Unit] =
     for {
       b <- Buffer.byte(chunk)
       _ <- write(b).repeatWhileZIO(_ => b.hasRemaining)
     } yield ()
 
-  def sink()(implicit trace: ZTraceElement): ZSink[Clock, IOException, Byte, Byte, Long] = sink(Buffer.byte(5000))
+  def sink()(implicit trace: ZTraceElement): ZSink[Any, IOException, Byte, Byte, Long] = sink(Buffer.byte(5000))
 
   /**
    * A sink that will write all the bytes it receives to this channel.
@@ -70,7 +70,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
    */
   def sink(
     bufferConstruct0: => UIO[ByteBuffer]
-  )(implicit trace: ZTraceElement): ZSink[Clock, IOException, Byte, Byte, Long] =
+  )(implicit trace: ZTraceElement): ZSink[Any, IOException, Byte, Byte, Long] =
     ZSink.fromPush {
       val bufferConstruct = bufferConstruct0
       for {
@@ -79,7 +79,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
       } yield (_: Option[Chunk[Byte]]).map { chunk =>
         def doWrite(total: Int, c: Chunk[Byte])(implicit
           trace: ZTraceElement
-        ): ZIO[Any with Clock, IOException, Int] = {
+        ): ZIO[Any, IOException, Int] = {
           val x = for {
             remaining <- buffer.putChunk(c)
             _         <- buffer.flip
@@ -101,7 +101,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
         )
       }
         .getOrElse(
-          countRef.get.flatMap[Clock, (Either[IOException, Long], Chunk[Byte]), Unit](count =>
+          countRef.get.flatMap[Any, (Either[IOException, Long], Chunk[Byte]), Unit](count =>
             ZIO.fail((Right(count), Chunk.empty))
           )
         )

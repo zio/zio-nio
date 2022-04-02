@@ -15,7 +15,7 @@ import zio.stream.ZStream
  */
 object TextFileDump extends ZIOAppDefault {
 
-  override def run: URIO[zio.ZEnv with ZIOAppArgs, ExitCode] = {
+  override def run: URIO[ZIOAppArgs, ExitCode] = {
     val charsetEff = ZIO.serviceWith[ZIOAppArgs](s =>
       (s.getArgs.toList match {
         case _ :: s :: _ => Some(s)
@@ -35,7 +35,7 @@ object TextFileDump extends ZIOAppDefault {
 
   private def dump(charset: Charset, file: Path)(implicit
     trace: ZTraceElement
-  ): ZIO[Console with Any, Exception, Unit] =
+  ): ZIO[Any, Exception, Unit] =
     ZIO.scoped {
       FileChannel.open(file).flatMapNioBlockingOps { fileOps =>
         val inStream: ZStream[Any, Exception, Byte] = ZStream.repeatZIOChunkOption {

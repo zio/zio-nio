@@ -69,7 +69,7 @@ final class WatchKey private[file] (private val javaKey: JWatchKey) {
    * closed, this key will be '''reset'''.
    */
   def pollEventsScoped(implicit trace: ZTraceElement): ZIO[Scope, Nothing, List[WatchEvent[_]]] =
-    pollEvents.withFinalizer(reset)
+    pollEvents.withFinalizer(_ => reset)
 
   /**
    * Resets this watch key, making it eligible to be re-queued in the `WatchService`. A key is typically reset after all

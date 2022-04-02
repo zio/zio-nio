@@ -9,7 +9,6 @@ Required imports for snippets:
 
 ```scala mdoc:silent
 import zio._
-import zio.Clock._
 import zio.Console._
 import zio.nio.channels._
 import zio.nio._
@@ -31,7 +30,7 @@ val server = ZIO.scoped {
     } *> ZIO.never
 }
 
-def doWork(channel: AsynchronousSocketChannel): ZIO[Console with Clock, Throwable, Unit] = {
+def doWork(channel: AsynchronousSocketChannel): ZIO[Any, Throwable, Unit] = {
   val process =
     for {
       chunk <- channel.readChunk(3)
