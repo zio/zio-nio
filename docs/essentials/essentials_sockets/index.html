@@ -63,36 +63,37 @@
         </script></nav></div><div class="container mainContainer docsContainer"><div class="wrapper"><div class="post"><header class="postHeader"><h1 id="__docusaurus" class="postHeaderTitle">Socket Channel</h1></header><article><div><span><p><code>AsynchronousSocketChannel</code> and <code>AsynchronousServerSocketChannel</code> provide methods for communicating with remote clients.</p>
 <p>Required imports for snippets:</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">import</span> zio._
-<span class="hljs-keyword">import</span> zio.clock._
-<span class="hljs-keyword">import</span> zio.console._
+<span class="hljs-keyword">import</span> zio.<span class="hljs-type">Console</span>._
 <span class="hljs-keyword">import</span> zio.nio.channels._
 <span class="hljs-keyword">import</span> zio.nio._
 </code></pre>
 <h2><a class="anchor" aria-hidden="true" id="creating-sockets"></a><a href="#creating-sockets" aria-hidden="true" class="hash-link"><svg class="hash-link-icon" aria-hidden="true" height="16" version="1.1" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Creating sockets</h2>
 <p>Creating a server socket:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> server = <span class="hljs-type">AsynchronousServerSocketChannel</span>.open
-  .mapM { socket =&gt;
-    <span class="hljs-keyword">for</span> {
-      address &lt;- <span class="hljs-type">InetSocketAddress</span>.hostName(<span class="hljs-string">"127.0.0.1"</span>, <span class="hljs-number">1337</span>)
-      _ &lt;- socket.bindTo(address)
-      _ &lt;- socket.accept.preallocate.flatMap(_.use(channel =&gt; doWork(channel).catchAll(ex =&gt; putStrLn(ex.getMessage))).fork).forever.fork
-    } <span class="hljs-keyword">yield</span> ()
-  }.useForever
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> server = <span class="hljs-type">ZIO</span>.scoped {
+  <span class="hljs-type">AsynchronousServerSocketChannel</span>.open
+    .flatMap { socket =&gt;
+      <span class="hljs-keyword">for</span> {
+        address &lt;- <span class="hljs-type">InetSocketAddress</span>.hostName(<span class="hljs-string">"127.0.0.1"</span>, <span class="hljs-number">1337</span>)
+        _ &lt;- socket.bindTo(address)
+        _ &lt;- socket.accept.flatMap(channel =&gt; doWork(channel).catchAll(ex =&gt; printLine(ex.getMessage)).fork).forever.fork
+      } <span class="hljs-keyword">yield</span> ()
+    } *&gt; <span class="hljs-type">ZIO</span>.never
+}
 
-<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">doWork</span></span>(channel: <span class="hljs-type">AsynchronousSocketChannel</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Console</span> <span class="hljs-keyword">with</span> <span class="hljs-type">Clock</span>, <span class="hljs-type">Throwable</span>, <span class="hljs-type">Unit</span>] = {
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">doWork</span></span>(channel: <span class="hljs-type">AsynchronousSocketChannel</span>): <span class="hljs-type">ZIO</span>[<span class="hljs-type">Any</span>, <span class="hljs-type">Throwable</span>, <span class="hljs-type">Unit</span>] = {
   <span class="hljs-keyword">val</span> process =
     <span class="hljs-keyword">for</span> {
       chunk &lt;- channel.readChunk(<span class="hljs-number">3</span>)
       str = chunk.toArray.map(_.toChar).mkString
-      _ &lt;- putStrLn(<span class="hljs-string">s"received: [<span class="hljs-subst">$str</span>] [<span class="hljs-subst">${chunk.length}</span>]"</span>)
+      _ &lt;- printLine(<span class="hljs-string">s"received: [<span class="hljs-subst">$str</span>] [<span class="hljs-subst">${chunk.length}</span>]"</span>)
     } <span class="hljs-keyword">yield</span> ()
 
-  process.whenM(channel.isOpen).forever
+  process.whenZIO(channel.isOpen).forever
 }
 </code></pre>
 <p>Creating a client socket:</p>
-<pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> clientM: <span class="hljs-type">Managed</span>[<span class="hljs-type">Exception</span>, <span class="hljs-type">AsynchronousSocketChannel</span>] = <span class="hljs-type">AsynchronousSocketChannel</span>.open
-  .mapM { client =&gt;
+<pre><code class="hljs css language-scala"><span class="hljs-keyword">val</span> clientM: <span class="hljs-type">ZIO</span>[<span class="hljs-type">Scope</span>, <span class="hljs-type">Exception</span>, <span class="hljs-type">AsynchronousSocketChannel</span>] = <span class="hljs-type">AsynchronousSocketChannel</span>.open
+  .flatMap { client =&gt;
     <span class="hljs-keyword">for</span> {
       host    &lt;- <span class="hljs-type">InetAddress</span>.localHost
       address &lt;- <span class="hljs-type">InetSocketAddress</span>.inetAddress(host, <span class="hljs-number">2552</span>)
@@ -103,7 +104,7 @@
 <p>Reading and writing to a socket:</p>
 <pre><code class="hljs css language-scala"><span class="hljs-keyword">for</span> {
   serverFiber &lt;- server.fork
-  _ &lt;- clientM.use(_.writeChunk(<span class="hljs-type">Chunk</span>.fromArray(<span class="hljs-type">Array</span>(<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>).map(_.toByte))))
+  _ &lt;- <span class="hljs-type">ZIO</span>.scoped(clientM.flatMap(_.writeChunk(<span class="hljs-type">Chunk</span>.fromArray(<span class="hljs-type">Array</span>(<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>).map(_.toByte)))))
   _           &lt;- serverFiber.join
 } <span class="hljs-keyword">yield</span> ()
 </code></pre>
