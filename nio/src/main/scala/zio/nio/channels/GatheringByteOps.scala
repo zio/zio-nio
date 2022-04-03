@@ -56,7 +56,7 @@ trait GatheringByteOps {
    */
   final def writeChunk(src: Chunk[Byte])(implicit trace: ZTraceElement): IO[IOException, Unit] = writeChunks(List(src))
 
-  def sink()(implicit trace: ZTraceElement): ZSink[Clock, IOException, Byte, Byte, Long] = sink(Buffer.byte(5000))
+  def sink()(implicit trace: ZTraceElement): ZSink[Any, IOException, Byte, Byte, Long] = sink(Buffer.byte(5000))
 
   /**
    * A sink that will write all the bytes it receives to this channel. The sink's result is the number of bytes written.
@@ -70,13 +70,13 @@ trait GatheringByteOps {
    */
   def sink(
     bufferConstruct: UIO[ByteBuffer]
-  )(implicit trace: ZTraceElement): ZSink[Clock, IOException, Byte, Byte, Long] =
+  )(implicit trace: ZTraceElement): ZSink[Any, IOException, Byte, Byte, Long] =
     ZSink.fromPush {
       for {
         buffer   <- bufferConstruct
         countRef <- Ref.make(0L)
       } yield (_: Option[Chunk[Byte]]).map { chunk =>
-        def doWrite(total: Int, c: Chunk[Byte])(implicit trace: ZTraceElement): ZIO[Clock, IOException, Int] = {
+        def doWrite(total: Int, c: Chunk[Byte])(implicit trace: ZTraceElement): ZIO[Any, IOException, Int] = {
           val x = for {
             remaining <- buffer.putChunk(c)
             _         <- buffer.flip

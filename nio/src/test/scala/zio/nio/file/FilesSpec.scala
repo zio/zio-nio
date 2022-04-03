@@ -3,7 +3,7 @@ package zio.nio.file
 import zio.nio.BaseSpec
 import zio.test.Assertion._
 import zio.test._
-import zio.{Chunk, Clock, Random, Ref, ZIO}
+import zio.{Chunk, Ref, ZIO}
 
 object FilesSpec extends BaseSpec {
 

@@ -48,7 +48,7 @@ object StreamDirWatch extends ZIOAppDefault {
       }
     }
 
-  override def run: URIO[zio.ZEnv with ZIOAppArgs, ExitCode] =
+  override def run: URIO[ZIOAppArgs, ExitCode] =
     ZIO
       .serviceWith[ZIOAppArgs](_.getArgs.toList.headOption)
       .flatMap(

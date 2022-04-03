@@ -1,21 +1,17 @@
 package zio.nio.channels
 
+import zio._
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.{BaseSpec, Buffer, ByteBuffer, SocketAddress}
 import zio.test.Assertion._
-import zio.test.{Live, TestClock, TestConsole, TestRandom, TestSystem, live, _}
-import zio.{Clock, Random, durationInt, _}
+import zio.test._
 
 import java.io.IOException
 import java.nio.channels.CancelledKeyException
 
 object SelectorSpec extends BaseSpec {
 
-  override def spec: Spec[
-    Annotations with Live with Sized with TestClock with TestConfig with TestConsole with TestRandom with TestSystem with Clock with zio.Console with zio.System with Random,
-    TestFailure[Any],
-    TestSuccess
-  ] =
+  override def spec: ZSpec[TestEnvironment with Scope, Any] =
     suite("SelectorSpec")(
       test("read/write") {
         for {
@@ -51,7 +47,7 @@ object SelectorSpec extends BaseSpec {
 
   def server(
     started: Promise[Nothing, SocketAddress]
-  )(implicit trace: ZTraceElement): ZIO[Clock with Scope, Exception, Unit] = {
+  )(implicit trace: ZTraceElement): ZIO[Scope, Exception, Unit] = {
     def serverLoop(
       scope: Scope,
       selector: Selector,

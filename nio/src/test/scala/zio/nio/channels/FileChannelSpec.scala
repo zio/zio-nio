@@ -6,7 +6,7 @@ import zio.nio.{BaseSpec, Buffer}
 import zio.stream.Stream
 import zio.test.Assertion._
 import zio.test._
-import zio.{Chunk, Clock, Random, UIO, ZIO, ZTraceElement}
+import zio.{Chunk, UIO, ZIO, ZTraceElement}
 
 import java.io.EOFException
 import java.nio.file.StandardOpenOption
