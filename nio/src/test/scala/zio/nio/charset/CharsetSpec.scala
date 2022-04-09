@@ -8,7 +8,7 @@ import zio.test.{ZSpec, _}
 
 import java.nio.charset.{CharacterCodingException, MalformedInputException, UnmappableCharacterException}
 
-object CharsetSpec extends DefaultRunnableSpec {
+object CharsetSpec extends ZIOSpecDefault {
 
   override def spec: Spec[Any, TestFailure[CharacterCodingException], TestSuccess] =
     suite("CharsetSpec")(
