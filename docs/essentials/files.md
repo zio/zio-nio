@@ -53,7 +53,7 @@ they are not in effects. Apart from basic acquire/release actions, the core API 
 ```scala mdoc:silent
 val lockOp = (channel: AsynchronousFileChannel) =>
   for {
-    isShared     <- channel.lock().acquireReleaseWith(_.release.ignore)(l => ZIO.succeed(l.isShared))
+    isShared     <- ZIO.acquireReleaseWith(channel.lock())(_.release.ignore)(l => ZIO.succeed(l.isShared))
     _            <- printLine(isShared.toString)                                      // false
 
     scoped      = ZIO.acquireRelease(channel.lock(position = 0, size = 10, shared = false))(_.release.ignore)
