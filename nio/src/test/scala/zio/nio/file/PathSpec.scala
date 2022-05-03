@@ -7,7 +7,7 @@ import zio.{Scope, ZIOAppArgs}
 
 object PathSpec extends BaseSpec {
 
-  override def spec: Spec[Environment with TestEnvironment with ZIOAppArgs with Scope, Any] =
+  override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("PathSpec")(
       test("Path construction") {
         val p        = Path("a", "b") / "c/d"

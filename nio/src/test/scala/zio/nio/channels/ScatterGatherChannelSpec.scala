@@ -4,12 +4,11 @@ import zio.nio.file.Path
 import zio.nio.{BaseSpec, Buffer}
 import zio.test.Assertion._
 import zio.test._
-import zio.{Chunk, IO, ZIO}
+import zio.{Chunk, IO, Scope, ZIO}
 
+import java.io.IOException
 import java.nio.file.{Files, StandardOpenOption}
 import scala.io.Source
-import java.io.IOException
-import zio.Scope
 
 object ScatterGatherChannelSpec extends BaseSpec {
 
