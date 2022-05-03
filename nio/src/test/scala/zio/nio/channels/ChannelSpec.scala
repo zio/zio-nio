@@ -23,14 +23,14 @@ object ChannelSpec extends BaseSpec {
       },
       suite("AsynchronousSocketChannel")(
         test("read/write") {
-          def echoServer(started: Promise[Nothing, SocketAddress])(implicit trace: ZTraceElement): IO[Exception, Unit] =
+          def echoServer(started: Promise[Nothing, SocketAddress])(implicit trace: Trace): IO[Exception, Unit] =
             for {
               sink <- Buffer.byte(3)
               _ <- ZIO.scoped {
                      AsynchronousServerSocketChannel.open.flatMap { server =>
                        for {
                          _    <- server.bindAuto()
-                         addr <- server.localAddress.flatMap(opt => IO.attempt(opt.get).orDie)
+                         addr <- server.localAddress.flatMap(opt => ZIO.attempt(opt.get).orDie)
                          _    <- started.succeed(addr)
                          _ <- ZIO.scoped {
                                 server.accept.flatMap { worker =>
@@ -44,7 +44,7 @@ object ChannelSpec extends BaseSpec {
                    }.fork
             } yield ()
 
-          def echoClient(address: SocketAddress)(implicit trace: ZTraceElement): IO[Exception, Boolean] =
+          def echoClient(address: SocketAddress)(implicit trace: Trace): IO[Exception, Boolean] =
             for {
               src <- Buffer.byte(3)
               result <- ZIO.scoped {
@@ -71,14 +71,14 @@ object ChannelSpec extends BaseSpec {
         },
         test("read should fail when connection close") {
           def server(started: Promise[Nothing, SocketAddress])(implicit
-            trace: ZTraceElement
+            trace: Trace
           ): IO[Exception, Fiber[Exception, Boolean]] =
             for {
               result <- ZIO.scoped {
                           AsynchronousServerSocketChannel.open.flatMap { server =>
                             for {
                               _    <- server.bindAuto()
-                              addr <- server.localAddress.flatMap(opt => IO.attempt(opt.get).orDie)
+                              addr <- server.localAddress.flatMap(opt => ZIO.attempt(opt.get).orDie)
                               _    <- started.succeed(addr)
                               result <- ZIO.scoped {
                                           server.accept
@@ -93,7 +93,7 @@ object ChannelSpec extends BaseSpec {
                         }.fork
             } yield result
 
-          def client(address: SocketAddress)(implicit trace: ZTraceElement): IO[Exception, Unit] =
+          def client(address: SocketAddress)(implicit trace: Trace): IO[Exception, Unit] =
             for {
               _ <- ZIO.scoped {
                      AsynchronousSocketChannel.open.flatMap { client =>
@@ -114,7 +114,7 @@ object ChannelSpec extends BaseSpec {
           } yield assert(same)(isTrue)
         },
         test("close channel unbind port") {
-          def client(address: SocketAddress)(implicit trace: ZTraceElement): IO[Exception, Unit] =
+          def client(address: SocketAddress)(implicit trace: Trace): IO[Exception, Unit] =
             ZIO.scoped {
               AsynchronousSocketChannel.open.flatMap {
                 _.connect(address)
@@ -123,11 +123,11 @@ object ChannelSpec extends BaseSpec {
 
           def server(
             started: Promise[Nothing, SocketAddress]
-          )(implicit trace: ZTraceElement): ZIO[Scope, IOException, Fiber[Exception, Unit]] =
+          )(implicit trace: Trace): ZIO[Scope, IOException, Fiber[Exception, Unit]] =
             for {
               server <- AsynchronousServerSocketChannel.open
               _      <- server.bindAuto()
-              addr   <- server.localAddress.someOrElseZIO(IO.die(new NoSuchElementException))
+              addr   <- server.localAddress.someOrElseZIO(ZIO.die(new NoSuchElementException))
               _      <- started.succeed(addr)
               worker <- server.accept.unit.forkScoped
             } yield worker
@@ -186,14 +186,14 @@ object ChannelSpec extends BaseSpec {
       ),
       suite("explicit end-of-stream")(
         test("converts EOFException to None") {
-          assertM(IO.fail(new EOFException).eofCheck.exit)(fails(isNone))
+          assertZIO(ZIO.fail(new EOFException).eofCheck.exit)(fails(isNone))
         },
         test("converts non EOFException to Some") {
           val e: IOException = new FileNotFoundException()
-          assertM(IO.fail(e).eofCheck.exit)(fails(isSome(equalTo(e))))
+          assertZIO(ZIO.fail(e).eofCheck.exit)(fails(isSome(equalTo(e))))
         },
         test("passes through success") {
-          assertM(IO.succeed(42).eofCheck.exit)(succeeds(equalTo(42)))
+          assertZIO(ZIO.succeed(42).eofCheck.exit)(succeeds(equalTo(42)))
         }
       ),
       suite("blocking operations")(
@@ -241,7 +241,7 @@ object ChannelSpec extends BaseSpec {
 
             override def flatMapBlocking[R, E >: IOException, A](
               f: GatheringByteOps => ZIO[R, E, A]
-            )(implicit trace: ZTraceElement): ZIO[R, E, A] = nioBlocking(f(hangingOps))
+            )(implicit trace: Trace): ZIO[R, E, A] = nioBlocking(f(hangingOps))
 
             override protected val channel: channels.Channel = hangingOps.channel
           }

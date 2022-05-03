@@ -24,7 +24,7 @@ object ToUppercaseAsAService extends ZIOAppDefault {
 
   private def handleConnection(
     socket: SocketChannel
-  )(implicit trace: ZTraceElement): ZIO[Any, IOException, Long] = {
+  )(implicit trace: Trace): ZIO[Any, IOException, Long] = {
 
     // this does the processing of the characters received over the channel via a pipeline
     // the stream of bytes from the channel is piped, then written back to the same channel's sink

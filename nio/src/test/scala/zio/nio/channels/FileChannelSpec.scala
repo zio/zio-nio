@@ -3,10 +3,10 @@ package zio.nio.channels
 import zio.nio.charset.Charset
 import zio.nio.file.{Files, Path}
 import zio.nio.{BaseSpec, Buffer}
-import zio.stream.Stream
+import zio.stream.ZStream
 import zio.test.Assertion._
 import zio.test._
-import zio.{Chunk, UIO, ZIO, ZTraceElement}
+import zio.{Chunk, Trace, UIO, ZIO}
 
 import java.io.EOFException
 import java.nio.file.StandardOpenOption
@@ -18,11 +18,14 @@ object FileChannelSpec extends BaseSpec {
 
   private val readFileContents = "Hello World"
 
-  def loadViaSource(path: Path)(implicit trace: ZTraceElement): UIO[List[String]] =
-    ZIO
-      .attempt(Source.fromFile(path.toFile))
-      .acquireReleaseWith(s => ZIO.succeed(s.close()))(s => ZIO.attemptBlocking(s.getLines().toList))
-      .orDie
+  def loadViaSource(path: Path)(implicit trace: Trace): UIO[List[String]] =
+    ZIO.acquireReleaseWith {
+      ZIO.succeed(Source.fromFile(path.toFile))
+    } { source =>
+      ZIO.succeed(source.close())
+    } { source =>
+      ZIO.succeedBlocking(source.getLines().toList)
+    }
 
   override def spec =
     suite("FileChannelSpec")(
@@ -101,7 +104,7 @@ object FileChannelSpec extends BaseSpec {
         val testData =
           """Yet such is oft the course of deeds that move the wheels of the world:
             | small hands do them because they must, while the eyes of the great are elsewhere.""".stripMargin
-        val stream = Stream.fromIterable(testData).via(Charset.Standard.utf8.newEncoder.transducer())
+        val stream = ZStream.fromIterable(testData).via(Charset.Standard.utf8.newEncoder.transducer())
         val file   = Path("nio/src/test/resources/sink_write_test.txt")
         FileChannel
           .open(file, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW)

@@ -34,7 +34,7 @@ object TextFileDump extends ZIOAppDefault {
   }
 
   private def dump(charset: Charset, file: Path)(implicit
-    trace: ZTraceElement
+    trace: Trace
   ): ZIO[Any, Exception, Unit] =
     ZIO.scoped {
       FileChannel.open(file).flatMapNioBlockingOps { fileOps =>

@@ -15,16 +15,16 @@ package object nio {
    *
    * Produces an `EOFException` failure if `value` < 0, otherwise succeeds with `value`.
    */
-  private[nio] def eofCheck(value: Int)(implicit trace: ZTraceElement): IO[EOFException, Int] =
-    if (value < 0) IO.fail(new EOFException("Channel has reached the end of stream")) else IO.succeed(value)
+  private[nio] def eofCheck(value: Int)(implicit trace: Trace): IO[EOFException, Int] =
+    if (value < 0) ZIO.fail(new EOFException("Channel has reached the end of stream")) else ZIO.succeed(value)
 
   /**
    * Handle -1 magic number returned by many Java read APIs when end of file is reached.
    *
    * Produces an `EOFException` failure if `value` < 0, otherwise succeeds with `value`.
    */
-  private[nio] def eofCheck(value: Long)(implicit trace: ZTraceElement): IO[EOFException, Long] =
-    if (value < 0L) IO.fail(new EOFException("Channel has reached the end of stream")) else IO.succeed(value)
+  private[nio] def eofCheck(value: Long)(implicit trace: Trace): IO[EOFException, Long] =
+    if (value < 0L) ZIO.fail(new EOFException("Channel has reached the end of stream")) else ZIO.succeed(value)
 
   implicit final class EffectOps[-R, +E, +A](private val effect: ZIO[R, E, A]) extends AnyVal {
 
@@ -35,7 +35,7 @@ package object nio {
      * exception types are wrapped in `Some`.
      */
     @silent("parameter value ev in method .* is never used")
-    def eofCheck[E2 >: E](implicit ev: EOFException <:< E2, trace: ZTraceElement): ZIO[R, Option[E2], A] =
+    def eofCheck[E2 >: E](implicit ev: EOFException <:< E2, trace: Trace): ZIO[R, Option[E2], A] =
       effect.catchAll {
         case _: EOFException => ZIO.fail(None)
         case e               => ZIO.fail(Some(e))
@@ -47,7 +47,7 @@ package object nio {
     private val acquire: ZIO[R, E, A]
   ) extends AnyVal {
 
-    def toNioScoped(implicit trace: ZTraceElement): ZIO[R with Scope, E, A] =
+    def toNioScoped(implicit trace: Trace): ZIO[R with Scope, E, A] =
       acquire.tap(a => ZIO.addFinalizer(a.close.ignore))
 
   }

@@ -1,7 +1,7 @@
 package zio.nio
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{ZIO, ZTraceElement}
+import zio.{ZIO, Trace}
 
 import java.io.IOException
 
@@ -14,11 +14,11 @@ package object channels {
 
     def flatMapNioBlocking[R1, E >: IOException, A](
       f: F1[R1, E, A]
-    )(implicit trace: ZTraceElement): ZIO[R with R1, E, A] = underlying.flatMap(c => c.flatMapBlocking(f(c, _)))
+    )(implicit trace: Trace): ZIO[R with R1, E, A] = underlying.flatMap(c => c.flatMapBlocking(f(c, _)))
 
     def flatMapNioBlockingOps[R1, E >: IOException, A](
       f: BO => ZIO[R1, E, A]
-    )(implicit trace: ZTraceElement): ZIO[R with R1, E, A] = flatMapNioBlocking((_, ops) => f(ops))
+    )(implicit trace: Trace): ZIO[R with R1, E, A] = flatMapNioBlocking((_, ops) => f(ops))
 
   }
 
@@ -27,12 +27,12 @@ package object channels {
   ) extends AnyVal {
 
     def flatMapNioNonBlocking[R1, E >: IOException, A](f: (C, BO) => ZIO[R1, E, A])(implicit
-      trace: ZTraceElement
+      trace: Trace
     ): ZIO[R with R1, E, A] =
       underlying.flatMap(c => c.flatMapNonBlocking(f(c, _)))
 
     def flatMapNioNonBlockingOps[R1, E >: IOException, A](f: BO => ZIO[R1, E, A])(implicit
-      trace: ZTraceElement
+      trace: Trace
     ): ZIO[R with R1, E, A] =
       flatMapNioNonBlocking((_, ops) => f(ops))
 

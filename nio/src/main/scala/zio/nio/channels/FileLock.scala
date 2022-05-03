@@ -1,7 +1,7 @@
 package zio.nio.channels
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, UIO, ZTraceElement}
+import zio.{IO, Trace, UIO, ZIO}
 
 import java.io.IOException
 import java.nio.channels.{FileLock => JFileLock}
@@ -62,10 +62,10 @@ final class FileLock private[channels] (javaLock: JFileLock) {
    * Tells whether or not this lock is valid. A lock object remains valid until it is released or the associated file
    * channel is closed, whichever comes first.
    */
-  def isValid(implicit trace: ZTraceElement): UIO[Boolean] = UIO.succeed(javaLock.isValid)
+  def isValid(implicit trace: Trace): UIO[Boolean] = ZIO.succeed(javaLock.isValid)
 
-  def release(implicit trace: ZTraceElement): IO[IOException, Unit] =
-    IO.attempt(javaLock.release()).refineToOrDie[IOException]
+  def release(implicit trace: Trace): IO[IOException, Unit] =
+    ZIO.attempt(javaLock.release()).refineToOrDie[IOException]
 }
 
 object FileLock {

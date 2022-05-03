@@ -3,7 +3,7 @@ package zio.nio.examples
 import zio.nio.InetSocketAddress
 import zio.nio.channels.AsynchronousServerSocketChannel
 import zio.stream._
-import zio.{Clock, Console, ExitCode, RIO, Scope, UIO, ZIO, ZIOAppDefault, ZTraceElement, durationInt}
+import zio.{Clock, Console, ExitCode, RIO, Scope, Trace, UIO, ZIO, ZIOAppDefault, durationInt}
 
 object StreamsBasedServer extends ZIOAppDefault {
 
@@ -19,7 +19,7 @@ object StreamsBasedServer extends ZIOAppDefault {
       .orDie
       .exitCode
 
-  def server(port: Int)(implicit trace: ZTraceElement): ZIO[Scope, Exception, AsynchronousServerSocketChannel] =
+  def server(port: Int)(implicit trace: Trace): ZIO[Scope, Exception, AsynchronousServerSocketChannel] =
     for {
       server        <- AsynchronousServerSocketChannel.open
       socketAddress <- InetSocketAddress.wildCard(port)
@@ -28,7 +28,7 @@ object StreamsBasedServer extends ZIOAppDefault {
 
   def handleConnections[R](
     server: AsynchronousServerSocketChannel
-  )(f: String => RIO[R, Unit])(implicit trace: ZTraceElement): ZStream[R, Throwable, Unit] =
+  )(f: String => RIO[R, Unit])(implicit trace: Trace): ZStream[R, Throwable, Unit] =
     ZStream
       .scoped(server.accept)
       .forever
@@ -42,7 +42,7 @@ object StreamsBasedServer extends ZIOAppDefault {
                     .flattenChunks
                     .take(4)
                     .via(ZPipeline.utf8Decode)
-                    .run(Sink.foldLeft("")(_ + (_: String)))
+                    .run(ZSink.foldLeft("")(_ + (_: String)))
           _ <- channel.close
           _ <- Console.printLine("Connection closed")
           _ <- f(data)

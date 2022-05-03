@@ -2,7 +2,7 @@ package zio.nio.channels
 import zio.ZIO.blocking
 import zio.nio.IOCloseable
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, UIO, ZIO, ZTraceElement}
+import zio.{IO, Trace, UIO, ZIO}
 
 import java.io.IOException
 import java.nio.channels.{Channel => JChannel}
@@ -14,13 +14,13 @@ trait Channel extends IOCloseable {
   /**
    * Closes this channel.
    */
-  final def close(implicit trace: ZTraceElement): IO[IOException, Unit] =
-    IO.attempt(channel.close()).refineToOrDie[IOException]
+  final def close(implicit trace: Trace): IO[IOException, Unit] =
+    ZIO.attempt(channel.close()).refineToOrDie[IOException]
 
   /**
    * Tells whether or not this channel is open.
    */
-  final def isOpen(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(channel.isOpen)
+  final def isOpen(implicit trace: Trace): UIO[Boolean] = ZIO.succeed(channel.isOpen)
 }
 
 /**
@@ -34,7 +34,7 @@ trait BlockingChannel extends Channel {
   type BlockingOps
 
   final protected def nioBlocking[R, E, A](zioEffect: ZIO[R, E, A])(implicit
-    trace: ZTraceElement
+    trace: Trace
   ): ZIO[R with Any, E, A] =
     blocking(zioEffect).fork.flatMap(_.join).onInterrupt(close.ignore)
 
@@ -48,7 +48,7 @@ trait BlockingChannel extends Channel {
    *   operations.
    */
   def flatMapBlocking[R, E >: IOException, A](f: BlockingOps => ZIO[R, E, A])(implicit
-    trace: ZTraceElement
+    trace: Trace
   ): ZIO[R with Any, E, A]
 
 }

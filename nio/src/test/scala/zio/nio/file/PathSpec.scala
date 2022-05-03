@@ -3,10 +3,11 @@ package zio.nio.file
 import zio.nio.BaseSpec
 import zio.test.Assertion._
 import zio.test._
+import zio.{Scope, ZIOAppArgs}
 
 object PathSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("PathSpec")(
       test("Path construction") {
         val p        = Path("a", "b") / "c/d"

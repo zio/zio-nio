@@ -20,15 +20,15 @@ final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset
 
   def contains(cs: Charset): Boolean = javaCharset.contains(cs.javaCharset)
 
-  def decode(byteBuffer: ByteBuffer)(implicit trace: ZTraceElement): UIO[CharBuffer] =
-    byteBuffer.withJavaBuffer(jBuf => UIO.succeed(Buffer.charFromJava(javaCharset.decode(jBuf))))
+  def decode(byteBuffer: ByteBuffer)(implicit trace: Trace): UIO[CharBuffer] =
+    byteBuffer.withJavaBuffer(jBuf => ZIO.succeed(Buffer.charFromJava(javaCharset.decode(jBuf))))
 
   def displayName: String = javaCharset.displayName()
 
   def displayName(locale: ju.Locale): String = javaCharset.displayName(locale)
 
-  def encode(charBuffer: CharBuffer)(implicit trace: ZTraceElement): UIO[ByteBuffer] =
-    charBuffer.withJavaBuffer(jBuf => UIO.succeed(Buffer.byteFromJava(javaCharset.encode(jBuf))))
+  def encode(charBuffer: CharBuffer)(implicit trace: Trace): UIO[ByteBuffer] =
+    charBuffer.withJavaBuffer(jBuf => ZIO.succeed(Buffer.byteFromJava(javaCharset.encode(jBuf))))
 
   override def equals(other: Any): Boolean =
     other match {
@@ -48,28 +48,28 @@ final class Charset private (val javaCharset: j.Charset) extends Ordered[Charset
 
   override def toString: String = javaCharset.toString
 
-  def encodeChunk(chunk: Chunk[Char])(implicit trace: ZTraceElement): UIO[Chunk[Byte]] =
+  def encodeChunk(chunk: Chunk[Char])(implicit trace: Trace): UIO[Chunk[Byte]] =
     for {
       charBuf <- Buffer.char(chunk)
       byteBuf <- encode(charBuf)
       chunk   <- byteBuf.getChunk()
     } yield chunk
 
-  def encodeString(s: CharSequence)(implicit trace: ZTraceElement): UIO[Chunk[Byte]] =
+  def encodeString(s: CharSequence)(implicit trace: Trace): UIO[Chunk[Byte]] =
     for {
       charBuf <- Buffer.char(s)
       byteBuf <- encode(charBuf)
       chunk   <- byteBuf.getChunk()
     } yield chunk
 
-  def decodeChunk(chunk: Chunk[Byte])(implicit trace: ZTraceElement): UIO[Chunk[Char]] =
+  def decodeChunk(chunk: Chunk[Byte])(implicit trace: Trace): UIO[Chunk[Char]] =
     for {
       byteBuf <- Buffer.byte(chunk)
       charBuf <- decode(byteBuf)
       chunk   <- charBuf.getChunk()
     } yield chunk
 
-  def decodeString(chunk: Chunk[Byte])(implicit trace: ZTraceElement): UIO[String] =
+  def decodeString(chunk: Chunk[Byte])(implicit trace: Trace): UIO[String] =
     for {
       byteBuf <- Buffer.byte(chunk)
       charBuf <- decode(byteBuf)

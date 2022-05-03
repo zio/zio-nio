@@ -9,10 +9,10 @@ import java.io.IOException
 
 object DatagramChannelSpec extends BaseSpec {
 
-  override def spec: ZSpec[TestEnvironment with Scope, Any] =
+  override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("DatagramChannelSpec")(
       test("read/write") {
-        def echoServer(started: Promise[Nothing, SocketAddress])(implicit trace: ZTraceElement): UIO[Unit] =
+        def echoServer(started: Promise[Nothing, SocketAddress])(implicit trace: Trace): UIO[Unit] =
           for {
             sink <- Buffer.byte(3)
             _ <- ZIO.scoped {
@@ -29,7 +29,7 @@ object DatagramChannelSpec extends BaseSpec {
                  }.fork
           } yield ()
 
-        def echoClient(address: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Boolean] =
+        def echoClient(address: SocketAddress)(implicit trace: Trace): IO[IOException, Boolean] =
           for {
             src <- Buffer.byte(3)
             result <- ZIO.scoped {
@@ -55,7 +55,7 @@ object DatagramChannelSpec extends BaseSpec {
         } yield assert(same)(isTrue)
       },
       test("close channel unbind port") {
-        def client(address: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+        def client(address: SocketAddress)(implicit trace: Trace): IO[IOException, Unit] =
           ZIO.scoped {
             DatagramChannel.open.flatMapNioBlockingOps(_.connect(address).unit)
           }
@@ -63,7 +63,7 @@ object DatagramChannelSpec extends BaseSpec {
         def server(
           address: Option[SocketAddress],
           started: Promise[Nothing, SocketAddress]
-        )(implicit trace: ZTraceElement): UIO[Fiber[IOException, Unit]] =
+        )(implicit trace: Trace): UIO[Fiber[IOException, Unit]] =
           for {
             worker <- ZIO.scoped {
                         DatagramChannel.open.flatMapNioBlocking { (server, _) =>

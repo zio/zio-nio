@@ -1,7 +1,7 @@
 package zio.nio
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, UIO, ZIO, ZTraceElement}
+import zio.{IO, Trace, UIO, ZIO}
 
 import java.nio.{MappedByteBuffer => JMappedByteBuffer}
 
@@ -18,15 +18,15 @@ final class MappedByteBuffer private[nio] (override protected[nio] val buffer: J
   /**
    * Tells whether or not this buffer's content is resident in physical memory.
    */
-  def isLoaded(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(buffer.isLoaded)
+  def isLoaded(implicit trace: Trace): UIO[Boolean] = ZIO.succeed(buffer.isLoaded)
 
   /**
    * Loads this buffer's content into physical memory.
    */
-  def load(implicit trace: ZTraceElement): ZIO[Any, Nothing, Unit] = ZIO.blocking(IO.succeed(buffer.load()).unit)
+  def load(implicit trace: Trace): ZIO[Any, Nothing, Unit] = ZIO.blocking(ZIO.succeed(buffer.load()).unit)
 
   /**
    * Forces any changes made to this buffer's content to be written to the storage device containing the mapped file.
    */
-  def force(implicit trace: ZTraceElement): ZIO[Any, Nothing, Unit] = ZIO.blocking(IO.succeed(buffer.force()).unit)
+  def force(implicit trace: Trace): ZIO[Any, Nothing, Unit] = ZIO.blocking(ZIO.succeed(buffer.force()).unit)
 }

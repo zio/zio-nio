@@ -2,7 +2,7 @@ package zio.nio
 
 import zio.test.Assertion._
 import zio.test.{TestEnvironment, _}
-import zio.{Chunk, IO}
+import zio.{Chunk, IO, ZIO}
 
 import java.nio.{
   Buffer => JBuffer,
@@ -20,7 +20,7 @@ import scala.reflect.ClassTag
 
 object BufferSpec extends BaseSpec {
 
-  def spec: Spec[TestEnvironment, TestFailure[Exception], TestSuccess] =
+  def spec: Spec[TestEnvironment, Exception] =
     suite("BufferSpec")(
       commonBufferTests(
         "ByteBuffer",
@@ -79,7 +79,7 @@ object BufferSpec extends BaseSpec {
     wrap: Chunk[A] => IO[Exception, C],
     jAllocate: Int => B,
     f: Int => A
-  ): ZSpec[TestEnvironment, Exception] = {
+  ): Spec[TestEnvironment, Exception] = {
     val initialCapacity = 10
     def initialValue    = f(1)
     def initialValues   = Array(1, 2, 3).map(f)
@@ -243,7 +243,7 @@ object BufferSpec extends BaseSpec {
             } yield assert(mark)(isWithin(0, position)) && assert(limit)(
               isWithin(position, capacity)
             )).catchSomeDefect { case _: IllegalArgumentException | _: IllegalStateException =>
-              IO.succeed(assertCompletes)
+              ZIO.succeed(assertCompletes)
             }
         }
       }
