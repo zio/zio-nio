@@ -4,7 +4,7 @@ package channels
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.stream.{Stream, ZStream}
-import zio.{Chunk, IO, UIO, Trace, ZIO}
+import zio.{Chunk, IO, Trace, UIO, ZIO}
 
 import java.io.{EOFException, IOException}
 import java.nio.channels.{ScatteringByteChannel => JScatteringByteChannel}

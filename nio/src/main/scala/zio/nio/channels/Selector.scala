@@ -4,7 +4,7 @@ package channels
 import com.github.ghik.silencer.silent
 import zio.nio.channels.spi.SelectorProvider
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{Duration, IO, Scope, UIO, ZIO, Trace}
+import zio.{Duration, IO, Scope, Trace, UIO, ZIO}
 
 import java.io.IOException
 import java.nio.channels.{SelectionKey => JSelectionKey, Selector => JSelector}

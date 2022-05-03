@@ -2,7 +2,7 @@ package zio.nio.channels
 import zio.ZIO.blocking
 import zio.nio.IOCloseable
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, UIO, ZIO, Trace}
+import zio.{IO, Trace, UIO, ZIO}
 
 import java.io.IOException
 import java.nio.channels.{Channel => JChannel}

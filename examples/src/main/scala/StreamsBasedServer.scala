@@ -3,7 +3,7 @@ package zio.nio.examples
 import zio.nio.InetSocketAddress
 import zio.nio.channels.AsynchronousServerSocketChannel
 import zio.stream._
-import zio.{Clock, Console, ExitCode, RIO, Scope, UIO, ZIO, ZIOAppDefault, Trace, durationInt}
+import zio.{Clock, Console, ExitCode, RIO, Scope, Trace, UIO, ZIO, ZIOAppDefault, durationInt}
 
 object StreamsBasedServer extends ZIOAppDefault {
 

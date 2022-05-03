@@ -8,10 +8,12 @@ import zio.{Chunk, IO, ZIO}
 
 import java.nio.file.{Files, StandardOpenOption}
 import scala.io.Source
+import java.io.IOException
+import zio.Scope
 
 object ScatterGatherChannelSpec extends BaseSpec {
 
-  override def spec =
+  override def spec: Spec[Scope with Any, IOException] =
     suite("ScatterGatherChannelSpec")(
       test("scattering read") {
         FileChannel

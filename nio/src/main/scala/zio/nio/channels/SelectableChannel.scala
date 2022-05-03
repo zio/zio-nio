@@ -4,7 +4,7 @@ package channels
 import zio.nio.channels.SelectionKey.Operation
 import zio.nio.channels.spi.SelectorProvider
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{Exit, Fiber, IO, Scope, UIO, ZIO, Trace}
+import zio.{Exit, Fiber, IO, Scope, Trace, UIO, ZIO}
 
 import java.io.IOException
 import java.net.{ServerSocket => JServerSocket, Socket => JSocket, SocketOption}

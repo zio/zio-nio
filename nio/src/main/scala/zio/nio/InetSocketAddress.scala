@@ -1,7 +1,7 @@
 package zio.nio
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, UIO, Trace, ZIO}
+import zio.{IO, Trace, UIO, ZIO}
 
 import java.net.{InetSocketAddress => JInetSocketAddress, SocketAddress => JSocketAddress, UnknownHostException}
 

@@ -4,7 +4,7 @@ import zio.ZIO.attemptBlocking
 import zio.nio.charset.Charset
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 import zio.stream.{ZSink, ZStream}
-import zio.{Chunk, Scope, ZIO, Trace}
+import zio.{Chunk, Scope, Trace, ZIO}
 
 import java.io.IOException
 import java.nio.file.attribute._

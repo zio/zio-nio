@@ -1,7 +1,7 @@
 package zio.nio.channels
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, UIO, ZIO, Trace}
+import zio.{IO, Trace, UIO, ZIO}
 
 import java.nio.{channels => jc}
 

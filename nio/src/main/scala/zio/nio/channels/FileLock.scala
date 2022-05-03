@@ -1,7 +1,7 @@
 package zio.nio.channels
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, UIO, Trace, ZIO}
+import zio.{IO, Trace, UIO, ZIO}
 
 import java.io.IOException
 import java.nio.channels.{FileLock => JFileLock}
