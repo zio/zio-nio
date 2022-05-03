@@ -11,7 +11,7 @@ import java.nio.channels.CancelledKeyException
 
 object SelectorSpec extends BaseSpec {
 
-  override def spec: ZSpec[TestEnvironment with Scope, Any] =
+  override def spec: Spec[TestEnvironment with Scope, Any] =
     suite("SelectorSpec")(
       test("read/write") {
         for {
@@ -41,18 +41,18 @@ object SelectorSpec extends BaseSpec {
   def byteArrayToString(array: Array[Byte]): String = array.takeWhile(_ != 10).map(_.toChar).mkString.trim
 
   def safeStatusCheck(statusCheck: IO[CancelledKeyException, Boolean])(implicit
-    trace: ZTraceElement
+    trace: Trace
   ): IO[Nothing, Boolean] =
     statusCheck.fold(_ => false, identity)
 
   def server(
     started: Promise[Nothing, SocketAddress]
-  )(implicit trace: ZTraceElement): ZIO[Scope, Exception, Unit] = {
+  )(implicit trace: Trace): ZIO[Scope, Exception, Unit] = {
     def serverLoop(
       scope: Scope,
       selector: Selector,
       buffer: ByteBuffer
-    )(implicit trace: ZTraceElement): ZIO[Any, Exception, Unit] =
+    )(implicit trace: Trace): ZIO[Any, Exception, Unit] =
       for {
         _ <- selector.select
         _ <- selector.foreachSelectedKey { key =>
@@ -62,7 +62,7 @@ object SelectorSpec extends BaseSpec {
                      for {
                        scopeResult <- scope.extend(channel.flatMapNonBlocking(_.accept))
                        maybeClient  = scopeResult
-                       _ <- IO.whenCase(maybeClient) { case Some(client) =>
+                       _ <- ZIO.whenCase(maybeClient) { case Some(client) =>
                               client.configureBlocking(false) *> client.register(selector, Set(Operation.Read))
                             }
                      } yield ()
@@ -105,7 +105,7 @@ object SelectorSpec extends BaseSpec {
     } yield ()
   }
 
-  def client(address: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, String] = {
+  def client(address: SocketAddress)(implicit trace: Trace): IO[IOException, String] = {
     val bytes = Chunk.fromArray("Hello world".getBytes)
     for {
       buffer <- Buffer.byte(bytes)

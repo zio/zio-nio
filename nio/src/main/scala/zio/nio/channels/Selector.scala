@@ -4,7 +4,7 @@ package channels
 import com.github.ghik.silencer.silent
 import zio.nio.channels.spi.SelectorProvider
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{Duration, IO, Scope, UIO, ZIO, ZTraceElement}
+import zio.{Duration, IO, Scope, UIO, ZIO, Trace}
 
 import java.io.IOException
 import java.nio.channels.{SelectionKey => JSelectionKey, Selector => JSelector}
@@ -22,14 +22,15 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
 
   type Env = Any
 
-  def isOpen(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(selector.isOpen)
+  def isOpen(implicit trace: Trace): UIO[Boolean] = ZIO.succeed(selector.isOpen)
 
-  def provider(implicit trace: ZTraceElement): UIO[SelectorProvider] =
-    IO.succeed(selector.provider()).map(new SelectorProvider(_))
+  def provider(implicit trace: Trace): UIO[SelectorProvider] =
+    ZIO.succeed(selector.provider()).map(new SelectorProvider(_))
 
   @silent
-  def keys(implicit trace: ZTraceElement): UIO[Set[SelectionKey]] =
-    IO.succeed(selector.keys())
+  def keys(implicit trace: Trace): UIO[Set[SelectionKey]] =
+    ZIO
+      .succeed(selector.keys())
       .map(_.asScala.toSet[JSelectionKey].map(new SelectionKey(_)))
 
   /**
@@ -40,8 +41,9 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * thread-safe.
    */
   @silent
-  def selectedKeys(implicit trace: ZTraceElement): UIO[mutable.Set[SelectionKey]] =
-    IO.succeed(selector.selectedKeys())
+  def selectedKeys(implicit trace: Trace): UIO[mutable.Set[SelectionKey]] =
+    ZIO
+      .succeed(selector.selectedKeys())
       .map(_.asScala.map(new SelectionKey(_)))
 
   /**
@@ -50,7 +52,7 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * If the result of effect is true, the key will be removed from the selected-key set, which is usually what you want
    * after successfully handling a selected key.
    */
-  def foreachSelectedKey[R, E](f: SelectionKey => ZIO[R, E, Boolean])(implicit trace: ZTraceElement): ZIO[R, E, Unit] =
+  def foreachSelectedKey[R, E](f: SelectionKey => ZIO[R, E, Boolean])(implicit trace: Trace): ZIO[R, E, Unit] =
     ZIO.succeed(selector.selectedKeys().iterator()).flatMap { iter =>
       def loop: ZIO[R, E, Unit] =
         ZIO.suspendSucceed {
@@ -65,8 +67,8 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
       loop
     }
 
-  def removeKey(key: SelectionKey)(implicit trace: ZTraceElement): UIO[Unit] =
-    IO.succeed(selector.selectedKeys().remove(key.selectionKey)).unit
+  def removeKey(key: SelectionKey)(implicit trace: Trace): UIO[Unit] =
+    ZIO.succeed(selector.selectedKeys().remove(key.selectionKey)).unit
 
   /**
    * Selects a set of keys whose corresponding channels are ready for I/O operations. This method performs a
@@ -76,8 +78,8 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * @return
    *   The number of keys, possibly zero, whose ready-operation sets were updated by the selection operation.
    */
-  def selectNow(implicit trace: ZTraceElement): IO[IOException, Int] =
-    IO.attempt(selector.selectNow()).refineToOrDie[IOException]
+  def selectNow(implicit trace: Trace): IO[IOException, Int] =
+    ZIO.attempt(selector.selectNow()).refineToOrDie[IOException]
 
   /**
    * Performs a blocking select operation.
@@ -90,8 +92,9 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * @return
    *   The number of keys, possibly zero, whose ready-operation sets were updated
    */
-  def select(timeout: Duration)(implicit trace: ZTraceElement): IO[IOException, Int] =
-    IO.attemptBlocking(selector.select(timeout.toMillis))
+  def select(timeout: Duration)(implicit trace: Trace): IO[IOException, Int] =
+    ZIO
+      .attemptBlocking(selector.select(timeout.toMillis))
       .refineToOrDie[IOException]
       .fork
       .flatMap(_.join)
@@ -108,8 +111,8 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * @return
    *   The number of keys, possibly zero, whose ready-operation sets were updated
    */
-  def select(implicit trace: ZTraceElement): IO[IOException, Int] =
-    IO.attemptBlocking(selector.select()).refineToOrDie[IOException].fork.flatMap(_.join).onInterrupt(wakeup)
+  def select(implicit trace: Trace): IO[IOException, Int] =
+    ZIO.attemptBlocking(selector.select()).refineToOrDie[IOException].fork.flatMap(_.join).onInterrupt(wakeup)
 
   /**
    * Causes the first selection operation that has not yet returned to return immediately.
@@ -121,7 +124,7 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * `select(long)` methods will block as usual unless this method is invoked again in the meantime. Invoking this
    * method more than once between two successive selection operations has the same effect as invoking it just once.
    */
-  def wakeup(implicit trace: ZTraceElement): IO[Nothing, Unit] = IO.succeed(selector.wakeup()).unit
+  def wakeup(implicit trace: Trace): IO[Nothing, Unit] = ZIO.succeed(selector.wakeup()).unit
 
   /**
    * Closes this selector.
@@ -133,8 +136,8 @@ final class Selector(private[nio] val selector: JSelector) extends IOCloseable {
    * to use it, except by invoking this method or the wakeup method, will cause a `ClosedSelectorException` to be raised
    * as a defect.
    */
-  def close(implicit trace: ZTraceElement): IO[IOException, Unit] =
-    IO.attempt(selector.close()).refineToOrDie[IOException]
+  def close(implicit trace: Trace): IO[IOException, Unit] =
+    ZIO.attempt(selector.close()).refineToOrDie[IOException]
 
 }
 
@@ -143,7 +146,7 @@ object Selector {
   /**
    * Opens a selector.
    */
-  def open(implicit trace: ZTraceElement): ZIO[Scope, IOException, Selector] =
-    IO.attempt(new Selector(JSelector.open())).refineToOrDie[IOException].toNioScoped
+  def open(implicit trace: Trace): ZIO[Scope, IOException, Selector] =
+    ZIO.attempt(new Selector(JSelector.open())).refineToOrDie[IOException].toNioScoped
 
 }

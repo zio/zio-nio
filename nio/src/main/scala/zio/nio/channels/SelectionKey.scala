@@ -1,7 +1,7 @@
 package zio.nio.channels
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, UIO, ZIO, ZTraceElement}
+import zio.{IO, UIO, ZIO, Trace}
 
 import java.nio.{channels => jc}
 
@@ -66,10 +66,10 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
    *         case channel: ServerSocketChannel if readyOps(Operation.Accept) =>
    *           // use `channel` to accept connection
    *         case channel: SocketChannel =>
-   *           IO.when(readyOps(Operation.Read)) {
+   *           ZIO.when(readyOps(Operation.Read)) {
    *             // use `channel` to read
    *           } *>
-   *             IO.when(readyOps(Operation.Write)) {
+   *             ZIO.when(readyOps(Operation.Write)) {
    *               // use `channel` to write
    *             }
    *       } }
@@ -85,7 +85,7 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
    */
   def matchChannel[R, E, A](
     matcher: Set[Operation] => PartialFunction[SelectableChannel, ZIO[R, E, A]]
-  )(implicit trace: ZTraceElement): ZIO[R, E, A] =
+  )(implicit trace: Trace): ZIO[R, E, A] =
     readyOps.flatMap(
       matcher(_)
         .applyOrElse(channel, (channel: SelectableChannel) => ZIO.dieMessage(s"Unexpected channel type: $channel"))
@@ -93,46 +93,46 @@ final class SelectionKey(private[nio] val selectionKey: jc.SelectionKey) {
 
   final def selector: Selector = new Selector(selectionKey.selector())
 
-  final def isValid(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(selectionKey.isValid)
+  final def isValid(implicit trace: Trace): UIO[Boolean] = ZIO.succeed(selectionKey.isValid)
 
-  final def cancel(implicit trace: ZTraceElement): UIO[Unit] = IO.succeed(selectionKey.cancel())
+  final def cancel(implicit trace: Trace): UIO[Unit] = ZIO.succeed(selectionKey.cancel())
 
-  final def interestOps(implicit trace: ZTraceElement): UIO[Set[Operation]] =
-    IO.succeed(Operation.fromInt(selectionKey.interestOps()))
+  final def interestOps(implicit trace: Trace): UIO[Set[Operation]] =
+    ZIO.succeed(Operation.fromInt(selectionKey.interestOps()))
 
-  final def interestOps(ops: Set[Operation])(implicit trace: ZTraceElement): UIO[Unit] =
-    IO.succeed(selectionKey.interestOps(Operation.toInt(ops))).unit
+  final def interestOps(ops: Set[Operation])(implicit trace: Trace): UIO[Unit] =
+    ZIO.succeed(selectionKey.interestOps(Operation.toInt(ops))).unit
 
-  def interested(op: Operation)(implicit trace: ZTraceElement): UIO[Set[Operation]] =
+  def interested(op: Operation)(implicit trace: Trace): UIO[Set[Operation]] =
     for {
       current    <- interestOps
       newInterest = current + op
       _          <- interestOps(newInterest)
     } yield newInterest
 
-  def notInterested(op: Operation)(implicit trace: ZTraceElement): UIO[Set[Operation]] =
+  def notInterested(op: Operation)(implicit trace: Trace): UIO[Set[Operation]] =
     for {
       current    <- interestOps
       newInterest = current - op
       _          <- interestOps(newInterest)
     } yield newInterest
 
-  final def readyOps(implicit trace: ZTraceElement): UIO[Set[Operation]] =
-    IO.succeed(Operation.fromInt(selectionKey.readyOps()))
+  final def readyOps(implicit trace: Trace): UIO[Set[Operation]] =
+    ZIO.succeed(Operation.fromInt(selectionKey.readyOps()))
 
-  final def isReadable(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(selectionKey.isReadable())
+  final def isReadable(implicit trace: Trace): UIO[Boolean] = ZIO.succeed(selectionKey.isReadable())
 
-  final def isWritable(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(selectionKey.isWritable())
+  final def isWritable(implicit trace: Trace): UIO[Boolean] = ZIO.succeed(selectionKey.isWritable())
 
-  final def isConnectable(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(selectionKey.isConnectable())
+  final def isConnectable(implicit trace: Trace): UIO[Boolean] = ZIO.succeed(selectionKey.isConnectable())
 
-  final def isAcceptable(implicit trace: ZTraceElement): UIO[Boolean] = IO.succeed(selectionKey.isAcceptable())
+  final def isAcceptable(implicit trace: Trace): UIO[Boolean] = ZIO.succeed(selectionKey.isAcceptable())
 
-  final def attach(ob: Option[AnyRef])(implicit trace: ZTraceElement): UIO[Option[AnyRef]] =
-    IO.succeed(Option(selectionKey.attach(ob.orNull)))
+  final def attach(ob: Option[AnyRef])(implicit trace: Trace): UIO[Option[AnyRef]] =
+    ZIO.succeed(Option(selectionKey.attach(ob.orNull)))
 
-  final def attachment(implicit trace: ZTraceElement): UIO[Option[AnyRef]] =
-    IO.succeed(selectionKey.attachment()).map(Option(_))
+  final def attachment(implicit trace: Trace): UIO[Option[AnyRef]] =
+    ZIO.succeed(selectionKey.attachment()).map(Option(_))
 
   override def toString: String = selectionKey.toString
 

@@ -2,7 +2,7 @@ package zio.nio
 
 import com.github.ghik.silencer.silent
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, ZTraceElement}
+import zio.{IO, Trace, ZIO}
 
 import java.net.{NetworkInterface => JNetworkInterface, SocketException}
 import scala.collection.JavaConverters._
@@ -28,47 +28,51 @@ class NetworkInterface private[nio] (private[nio] val jNetworkInterface: JNetwor
 
   def displayName: String = jNetworkInterface.getDisplayName
 
-  def isUp(implicit trace: ZTraceElement): IO[SocketException, Boolean] =
-    IO.attempt(jNetworkInterface.isUp).refineToOrDie[SocketException]
+  def isUp(implicit trace: Trace): IO[SocketException, Boolean] =
+    ZIO.attempt(jNetworkInterface.isUp).refineToOrDie[SocketException]
 
-  def isLoopback(implicit trace: ZTraceElement): IO[SocketException, Boolean] =
-    IO.attempt(jNetworkInterface.isLoopback).refineToOrDie[SocketException]
+  def isLoopback(implicit trace: Trace): IO[SocketException, Boolean] =
+    ZIO.attempt(jNetworkInterface.isLoopback).refineToOrDie[SocketException]
 
-  def isPointToPoint(implicit trace: ZTraceElement): IO[SocketException, Boolean] =
-    IO.attempt(jNetworkInterface.isPointToPoint).refineToOrDie[SocketException]
+  def isPointToPoint(implicit trace: Trace): IO[SocketException, Boolean] =
+    ZIO.attempt(jNetworkInterface.isPointToPoint).refineToOrDie[SocketException]
 
-  def supportsMulticast(implicit trace: ZTraceElement): IO[SocketException, Boolean] =
-    IO.attempt(jNetworkInterface.supportsMulticast).refineToOrDie[SocketException]
+  def supportsMulticast(implicit trace: Trace): IO[SocketException, Boolean] =
+    ZIO.attempt(jNetworkInterface.supportsMulticast).refineToOrDie[SocketException]
 
-  def hardwareAddress(implicit trace: ZTraceElement): IO[SocketException, Array[Byte]] =
-    IO.attempt(jNetworkInterface.getHardwareAddress).refineToOrDie[SocketException]
+  def hardwareAddress(implicit trace: Trace): IO[SocketException, Array[Byte]] =
+    ZIO.attempt(jNetworkInterface.getHardwareAddress).refineToOrDie[SocketException]
 
-  def mtu(implicit trace: ZTraceElement): IO[SocketException, Int] =
-    IO.attempt(jNetworkInterface.getMTU).refineToOrDie[SocketException]
+  def mtu(implicit trace: Trace): IO[SocketException, Int] =
+    ZIO.attempt(jNetworkInterface.getMTU).refineToOrDie[SocketException]
 
   def isVirtual: Boolean = jNetworkInterface.isVirtual
 }
 
 object NetworkInterface {
 
-  def byName(name: String)(implicit trace: ZTraceElement): IO[SocketException, NetworkInterface] =
-    IO.attempt(JNetworkInterface.getByName(name))
+  def byName(name: String)(implicit trace: Trace): IO[SocketException, NetworkInterface] =
+    ZIO
+      .attempt(JNetworkInterface.getByName(name))
       .refineToOrDie[SocketException]
       .map(new NetworkInterface(_))
 
-  def byIndex(index: Integer)(implicit trace: ZTraceElement): IO[SocketException, NetworkInterface] =
-    IO.attempt(JNetworkInterface.getByIndex(index))
+  def byIndex(index: Integer)(implicit trace: Trace): IO[SocketException, NetworkInterface] =
+    ZIO
+      .attempt(JNetworkInterface.getByIndex(index))
       .refineToOrDie[SocketException]
       .map(new NetworkInterface(_))
 
-  def byInetAddress(address: InetAddress)(implicit trace: ZTraceElement): IO[SocketException, NetworkInterface] =
-    IO.attempt(JNetworkInterface.getByInetAddress(address.jInetAddress))
+  def byInetAddress(address: InetAddress)(implicit trace: Trace): IO[SocketException, NetworkInterface] =
+    ZIO
+      .attempt(JNetworkInterface.getByInetAddress(address.jInetAddress))
       .refineToOrDie[SocketException]
       .map(new NetworkInterface(_))
 
   @silent
-  def networkInterfaces(implicit trace: ZTraceElement): IO[SocketException, Iterator[NetworkInterface]] =
-    IO.attempt(JNetworkInterface.getNetworkInterfaces.asScala)
+  def networkInterfaces(implicit trace: Trace): IO[SocketException, Iterator[NetworkInterface]] =
+    ZIO
+      .attempt(JNetworkInterface.getNetworkInterfaces.asScala)
       .refineToOrDie[SocketException]
       .map(_.map(new NetworkInterface(_)))
 

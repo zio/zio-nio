@@ -1,7 +1,7 @@
 package zio.nio
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{Chunk, UIO, ZIO, ZTraceElement}
+import zio.{Chunk, UIO, ZIO, Trace}
 
 import java.nio.{ByteOrder, CharBuffer => JCharBuffer}
 
@@ -10,16 +10,16 @@ import java.nio.{ByteOrder, CharBuffer => JCharBuffer}
  */
 final class CharBuffer(protected[nio] val buffer: JCharBuffer) extends Buffer[Char] {
 
-  override protected[nio] def array(implicit trace: ZTraceElement): UIO[Array[Char]] = UIO.succeed(buffer.array())
+  override protected[nio] def array(implicit trace: Trace): UIO[Array[Char]] = ZIO.succeed(buffer.array())
 
-  override def order(implicit trace: ZTraceElement): UIO[ByteOrder] = UIO.succeed(buffer.order())
+  override def order(implicit trace: Trace): UIO[ByteOrder] = ZIO.succeed(buffer.order())
 
-  override def slice(implicit trace: ZTraceElement): UIO[CharBuffer] = UIO.succeed(new CharBuffer(buffer.slice()))
+  override def slice(implicit trace: Trace): UIO[CharBuffer] = ZIO.succeed(new CharBuffer(buffer.slice()))
 
-  override def compact(implicit trace: ZTraceElement): UIO[Unit] = UIO.succeed(buffer.compact()).unit
+  override def compact(implicit trace: Trace): UIO[Unit] = ZIO.succeed(buffer.compact()).unit
 
-  override def duplicate(implicit trace: ZTraceElement): UIO[CharBuffer] =
-    UIO.succeed(new CharBuffer(buffer.duplicate()))
+  override def duplicate(implicit trace: Trace): UIO[CharBuffer] =
+    ZIO.succeed(new CharBuffer(buffer.duplicate()))
 
   /**
    * Provides the underlying Java character buffer for use in an effect.
@@ -29,33 +29,33 @@ final class CharBuffer(protected[nio] val buffer: JCharBuffer) extends Buffer[Ch
    * @return
    *   The effect value constructed by `f` using the underlying buffer.
    */
-  def withJavaBuffer[R, E, A](f: JCharBuffer => ZIO[R, E, A])(implicit trace: ZTraceElement): ZIO[R, E, A] = f(buffer)
+  def withJavaBuffer[R, E, A](f: JCharBuffer => ZIO[R, E, A])(implicit trace: Trace): ZIO[R, E, A] = f(buffer)
 
-  override def get(implicit trace: ZTraceElement): UIO[Char] = UIO.succeed(buffer.get())
+  override def get(implicit trace: Trace): UIO[Char] = ZIO.succeed(buffer.get())
 
-  override def get(i: Int)(implicit trace: ZTraceElement): UIO[Char] = UIO.succeed(buffer.get(i))
+  override def get(i: Int)(implicit trace: Trace): UIO[Char] = ZIO.succeed(buffer.get(i))
 
-  override def getChunk(maxLength: Int = Int.MaxValue)(implicit trace: ZTraceElement): UIO[Chunk[Char]] =
-    UIO.succeed {
+  override def getChunk(maxLength: Int = Int.MaxValue)(implicit trace: Trace): UIO[Chunk[Char]] =
+    ZIO.succeed {
       val array = Array.ofDim[Char](math.min(maxLength, buffer.remaining()))
       buffer.get(array)
       Chunk.fromArray(array)
     }
 
-  def getString(implicit trace: ZTraceElement): UIO[String] = UIO.succeed(buffer.toString())
+  def getString(implicit trace: Trace): UIO[String] = ZIO.succeed(buffer.toString())
 
-  override def put(element: Char)(implicit trace: ZTraceElement): UIO[Unit] = UIO.succeed(buffer.put(element)).unit
+  override def put(element: Char)(implicit trace: Trace): UIO[Unit] = ZIO.succeed(buffer.put(element)).unit
 
-  override def put(index: Int, element: Char)(implicit trace: ZTraceElement): UIO[Unit] =
-    UIO.succeed(buffer.put(index, element)).unit
+  override def put(index: Int, element: Char)(implicit trace: Trace): UIO[Unit] =
+    ZIO.succeed(buffer.put(index, element)).unit
 
-  override protected def putChunkAll(chunk: Chunk[Char])(implicit trace: ZTraceElement): UIO[Unit] =
-    UIO.succeed {
+  override protected def putChunkAll(chunk: Chunk[Char])(implicit trace: Trace): UIO[Unit] =
+    ZIO.succeed {
       val array = chunk.toArray
       buffer.put(array)
     }.unit
 
-  override def asReadOnlyBuffer(implicit trace: ZTraceElement): UIO[CharBuffer] =
-    UIO.succeed(new CharBuffer(buffer.asReadOnlyBuffer()))
+  override def asReadOnlyBuffer(implicit trace: Trace): UIO[CharBuffer] =
+    ZIO.succeed(new CharBuffer(buffer.asReadOnlyBuffer()))
 
 }

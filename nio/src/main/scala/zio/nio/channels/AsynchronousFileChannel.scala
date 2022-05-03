@@ -16,11 +16,11 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
 
   import AsynchronousByteChannel.effectAsyncChannel
 
-  def force(metaData: Boolean)(implicit trace: ZTraceElement): IO[IOException, Unit] =
-    IO.attempt(channel.force(metaData)).refineToOrDie[IOException]
+  def force(metaData: Boolean)(implicit trace: Trace): IO[IOException, Unit] =
+    ZIO.attempt(channel.force(metaData)).refineToOrDie[IOException]
 
   def lock(position: Long = 0L, size: Long = Long.MaxValue, shared: Boolean = false)(implicit
-    trace: ZTraceElement
+    trace: Trace
   ): IO[IOException, FileLock] =
     effectAsyncChannel[JAsynchronousFileChannel, JFileLock](channel)(c => c.lock(position, size, shared, (), _))
       .map(new FileLock(_))
@@ -33,7 +33,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
    * @param position
    *   The file position at which the transfer is to begin; must be non-negative
    */
-  def read(dst: ByteBuffer, position: Long)(implicit trace: ZTraceElement): IO[IOException, Int] =
+  def read(dst: ByteBuffer, position: Long)(implicit trace: Trace): IO[IOException, Int] =
     dst.withJavaBuffer { buf =>
       effectAsyncChannel[JAsynchronousFileChannel, Integer](channel)(c => c.read(buf, position, (), _))
         .flatMap(eofCheck(_))
@@ -47,7 +47,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
    * @param position
    *   The file position at which the transfer is to begin; must be non-negative
    */
-  def readChunk(capacity: Int, position: Long)(implicit trace: ZTraceElement): IO[IOException, Chunk[Byte]] =
+  def readChunk(capacity: Int, position: Long)(implicit trace: Trace): IO[IOException, Chunk[Byte]] =
     for {
       b     <- Buffer.byte(capacity)
       _     <- read(b, position)
@@ -55,19 +55,19 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
       chunk <- b.getChunk()
     } yield chunk
 
-  def size(implicit trace: ZTraceElement): IO[IOException, Long] = IO.attempt(channel.size()).refineToOrDie[IOException]
+  def size(implicit trace: Trace): IO[IOException, Long] = ZIO.attempt(channel.size()).refineToOrDie[IOException]
 
-  def truncate(size: Long)(implicit trace: ZTraceElement): IO[IOException, Unit] =
-    IO.attempt(channel.truncate(size)).refineToOrDie[IOException].unit
+  def truncate(size: Long)(implicit trace: Trace): IO[IOException, Unit] =
+    ZIO.attempt(channel.truncate(size)).refineToOrDie[IOException].unit
 
   def tryLock(
     position: Long = 0L,
     size: Long = Long.MaxValue,
     shared: Boolean = false
-  )(implicit trace: ZTraceElement): IO[IOException, FileLock] =
-    IO.attempt(new FileLock(channel.tryLock(position, size, shared))).refineToOrDie[IOException]
+  )(implicit trace: Trace): IO[IOException, FileLock] =
+    ZIO.attempt(new FileLock(channel.tryLock(position, size, shared))).refineToOrDie[IOException]
 
-  def write(src: ByteBuffer, position: Long)(implicit trace: ZTraceElement): IO[IOException, Int] =
+  def write(src: ByteBuffer, position: Long)(implicit trace: Trace): IO[IOException, Int] =
     src.withJavaBuffer { buf =>
       effectAsyncChannel[JAsynchronousFileChannel, Integer](channel)(c => c.write(buf, position, (), _))
         .map(_.intValue)
@@ -83,19 +83,19 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
    * @param position
    *   Where in the file to write.
    */
-  def writeChunk(src: Chunk[Byte], position: Long)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+  def writeChunk(src: Chunk[Byte], position: Long)(implicit trace: Trace): IO[IOException, Unit] =
     Buffer.byte(src).flatMap { b =>
-      def go(pos: Long)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+      def go(pos: Long)(implicit trace: Trace): IO[IOException, Unit] =
         write(b, pos).flatMap { bytesWritten =>
           b.hasRemaining.flatMap {
             case true  => go(pos + bytesWritten.toLong)
-            case false => IO.unit
+            case false => ZIO.unit
           }
         }
       go(position)
     }
 
-  def stream(position: Long)(implicit trace: ZTraceElement): Stream[IOException, Byte] =
+  def stream(position: Long)(implicit trace: Trace): Stream[IOException, Byte] =
     stream(position, Buffer.byte(5000))
 
   /**
@@ -110,7 +110,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
    *   default a heap buffer is used, but a direct buffer will usually perform better.
    */
   def stream(position: Long, bufferConstruct: UIO[ByteBuffer])(implicit
-    trace: ZTraceElement
+    trace: Trace
   ): Stream[IOException, Byte] =
     ZStream.unwrapScoped {
       for {
@@ -132,7 +132,7 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
       }
     }
 
-  def sink(position: Long)(implicit trace: ZTraceElement): ZSink[Any, IOException, Byte, Byte, Long] =
+  def sink(position: Long)(implicit trace: Trace): ZSink[Any, IOException, Byte, Byte, Long] =
     sink(position, Buffer.byte(5000))
 
   /**
@@ -147,13 +147,13 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
   def sink(
     position: Long,
     bufferConstruct: UIO[ByteBuffer]
-  )(implicit trace: ZTraceElement): ZSink[Any, IOException, Byte, Byte, Long] =
+  )(implicit trace: Trace): ZSink[Any, IOException, Byte, Byte, Long] =
     ZSink.fromPush {
       for {
         buffer <- bufferConstruct
         posRef <- Ref.make(position)
       } yield (_: Option[Chunk[Byte]]).map { chunk =>
-        def doWrite(currentPos: Long, c: Chunk[Byte])(implicit trace: ZTraceElement): ZIO[Any, IOException, Long] = {
+        def doWrite(currentPos: Long, c: Chunk[Byte])(implicit trace: Trace): ZIO[Any, IOException, Long] = {
           val x = for {
             remaining <- buffer.putChunk(c)
             _         <- buffer.flip
@@ -192,9 +192,10 @@ final class AsynchronousFileChannel(protected val channel: JAsynchronousFileChan
 object AsynchronousFileChannel {
 
   def open(file: Path, options: OpenOption*)(implicit
-    trace: ZTraceElement
+    trace: Trace
   ): ZIO[Scope, IOException, AsynchronousFileChannel] =
-    IO.attempt(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*)))
+    ZIO
+      .attempt(new AsynchronousFileChannel(JAsynchronousFileChannel.open(file.javaPath, options: _*)))
       .refineToOrDie[IOException]
       .toNioScoped
 
@@ -203,12 +204,14 @@ object AsynchronousFileChannel {
     options: Set[OpenOption],
     executor: Option[ExecutionContextExecutorService],
     attrs: Set[FileAttribute[_]]
-  )(implicit trace: ZTraceElement): ZIO[Scope, IOException, AsynchronousFileChannel] =
-    IO.attempt(
-      new AsynchronousFileChannel(
-        JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
+  )(implicit trace: Trace): ZIO[Scope, IOException, AsynchronousFileChannel] =
+    ZIO
+      .attempt(
+        new AsynchronousFileChannel(
+          JAsynchronousFileChannel.open(file.javaPath, options.asJava, executor.orNull, attrs.toSeq: _*)
+        )
       )
-    ).refineToOrDie[IOException]
+      .refineToOrDie[IOException]
       .toNioScoped
 
   def fromJava(javaAsynchronousFileChannel: JAsynchronousFileChannel): AsynchronousFileChannel =

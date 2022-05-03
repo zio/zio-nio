@@ -18,7 +18,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
           .open(Path("nio/src/test/resources/scattering_read_test.txt"), StandardOpenOption.READ)
           .flatMapNioBlockingOps { ops =>
             for {
-              buffs <- IO.collectAll(List(Buffer.byte(5), Buffer.byte(5)))
+              buffs <- ZIO.collectAll(List(Buffer.byte(5), Buffer.byte(5)))
               _     <- ops.read(buffs)
               list <- ZIO.foreach(buffs) { (buffer: Buffer[Byte]) =>
                         for {
@@ -37,7 +37,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
           .open(file, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
           .flatMapNioBlockingOps { ops =>
             for {
-              buffs <- IO.collectAll(
+              buffs <- ZIO.collectAll(
                          List(
                            Buffer.byte(Chunk.fromArray("Hello".getBytes)),
                            Buffer.byte(Chunk.fromArray("World".getBytes))
@@ -47,7 +47,7 @@ object ScatterGatherChannelSpec extends BaseSpec {
               result = Source.fromFile(file.toFile).getLines().toSeq
             } yield assert(result)(equalTo(Seq("HelloWorld")))
           }
-          .ensuring(IO.succeed(Files.delete(file.javaPath)))
+          .ensuring(ZIO.succeed(Files.delete(file.javaPath)))
       }
     )
 }

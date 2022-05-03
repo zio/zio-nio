@@ -1,7 +1,7 @@
 package zio.nio
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, ZTraceElement}
+import zio.{IO, Trace}
 
 import java.io.IOException
 
@@ -13,6 +13,6 @@ trait IOCloseable {
   /**
    * Closes this resource.
    */
-  def close(implicit trace: ZTraceElement): IO[IOException, Unit]
+  def close(implicit trace: Trace): IO[IOException, Unit]
 
 }

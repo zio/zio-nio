@@ -3,7 +3,7 @@ package zio.nio.channels
 import zio.nio.BaseSpec
 import zio.test.Assertion._
 import zio.test._
-import zio.{Duration, ZIO, ZTraceElement}
+import zio.{Duration, ZIO, Trace}
 
 import java.nio.channels.{AsynchronousChannelGroup => JAsynchronousChannelGroup}
 import java.util.concurrent.{ExecutorService => JExecutorService, Executors, TimeUnit}
@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext
 
 object AsynchronousChannelGroupSpec extends BaseSpec {
 
-  override def spec: Spec[Any, TestFailure[Throwable], TestSuccess] =
+  override def spec: Spec[Any, Throwable] =
     suite("AsynchronousChannelGroupSpec")(
       test("awaitTermination") {
         ClassFixture.providedFixture { fixture =>
@@ -57,11 +57,13 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
         } yield assert(result)(dies(anything))
       },
       test("companion object create instance using executor and initial size") {
-        ZIO
-          .attempt(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
-          .acquireReleaseWith(executor => ZIO.succeed(executor.shutdown())) { executor =>
-            AsynchronousChannelGroup(executor, 1).exit.map(result => assert(result.toEither)(isRight(anything)))
-          }
+        ZIO.acquireReleaseWith {
+          ZIO.attempt(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
+        } { executor =>
+          ZIO.succeed(executor.shutdown())
+        } { executor =>
+          AsynchronousChannelGroup(executor, 1).exit.map(result => assert(result.toEither)(isRight(anything)))
+        }
       },
       test("failing companion object create instance using executor and initial size") {
         for {
@@ -74,11 +76,13 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
         } yield assert(result)(dies(isSubtype[NullPointerException](anything)))
       },
       test("companion object create instance using executor service") {
-        ZIO
-          .attempt(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
-          .acquireReleaseWith(executor => ZIO.succeed(executor.shutdown())) { executor =>
-            AsynchronousChannelGroup(executor).exit.map(result => assert(result.toEither)(isRight(anything)))
-          }
+        ZIO.acquireReleaseWith {
+          ZIO.attempt(ExecutionContext.fromExecutorService(Executors.newCachedThreadPool()))
+        } { executor =>
+          ZIO.succeed(executor.shutdown())
+        } { executor =>
+          AsynchronousChannelGroup(executor).exit.map(result => assert(result.toEither)(isRight(anything)))
+        }
       },
       test("failing companion object create instance using executor service") {
         for {
@@ -114,10 +118,14 @@ object AsynchronousChannelGroupSpec extends BaseSpec {
       }
 
     def providedFixture(f: ClassFixture => ZIO[Any, Throwable, TestResult])(implicit
-      trace: ZTraceElement
+      trace: Trace
     ): ZIO[Any, Throwable, TestResult] =
-      ZIO
-        .attempt(ClassFixture())
-        .acquireReleaseWith(fixture => ZIO.succeed(fixture.cleanFixture()))(fixture => f(fixture))
+      ZIO.acquireReleaseWith {
+        ZIO.attempt(ClassFixture())
+      } { fixture =>
+        ZIO.succeed(fixture.cleanFixture())
+      } { fixture =>
+        f(fixture)
+      }
   }
 }

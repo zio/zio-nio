@@ -19,27 +19,27 @@ trait GatheringByteOps {
 
   protected[channels] def channel: JGatheringByteChannel
 
-  final def write(srcs: List[ByteBuffer])(implicit trace: ZTraceElement): IO[IOException, Long] =
-    IO.attempt(channel.write(unwrap(srcs))).refineToOrDie[IOException]
+  final def write(srcs: List[ByteBuffer])(implicit trace: Trace): IO[IOException, Long] =
+    ZIO.attempt(channel.write(unwrap(srcs))).refineToOrDie[IOException]
 
-  final def write(src: ByteBuffer)(implicit trace: ZTraceElement): IO[IOException, Int] =
-    IO.attempt(channel.write(src.buffer)).refineToOrDie[IOException]
+  final def write(src: ByteBuffer)(implicit trace: Trace): IO[IOException, Int] =
+    ZIO.attempt(channel.write(src.buffer)).refineToOrDie[IOException]
 
   /**
    * Writes a list of chunks, in order.
    *
    * Multiple writes may be performed in order to write all the chunks.
    */
-  final def writeChunks(srcs: List[Chunk[Byte]])(implicit trace: ZTraceElement): IO[IOException, Unit] =
+  final def writeChunks(srcs: List[Chunk[Byte]])(implicit trace: Trace): IO[IOException, Unit] =
     for {
-      bs <- IO.foreach(srcs)(Buffer.byte)
+      bs <- ZIO.foreach(srcs)(Buffer.byte)
       _ <- {
         // Handle partial writes by dropping buffers where `hasRemaining` returns false,
         // meaning they've been completely written
-        def go(buffers: List[ByteBuffer])(implicit trace: ZTraceElement): IO[IOException, Unit] =
+        def go(buffers: List[ByteBuffer])(implicit trace: Trace): IO[IOException, Unit] =
           for {
             _     <- write(buffers)
-            pairs <- IO.foreach(buffers)(b => b.hasRemaining.map(_ -> b))
+            pairs <- ZIO.foreach(buffers)(b => b.hasRemaining.map(_ -> b))
             _ <- {
               val remaining = pairs.dropWhile(!_._1).map(_._2)
               go(remaining).unless(remaining.isEmpty)
@@ -54,9 +54,9 @@ trait GatheringByteOps {
    *
    * Multiple writes may be performed to write the entire chunk.
    */
-  final def writeChunk(src: Chunk[Byte])(implicit trace: ZTraceElement): IO[IOException, Unit] = writeChunks(List(src))
+  final def writeChunk(src: Chunk[Byte])(implicit trace: Trace): IO[IOException, Unit] = writeChunks(List(src))
 
-  def sink()(implicit trace: ZTraceElement): ZSink[Any, IOException, Byte, Byte, Long] = sink(Buffer.byte(5000))
+  def sink()(implicit trace: Trace): ZSink[Any, IOException, Byte, Byte, Long] = sink(Buffer.byte(5000))
 
   /**
    * A sink that will write all the bytes it receives to this channel. The sink's result is the number of bytes written.
@@ -70,13 +70,13 @@ trait GatheringByteOps {
    */
   def sink(
     bufferConstruct: UIO[ByteBuffer]
-  )(implicit trace: ZTraceElement): ZSink[Any, IOException, Byte, Byte, Long] =
+  )(implicit trace: Trace): ZSink[Any, IOException, Byte, Byte, Long] =
     ZSink.fromPush {
       for {
         buffer   <- bufferConstruct
         countRef <- Ref.make(0L)
       } yield (_: Option[Chunk[Byte]]).map { chunk =>
-        def doWrite(total: Int, c: Chunk[Byte])(implicit trace: ZTraceElement): ZIO[Any, IOException, Int] = {
+        def doWrite(total: Int, c: Chunk[Byte])(implicit trace: Trace): ZIO[Any, IOException, Int] = {
           val x = for {
             remaining <- buffer.putChunk(c)
             _         <- buffer.flip

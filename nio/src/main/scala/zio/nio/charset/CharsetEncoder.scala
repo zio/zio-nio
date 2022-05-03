@@ -24,42 +24,42 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
 
   def charset: Charset = Charset.fromJava(javaEncoder.charset())
 
-  def encode(in: CharBuffer)(implicit trace: ZTraceElement): IO[j.CharacterCodingException, ByteBuffer] =
-    in.withJavaBuffer[Any, Throwable, ByteBuffer](jBuf => IO.attempt(Buffer.byteFromJava(javaEncoder.encode(jBuf))))
+  def encode(in: CharBuffer)(implicit trace: Trace): IO[j.CharacterCodingException, ByteBuffer] =
+    in.withJavaBuffer[Any, Throwable, ByteBuffer](jBuf => ZIO.attempt(Buffer.byteFromJava(javaEncoder.encode(jBuf))))
       .refineToOrDie[j.CharacterCodingException]
 
-  def encode(in: CharBuffer, out: ByteBuffer, endOfInput: Boolean)(implicit trace: ZTraceElement): UIO[CoderResult] =
+  def encode(in: CharBuffer, out: ByteBuffer, endOfInput: Boolean)(implicit trace: Trace): UIO[CoderResult] =
     in.withJavaBuffer { jIn =>
-      out.withJavaBuffer(jOut => IO.succeed(CoderResult.fromJava(javaEncoder.encode(jIn, jOut, endOfInput))))
+      out.withJavaBuffer(jOut => ZIO.succeed(CoderResult.fromJava(javaEncoder.encode(jIn, jOut, endOfInput))))
     }
 
-  def flush(out: ByteBuffer)(implicit trace: ZTraceElement): UIO[CoderResult] =
-    out.withJavaBuffer(jOut => UIO.succeed(CoderResult.fromJava(javaEncoder.flush(jOut))))
+  def flush(out: ByteBuffer)(implicit trace: Trace): UIO[CoderResult] =
+    out.withJavaBuffer(jOut => ZIO.succeed(CoderResult.fromJava(javaEncoder.flush(jOut))))
 
-  def malformedInputAction(implicit trace: ZTraceElement): UIO[j.CodingErrorAction] =
-    UIO.succeed(javaEncoder.malformedInputAction())
+  def malformedInputAction(implicit trace: Trace): UIO[j.CodingErrorAction] =
+    ZIO.succeed(javaEncoder.malformedInputAction())
 
-  def onMalformedInput(errorAction: j.CodingErrorAction)(implicit trace: ZTraceElement): UIO[Unit] =
-    UIO.succeed(javaEncoder.onMalformedInput(errorAction)).unit
+  def onMalformedInput(errorAction: j.CodingErrorAction)(implicit trace: Trace): UIO[Unit] =
+    ZIO.succeed(javaEncoder.onMalformedInput(errorAction)).unit
 
-  def unmappableCharacterAction(implicit trace: ZTraceElement): UIO[j.CodingErrorAction] =
-    UIO.succeed(javaEncoder.unmappableCharacterAction())
+  def unmappableCharacterAction(implicit trace: Trace): UIO[j.CodingErrorAction] =
+    ZIO.succeed(javaEncoder.unmappableCharacterAction())
 
-  def onUnmappableCharacter(errorAction: j.CodingErrorAction)(implicit trace: ZTraceElement): UIO[Unit] =
-    UIO.succeed(javaEncoder.onUnmappableCharacter(errorAction)).unit
+  def onUnmappableCharacter(errorAction: j.CodingErrorAction)(implicit trace: Trace): UIO[Unit] =
+    ZIO.succeed(javaEncoder.onUnmappableCharacter(errorAction)).unit
 
   def maxCharsPerByte: Float = javaEncoder.maxBytesPerChar()
 
-  def replacement(implicit trace: ZTraceElement): UIO[Chunk[Byte]] =
-    UIO.succeed(Chunk.fromArray(javaEncoder.replacement()))
+  def replacement(implicit trace: Trace): UIO[Chunk[Byte]] =
+    ZIO.succeed(Chunk.fromArray(javaEncoder.replacement()))
 
-  def replaceWith(replacement: Chunk[Byte])(implicit trace: ZTraceElement): UIO[Unit] =
-    UIO.succeed(javaEncoder.replaceWith(replacement.toArray)).unit
+  def replaceWith(replacement: Chunk[Byte])(implicit trace: Trace): UIO[Unit] =
+    ZIO.succeed(javaEncoder.replaceWith(replacement.toArray)).unit
 
   /**
    * Resets this decoder, clearing any internal state.
    */
-  def reset(implicit trace: ZTraceElement): UIO[Unit] = UIO.succeed(javaEncoder.reset()).unit
+  def reset(implicit trace: Trace): UIO[Unit] = ZIO.succeed(javaEncoder.reset()).unit
 
   /**
    * Encodes a stream of characters into bytes according to this character set's encoding.
@@ -71,7 +71,7 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
    */
   def transducer(
     bufSize: Int = 5000
-  )(implicit trace: ZTraceElement): ZPipeline[Any, j.CharacterCodingException, Char, Byte] = {
+  )(implicit trace: Trace): ZPipeline[Any, j.CharacterCodingException, Char, Byte] = {
     val push: ZIO[Any, Nothing, Option[Chunk[Char]] => IO[j.CharacterCodingException, Chunk[Byte]]] = {
       for {
         _          <- reset
@@ -87,14 +87,14 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
                 byteBuffer.getChunk() <*
                 byteBuffer.clear
             case CoderResult.Malformed(length) =>
-              IO.fail(new MalformedInputException(length))
+              ZIO.fail(new MalformedInputException(length))
             case CoderResult.Unmappable(length) =>
-              IO.fail(new UnmappableCharacterException(length))
+              ZIO.fail(new UnmappableCharacterException(length))
           }
 
         (_: Option[Chunk[Char]]).map { inChunk =>
           def encodeChunk(inChars: Chunk[Char])(implicit
-            trace: ZTraceElement
+            trace: Trace
           ): IO[j.CharacterCodingException, Chunk[Byte]] =
             for {
               bufRemaining <- charBuffer.remaining
@@ -108,23 +108,23 @@ final class CharsetEncoder private (val javaEncoder: j.CharsetEncoder) extends A
               _              <- charBuffer.flip
               result         <- encode(charBuffer, byteBuffer, endOfInput = false)
               encodedBytes   <- handleCoderResult(result)
-              remainderBytes <- if (remainingChars.isEmpty) IO.succeed(Chunk.empty) else encodeChunk(remainingChars)
+              remainderBytes <- if (remainingChars.isEmpty) ZIO.succeed(Chunk.empty) else encodeChunk(remainingChars)
             } yield encodedBytes ++ remainderBytes
 
           encodeChunk(inChunk)
         }.getOrElse {
-          def endOfInput(implicit trace: ZTraceElement): IO[j.CharacterCodingException, Chunk[Byte]] =
+          def endOfInput(implicit trace: Trace): IO[j.CharacterCodingException, Chunk[Byte]] =
             for {
               result         <- encode(charBuffer, byteBuffer, endOfInput = true)
               encodedBytes   <- handleCoderResult(result)
-              remainderBytes <- if (result == CoderResult.Overflow) endOfInput else IO.succeed(Chunk.empty)
+              remainderBytes <- if (result == CoderResult.Overflow) endOfInput else ZIO.succeed(Chunk.empty)
             } yield encodedBytes ++ remainderBytes
           charBuffer.flip *> endOfInput.flatMap { encodedBytes =>
-            def flushRemaining(implicit trace: ZTraceElement): IO[j.CharacterCodingException, Chunk[Byte]] =
+            def flushRemaining(implicit trace: Trace): IO[j.CharacterCodingException, Chunk[Byte]] =
               for {
                 result         <- flush(byteBuffer)
                 encodedBytes   <- handleCoderResult(result)
-                remainderBytes <- if (result == CoderResult.Overflow) flushRemaining else IO.succeed(Chunk.empty)
+                remainderBytes <- if (result == CoderResult.Overflow) flushRemaining else ZIO.succeed(Chunk.empty)
               } yield encodedBytes ++ remainderBytes
             flushRemaining.map(encodedBytes ++ _)
           } <* charBuffer.clear <* byteBuffer.clear

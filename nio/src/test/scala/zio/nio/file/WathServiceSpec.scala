@@ -10,7 +10,7 @@ import java.nio.file.StandardWatchEventKinds.ENTRY_CREATE
 
 object WathServiceSpec extends BaseSpec {
 
-  override def spec: Spec[Scope, TestFailure[IOException], TestSuccess] =
+  override def spec: Spec[Scope, IOException] =
     suite("WatchServiceSpec")(
       test("Watch Service register")(
         FileSystem.default.newWatchService.flatMap { watchService =>

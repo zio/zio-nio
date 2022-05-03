@@ -2,15 +2,15 @@ package zio
 package nio
 package charset
 
-import zio.stream.Stream
+import zio.stream.ZStream
 import zio.test.Assertion._
-import zio.test.{ZSpec, _}
+import zio.test.{Spec, _}
 
 import java.nio.charset.{CharacterCodingException, MalformedInputException, UnmappableCharacterException}
 
 object CharsetSpec extends ZIOSpecDefault {
 
-  override def spec: Spec[Any, TestFailure[CharacterCodingException], TestSuccess] =
+  override def spec: Spec[Any, CharacterCodingException] =
     suite("CharsetSpec")(
       chunkEncodeDecode(Charset.Standard.utf8),
       chunkEncodeDecode(Charset.Standard.utf16),
@@ -24,30 +24,30 @@ object CharsetSpec extends ZIOSpecDefault {
       streamEncodeDecode(Charset.Standard.utf8),
       streamEncodeDecode(Charset.Standard.utf16Be),
       test("stream decode across chunk boundaries") {
-        val byteStream = Stream.fromChunks(arabicUtf8.map(Chunk.single): _*)
+        val byteStream = ZStream.fromChunks(arabicUtf8.map(Chunk.single): _*)
         for {
           chars <- byteStream.via(Charset.Standard.utf8.newDecoder.transducer()).runCollect
         } yield assert(chars)(equalTo(arabicChunk))
       },
       test("minimum buffer size for encoding") {
-        val in = Stream.fromChunk(arabicChunk)
+        val in = ZStream.fromChunk(arabicChunk)
         val t  = Charset.Standard.utf8.newEncoder.transducer(49)
-        assertM(in.via(t).runDrain.exit)(dies(isSubtype[IllegalArgumentException](anything)))
+        assertZIO(in.via(t).runDrain.exit)(dies(isSubtype[IllegalArgumentException](anything)))
       },
       test("minimum buffer size for decoding") {
-        val in = Stream.fromChunk(arabicUtf8)
+        val in = ZStream.fromChunk(arabicUtf8)
         val t  = Charset.Standard.utf8.newDecoder.transducer(49)
-        assertM(in.via(t).runDrain.exit)(dies(isSubtype[IllegalArgumentException](anything)))
+        assertZIO(in.via(t).runDrain.exit)(dies(isSubtype[IllegalArgumentException](anything)))
       },
       test("handles encoding errors") {
-        val in = Stream.fromChunk(arabicChunk)
+        val in = ZStream.fromChunk(arabicChunk)
         val t  = Charset.Standard.iso8859_1.newEncoder.transducer()
-        assertM(in.via(t).runDrain.exit)(fails(isSubtype[UnmappableCharacterException](anything)))
+        assertZIO(in.via(t).runDrain.exit)(fails(isSubtype[UnmappableCharacterException](anything)))
       },
       test("handles decoding errors") {
-        val in = Stream(0xd8, 0x00, 0xa5, 0xd8).map(_.toByte)
+        val in = ZStream(0xd8, 0x00, 0xa5, 0xd8).map(_.toByte)
         val t  = Charset.Standard.utf16Le.newDecoder.transducer()
-        assertM(in.via(t).runDrain.exit)(fails(isSubtype[MalformedInputException](anything)))
+        assertZIO(in.via(t).runDrain.exit)(fails(isSubtype[MalformedInputException](anything)))
       }
     )
 
@@ -59,7 +59,7 @@ object CharsetSpec extends ZIOSpecDefault {
     0xd8, 0xb6, 0xd8, 0xb1, 0xd8, 0xaa, 0xd9, 0x83, 0xd8, 0x9f)
     .map(_.toByte)
 
-  def chunkEncodeDecode(charset: Charset): ZSpec[Any, Nothing] =
+  def chunkEncodeDecode(charset: Charset): Spec[Any, Nothing] =
     test(s"chunk encode/decode ${charset.displayName}") {
       for {
         encoded <- charset.encodeChunk(arabicChunk)
@@ -67,7 +67,7 @@ object CharsetSpec extends ZIOSpecDefault {
       } yield assert(decoded)(equalTo(arabicChunk))
     }
 
-  def bufferEncodeDecode(charset: Charset): ZSpec[Any, Nothing] =
+  def bufferEncodeDecode(charset: Charset): Spec[Any, Nothing] =
     test(s"buffer encode/decode ${charset.displayName}") {
       for {
         chars             <- Buffer.char(100)
@@ -80,12 +80,12 @@ object CharsetSpec extends ZIOSpecDefault {
       } yield assert(charsHasRemaining)(isFalse) && assert(chunk)(equalTo(arabicChunk))
     }
 
-  def streamEncodeDecode(charset: Charset): ZSpec[Any, CharacterCodingException] =
+  def streamEncodeDecode(charset: Charset): Spec[Any, CharacterCodingException] =
     test(s"stream encode/decode ${charset.displayName}") {
-      val charStream = Stream.fromIterable(arabic)
+      val charStream = ZStream.fromIterable(arabic)
       for {
         byteChunks <- charStream.via(charset.newEncoder.transducer()).runCollect
-        byteStream  = Stream.fromIterable(byteChunks)
+        byteStream  = ZStream.fromIterable(byteChunks)
         chars      <- byteStream.via(charset.newDecoder.transducer()).runCollect
       } yield assert(chars)(equalTo(arabicChunk))
     }

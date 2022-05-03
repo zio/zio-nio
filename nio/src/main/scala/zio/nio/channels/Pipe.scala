@@ -2,18 +2,18 @@ package zio.nio
 package channels
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
-import zio.{IO, Scope, ZIO, ZTraceElement}
+import zio.{IO, Scope, ZIO, Trace}
 
 import java.io.IOException
 import java.nio.channels.{Pipe => JPipe}
 
-final class Pipe private (private val pipe: JPipe)(implicit trace: ZTraceElement) {
+final class Pipe private (private val pipe: JPipe)(implicit trace: Trace) {
 
-  def source(implicit trace: ZTraceElement): ZIO[Scope, Nothing, Pipe.SourceChannel] =
-    IO.succeed(new channels.Pipe.SourceChannel(pipe.source())).toNioScoped
+  def source(implicit trace: Trace): ZIO[Scope, Nothing, Pipe.SourceChannel] =
+    ZIO.succeed(new channels.Pipe.SourceChannel(pipe.source())).toNioScoped
 
-  def sink(implicit trace: ZTraceElement): ZIO[Scope, Nothing, Pipe.SinkChannel] =
-    IO.succeed(new Pipe.SinkChannel(pipe.sink())).toNioScoped
+  def sink(implicit trace: Trace): ZIO[Scope, Nothing, Pipe.SinkChannel] =
+    ZIO.succeed(new Pipe.SinkChannel(pipe.sink())).toNioScoped
 
 }
 
@@ -55,9 +55,9 @@ object Pipe {
 
   }
 
-  def open(implicit trace: ZTraceElement): IO[IOException, Pipe] =
-    IO.attempt(new Pipe(JPipe.open())).refineToOrDie[IOException]
+  def open(implicit trace: Trace): IO[IOException, Pipe] =
+    ZIO.attempt(new Pipe(JPipe.open())).refineToOrDie[IOException]
 
-  def fromJava(javaPipe: JPipe)(implicit trace: ZTraceElement): Pipe = new Pipe(javaPipe)
+  def fromJava(javaPipe: JPipe)(implicit trace: Trace): Pipe = new Pipe(javaPipe)
 
 }

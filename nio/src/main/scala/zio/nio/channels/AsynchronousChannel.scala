@@ -31,11 +31,11 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
    *
    * Fails with `java.io.EOFException` if end-of-stream is reached.
    */
-  final def read(b: ByteBuffer)(implicit trace: ZTraceElement): IO[IOException, Int] =
+  final def read(b: ByteBuffer)(implicit trace: Trace): IO[IOException, Int] =
     effectAsyncChannel[JAsynchronousByteChannel, JInteger](channel)(c => c.read(b.buffer, (), _))
       .flatMap(eofCheck(_))
 
-  final def readChunk(capacity: Int)(implicit trace: ZTraceElement): IO[IOException, Chunk[Byte]] =
+  final def readChunk(capacity: Int)(implicit trace: Trace): IO[IOException, Chunk[Byte]] =
     for {
       b <- Buffer.byte(capacity)
       _ <- read(b)
@@ -46,7 +46,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
   /**
    * Writes data into this channel from buffer, returning the number of bytes written.
    */
-  final def write(b: ByteBuffer)(implicit trace: ZTraceElement): IO[IOException, Int] =
+  final def write(b: ByteBuffer)(implicit trace: Trace): IO[IOException, Int] =
     effectAsyncChannel[JAsynchronousByteChannel, JInteger](channel)(c => c.write(b.buffer, (), _)).map(_.toInt)
 
   /**
@@ -54,13 +54,13 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
    *
    * More than one write operation may be performed to write out the entire chunk.
    */
-  final def writeChunk(chunk: Chunk[Byte])(implicit trace: ZTraceElement): ZIO[Any, IOException, Unit] =
+  final def writeChunk(chunk: Chunk[Byte])(implicit trace: Trace): ZIO[Any, IOException, Unit] =
     for {
       b <- Buffer.byte(chunk)
       _ <- write(b).repeatWhileZIO(_ => b.hasRemaining)
     } yield ()
 
-  def sink()(implicit trace: ZTraceElement): ZSink[Any, IOException, Byte, Byte, Long] = sink(Buffer.byte(5000))
+  def sink()(implicit trace: Trace): ZSink[Any, IOException, Byte, Byte, Long] = sink(Buffer.byte(5000))
 
   /**
    * A sink that will write all the bytes it receives to this channel.
@@ -70,7 +70,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
    */
   def sink(
     bufferConstruct0: => UIO[ByteBuffer]
-  )(implicit trace: ZTraceElement): ZSink[Any, IOException, Byte, Byte, Long] =
+  )(implicit trace: Trace): ZSink[Any, IOException, Byte, Byte, Long] =
     ZSink.fromPush {
       val bufferConstruct = bufferConstruct0
       for {
@@ -78,7 +78,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
         countRef <- Ref.make(0L)
       } yield (_: Option[Chunk[Byte]]).map { chunk =>
         def doWrite(total: Int, c: Chunk[Byte])(implicit
-          trace: ZTraceElement
+          trace: Trace
         ): ZIO[Any, IOException, Int] = {
           val x = for {
             remaining <- buffer.putChunk(c)
@@ -107,7 +107,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
         )
     }
 
-  def stream()(implicit trace: ZTraceElement): Stream[IOException, Byte] = stream(Buffer.byte(5000))
+  def stream()(implicit trace: Trace): Stream[IOException, Byte] = stream(Buffer.byte(5000))
 
   /**
    * A `ZStream` that reads from this channel. The stream terminates without error if the channel reaches end-of-stream.
@@ -117,7 +117,7 @@ abstract class AsynchronousByteChannel private[channels] (protected val channel:
    */
   def stream(
     bufferConstruct: UIO[ByteBuffer]
-  )(implicit trace: ZTraceElement): Stream[IOException, Byte] =
+  )(implicit trace: Trace): Stream[IOException, Byte] =
     ZStream.unwrapScoped {
       bufferConstruct.map { buffer =>
         val doRead = for {
@@ -146,36 +146,36 @@ object AsynchronousByteChannel {
    */
   private[channels] def effectAsyncChannel[C <: JChannel, A](
     channel: C
-  )(op: C => CompletionHandler[A, Any] => Any)(implicit trace: ZTraceElement): IO[IOException, A] =
+  )(op: C => CompletionHandler[A, Any] => Any)(implicit trace: Trace): IO[IOException, A] =
     ZIO
       .attempt(op(channel))
-      .flatMap(Task.asyncWithCompletionHandler)
+      .flatMap(ZIO.asyncWithCompletionHandler)
       .refineToOrDie[IOException]
-      .onInterrupt(IO.attempt(channel.close()).ignore)
+      .onInterrupt(ZIO.attempt(channel.close()).ignore)
 
 }
 
 final class AsynchronousServerSocketChannel(protected val channel: JAsynchronousServerSocketChannel) extends Channel {
 
-  def bindTo(local: SocketAddress, backlog: Int = 0)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+  def bindTo(local: SocketAddress, backlog: Int = 0)(implicit trace: Trace): IO[IOException, Unit] =
     bind(Some(local), backlog)
 
-  def bindAuto(backlog: Int = 0)(implicit trace: ZTraceElement): IO[IOException, Unit] = bind(None, backlog)
+  def bindAuto(backlog: Int = 0)(implicit trace: Trace): IO[IOException, Unit] = bind(None, backlog)
 
   /**
    * Binds the channel's socket to a local address and configures the socket to listen for connections, up to backlog
    * pending connection.
    */
-  def bind(address: Option[SocketAddress], backlog: Int = 0)(implicit trace: ZTraceElement): IO[IOException, Unit] =
-    IO.attempt(channel.bind(address.map(_.jSocketAddress).orNull, backlog)).refineToOrDie[IOException].unit
+  def bind(address: Option[SocketAddress], backlog: Int = 0)(implicit trace: Trace): IO[IOException, Unit] =
+    ZIO.attempt(channel.bind(address.map(_.jSocketAddress).orNull, backlog)).refineToOrDie[IOException].unit
 
-  def setOption[T](name: SocketOption[T], value: T)(implicit trace: ZTraceElement): IO[IOException, Unit] =
-    IO.attempt(channel.setOption(name, value)).refineToOrDie[IOException].unit
+  def setOption[T](name: SocketOption[T], value: T)(implicit trace: Trace): IO[IOException, Unit] =
+    ZIO.attempt(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
   /**
    * Accepts a connection.
    */
-  def accept(implicit trace: ZTraceElement): ZIO[Scope, IOException, AsynchronousSocketChannel] =
+  def accept(implicit trace: Trace): ZIO[Scope, IOException, AsynchronousSocketChannel] =
     AsynchronousByteChannel
       .effectAsyncChannel[JAsynchronousServerSocketChannel, JAsynchronousSocketChannel](channel)(c => c.accept((), _))
       .map(AsynchronousSocketChannel.fromJava)
@@ -185,24 +185,28 @@ final class AsynchronousServerSocketChannel(protected val channel: JAsynchronous
    * The `SocketAddress` that the socket is bound to, or the `SocketAddress` representing the loopback address if denied
    * by the security manager, or `Maybe.empty` if the channel's socket is not bound.
    */
-  def localAddress(implicit trace: ZTraceElement): IO[IOException, Option[SocketAddress]] =
-    IO.attempt(
-      Option(channel.getLocalAddress).map(SocketAddress.fromJava)
-    ).refineToOrDie[IOException]
+  def localAddress(implicit trace: Trace): IO[IOException, Option[SocketAddress]] =
+    ZIO
+      .attempt(
+        Option(channel.getLocalAddress).map(SocketAddress.fromJava)
+      )
+      .refineToOrDie[IOException]
 
 }
 
 object AsynchronousServerSocketChannel {
 
-  def open(implicit trace: ZTraceElement): ZIO[Scope, IOException, AsynchronousServerSocketChannel] =
-    IO.attempt(new AsynchronousServerSocketChannel(JAsynchronousServerSocketChannel.open()))
+  def open(implicit trace: Trace): ZIO[Scope, IOException, AsynchronousServerSocketChannel] =
+    ZIO
+      .attempt(new AsynchronousServerSocketChannel(JAsynchronousServerSocketChannel.open()))
       .refineToOrDie[IOException]
       .toNioScoped
 
   def open(
     channelGroup: AsynchronousChannelGroup
-  )(implicit trace: ZTraceElement): ZIO[Scope, IOException, AsynchronousServerSocketChannel] =
-    IO.attempt(new AsynchronousServerSocketChannel(JAsynchronousServerSocketChannel.open(channelGroup.channelGroup)))
+  )(implicit trace: Trace): ZIO[Scope, IOException, AsynchronousServerSocketChannel] =
+    ZIO
+      .attempt(new AsynchronousServerSocketChannel(JAsynchronousServerSocketChannel.open(channelGroup.channelGroup)))
       .refineToOrDie[IOException]
       .toNioScoped
 
@@ -214,35 +218,39 @@ object AsynchronousServerSocketChannel {
 final class AsynchronousSocketChannel(override protected val channel: JAsynchronousSocketChannel)
     extends AsynchronousByteChannel(channel) {
 
-  def bindTo(address: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Unit] = bind(Some(address))
+  def bindTo(address: SocketAddress)(implicit trace: Trace): IO[IOException, Unit] = bind(Some(address))
 
-  def bindAuto(implicit trace: ZTraceElement): IO[IOException, Unit] = bind(None)
+  def bindAuto(implicit trace: Trace): IO[IOException, Unit] = bind(None)
 
-  def bind(address: Option[SocketAddress])(implicit trace: ZTraceElement): IO[IOException, Unit] =
-    IO.attempt(channel.bind(address.map(_.jSocketAddress).orNull)).refineToOrDie[IOException].unit
+  def bind(address: Option[SocketAddress])(implicit trace: Trace): IO[IOException, Unit] =
+    ZIO.attempt(channel.bind(address.map(_.jSocketAddress).orNull)).refineToOrDie[IOException].unit
 
-  def setOption[T](name: SocketOption[T], value: T)(implicit trace: ZTraceElement): IO[IOException, Unit] =
-    IO.attempt(channel.setOption(name, value)).refineToOrDie[IOException].unit
+  def setOption[T](name: SocketOption[T], value: T)(implicit trace: Trace): IO[IOException, Unit] =
+    ZIO.attempt(channel.setOption(name, value)).refineToOrDie[IOException].unit
 
-  def shutdownInput(implicit trace: ZTraceElement): IO[IOException, Unit] =
-    IO.attempt(channel.shutdownInput()).refineToOrDie[IOException].unit
+  def shutdownInput(implicit trace: Trace): IO[IOException, Unit] =
+    ZIO.attempt(channel.shutdownInput()).refineToOrDie[IOException].unit
 
-  def shutdownOutput(implicit trace: ZTraceElement): IO[IOException, Unit] =
-    IO.attempt(channel.shutdownOutput()).refineToOrDie[IOException].unit
+  def shutdownOutput(implicit trace: Trace): IO[IOException, Unit] =
+    ZIO.attempt(channel.shutdownOutput()).refineToOrDie[IOException].unit
 
-  def remoteAddress(implicit trace: ZTraceElement): IO[IOException, Option[SocketAddress]] =
-    IO.attempt(
-      Option(channel.getRemoteAddress)
-        .map(SocketAddress.fromJava)
-    ).refineToOrDie[IOException]
+  def remoteAddress(implicit trace: Trace): IO[IOException, Option[SocketAddress]] =
+    ZIO
+      .attempt(
+        Option(channel.getRemoteAddress)
+          .map(SocketAddress.fromJava)
+      )
+      .refineToOrDie[IOException]
 
-  def localAddress(implicit trace: ZTraceElement): IO[IOException, Option[SocketAddress]] =
-    IO.attempt(
-      Option(channel.getLocalAddress)
-        .map(SocketAddress.fromJava)
-    ).refineToOrDie[IOException]
+  def localAddress(implicit trace: Trace): IO[IOException, Option[SocketAddress]] =
+    ZIO
+      .attempt(
+        Option(channel.getLocalAddress)
+          .map(SocketAddress.fromJava)
+      )
+      .refineToOrDie[IOException]
 
-  def connect(socketAddress: SocketAddress)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+  def connect(socketAddress: SocketAddress)(implicit trace: Trace): IO[IOException, Unit] =
     AsynchronousByteChannel
       .effectAsyncChannel[JAsynchronousSocketChannel, JVoid](channel)(c =>
         c.connect(socketAddress.jSocketAddress, (), _)
@@ -254,7 +262,7 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
    *
    * Fails with `java.io.EOFException` if end-of-stream is reached.
    */
-  def read(dst: ByteBuffer, timeout: Duration)(implicit trace: ZTraceElement): IO[IOException, Int] =
+  def read(dst: ByteBuffer, timeout: Duration)(implicit trace: Trace): IO[IOException, Int] =
     AsynchronousByteChannel
       .effectAsyncChannel[JAsynchronousSocketChannel, JInteger](channel) { channel =>
         channel.read(
@@ -267,7 +275,7 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
       }
       .flatMap(eofCheck(_))
 
-  def readChunk(capacity: Int, timeout: Duration)(implicit trace: ZTraceElement): IO[IOException, Chunk[Byte]] =
+  def readChunk(capacity: Int, timeout: Duration)(implicit trace: Trace): IO[IOException, Chunk[Byte]] =
     for {
       b <- Buffer.byte(capacity)
       _ <- read(b, timeout)
@@ -283,7 +291,7 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
   def read(
     dsts: List[ByteBuffer],
     timeout: Duration
-  )(implicit trace: ZTraceElement): IO[IOException, Long] =
+  )(implicit trace: Trace): IO[IOException, Long] =
     AsynchronousByteChannel
       .effectAsyncChannel[JAsynchronousSocketChannel, JLong](channel) { channel =>
         val a = dsts.map(_.buffer).toArray
@@ -302,19 +310,19 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
   def readChunks(
     capacities: List[Int],
     timeout: Duration
-  )(implicit trace: ZTraceElement): IO[IOException, List[Chunk[Byte]]] =
-    IO.foreach(capacities)(Buffer.byte).flatMap { buffers =>
-      read(buffers, timeout) *> IO.foreach(buffers)(b => b.flip *> b.getChunk())
+  )(implicit trace: Trace): IO[IOException, List[Chunk[Byte]]] =
+    ZIO.foreach(capacities)(Buffer.byte).flatMap { buffers =>
+      read(buffers, timeout) *> ZIO.foreach(buffers)(b => b.flip *> b.getChunk())
     }
 
-  def write(src: ByteBuffer, timeout: Duration)(implicit trace: ZTraceElement): IO[IOException, Int] =
+  def write(src: ByteBuffer, timeout: Duration)(implicit trace: Trace): IO[IOException, Int] =
     AsynchronousByteChannel
       .effectAsyncChannel[JAsynchronousSocketChannel, JInteger](channel) { channel =>
         channel.write(src.buffer, timeout.fold(Long.MaxValue, _.toNanos), TimeUnit.NANOSECONDS, (), _)
       }
       .map(_.toInt)
 
-  def writeChunk(chunk: Chunk[Byte], timeout: Duration)(implicit trace: ZTraceElement): IO[IOException, Unit] =
+  def writeChunk(chunk: Chunk[Byte], timeout: Duration)(implicit trace: Trace): IO[IOException, Unit] =
     for {
       b <- Buffer.byte(chunk.length)
       _ <- b.putChunk(chunk)
@@ -325,7 +333,7 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
   def write(
     srcs: List[ByteBuffer],
     timeout: Duration
-  )(implicit trace: ZTraceElement): IO[IOException, Long] =
+  )(implicit trace: Trace): IO[IOException, Long] =
     AsynchronousByteChannel
       .effectAsyncChannel[JAsynchronousSocketChannel, JLong](channel) { channel =>
         val a = srcs.map(_.buffer).toArray
@@ -341,24 +349,28 @@ final class AsynchronousSocketChannel(override protected val channel: JAsynchron
       }
       .map(_.toLong)
 
-  def writeChunks(chunks: List[Chunk[Byte]], timeout: Duration)(implicit trace: ZTraceElement): IO[IOException, Long] =
-    IO.foreach(chunks) { chunk =>
-      Buffer.byte(chunk.length).tap(_.putChunk(chunk)).tap(_.flip)
-    }.flatMap(write(_, timeout))
+  def writeChunks(chunks: List[Chunk[Byte]], timeout: Duration)(implicit trace: Trace): IO[IOException, Long] =
+    ZIO
+      .foreach(chunks) { chunk =>
+        Buffer.byte(chunk.length).tap(_.putChunk(chunk)).tap(_.flip)
+      }
+      .flatMap(write(_, timeout))
 
 }
 
 object AsynchronousSocketChannel {
 
-  def open(implicit trace: ZTraceElement): ZIO[Scope, IOException, AsynchronousSocketChannel] =
-    IO.attempt(new AsynchronousSocketChannel(JAsynchronousSocketChannel.open()))
+  def open(implicit trace: Trace): ZIO[Scope, IOException, AsynchronousSocketChannel] =
+    ZIO
+      .attempt(new AsynchronousSocketChannel(JAsynchronousSocketChannel.open()))
       .refineToOrDie[IOException]
       .toNioScoped
 
   def open(
     channelGroup: AsynchronousChannelGroup
-  )(implicit trace: ZTraceElement): ZIO[Scope, IOException, AsynchronousSocketChannel] =
-    IO.attempt(new AsynchronousSocketChannel(JAsynchronousSocketChannel.open(channelGroup.channelGroup)))
+  )(implicit trace: Trace): ZIO[Scope, IOException, AsynchronousSocketChannel] =
+    ZIO
+      .attempt(new AsynchronousSocketChannel(JAsynchronousSocketChannel.open(channelGroup.channelGroup)))
       .refineToOrDie[IOException]
       .toNioScoped
 
