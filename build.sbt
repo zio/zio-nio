@@ -19,7 +19,7 @@ addCommandAlias(
   ";zioNio/test;examples/test"
 )
 
-val zioVersion = "2.0.0-RC6"
+val zioVersion = "2.0.0"
 
 lazy val zioNio = project
   .in(file("nio"))
