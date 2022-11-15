@@ -1,6 +1,6 @@
 ---
-id: essentials_files
-title:  "File Channel"
+id: files
+title: "File Channel"
 ---
 
 An `AsynchronousFileChannel` provides an API for handling files in a non-blocking way.
