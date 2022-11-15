@@ -21,6 +21,10 @@ addCommandAlias(
 
 val zioVersion = "1.0.16"
 
+lazy val root = project
+  .in(file("."))
+  .aggregate(docs, zioNio, examples)
+
 lazy val zioNio = project
   .in(file("nio"))
   .settings(stdSettings("zio-nio"))
@@ -43,15 +47,11 @@ lazy val docs = project
     moduleName     := "zio-nio-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(zioNio),
-    ScalaUnidoc / unidoc / target              := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
-    cleanFiles += (ScalaUnidoc / unidoc / target).value,
-    docusaurusCreateSite     := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
-    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
+    libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion)
   )
   .dependsOn(zioNio)
-  .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
-
+  .enablePlugins(WebsitePlugin)
+  
 lazy val examples = project
   .in(file("examples"))
   .settings(stdSettings("examples"))
