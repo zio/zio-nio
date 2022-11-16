@@ -23,7 +23,7 @@ val zioVersion = "1.0.16"
 
 lazy val root = project
   .in(file("."))
-  .aggregate(docs, zioNio, examples)
+  .aggregate(zioNio, examples)
 
 lazy val zioNio = project
   .in(file("nio"))
