@@ -51,7 +51,7 @@ lazy val docs = project
   )
   .dependsOn(zioNio)
   .enablePlugins(WebsitePlugin)
-  
+
 lazy val examples = project
   .in(file("examples"))
   .settings(stdSettings("examples"))
