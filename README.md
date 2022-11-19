@@ -15,7 +15,7 @@ ZIO-NIO comes in two flavours:
 
 Learn more about ZIO-NIO at:
 
- - [Homepage](https://zio.github.io/zio-nio/)
+ - [Homepage](https://zio.dev/zio-nio/)
 
 ## Background
 

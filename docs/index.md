@@ -1,6 +1,7 @@
 ---
-id: essentials_index
-title:  "Overview"
+id: index
+title: "Introduction to ZIO NIO"
+sidebar_label: "ZIO NIO"
 ---
 
 ZIO-NIO is a ZIO wrapper on Java NIO, an opinionated interface with deep ZIO integration that provides type and resource safety.
@@ -10,7 +11,7 @@ ZIO-NIO is a ZIO wrapper on Java NIO, an opinionated interface with deep ZIO int
 `ZIO-NIO` is available via maven repo. Add this to your dependencies in `sbt`:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-nio" % "1.0.0-RC10"
+libraryDependencies += "dev.zio" %% "zio-nio" % "@VERSION@"
 ```
 
 ## Main Abstractions
