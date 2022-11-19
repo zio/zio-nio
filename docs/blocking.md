@@ -1,6 +1,6 @@
 ---
-id: essentials_blocking
-title:  "Blocking I/O"
+id: blocking
+title: "Blocking I/O"
 ---
 
 The default ZIO runtime assumes that threads will never block, and maintains a small fixed-size thread pool to perform all its operations. If threads become blocked, CPU utilization can be reduced as the number of available threads drops below the number of available CPU cores. If enough threads block, the entire program may halt.
