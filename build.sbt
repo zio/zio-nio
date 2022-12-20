@@ -47,7 +47,15 @@ lazy val docs = project
     moduleName     := "zio-nio-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion)
+    libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion),
+    projectName    := "ZIO NIO",
+    badgeInfo := Some(
+      BadgeInfo(
+        artifact = "zio-nio_2.12",
+        projectStage = ProjectStage.Development
+      )
+    ),
+    docsPublishBranch := "master"
   )
   .dependsOn(zioNio)
   .enablePlugins(WebsitePlugin)
