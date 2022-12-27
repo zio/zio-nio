@@ -48,7 +48,7 @@ lazy val docs = project
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion),
-    projectName    := "ZIO NIO",
+    projectName := "ZIO NIO",
     badgeInfo := Some(
       BadgeInfo(
         artifact = "zio-nio_2.12",
