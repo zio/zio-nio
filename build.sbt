@@ -19,7 +19,7 @@ addCommandAlias(
   ";zioNio/test;examples/test"
 )
 
-val zioVersion = "2.0.0"
+val zioVersion = "2.0.5"
 
 lazy val zioNio = project
   .in(file("nio"))
@@ -28,7 +28,7 @@ lazy val zioNio = project
     libraryDependencies ++= Seq(
       "dev.zio"                %% "zio"                     % zioVersion,
       "dev.zio"                %% "zio-streams"             % zioVersion,
-      "org.scala-lang.modules" %% "scala-collection-compat" % "2.6.0",
+      "org.scala-lang.modules" %% "scala-collection-compat" % "2.9.0",
       "dev.zio"                %% "zio-test"                % zioVersion % Test,
       "dev.zio"                %% "zio-test-sbt"            % zioVersion % Test
     ),
