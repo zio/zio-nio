@@ -50,6 +50,7 @@ lazy val docs = project
     projectName       := "ZIO NIO",
     mainModuleName    := (zioNio / moduleName).value,
     projectStage      := ProjectStage.Development,
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(zioNio),
     docsPublishBranch := "master"
   )
   .dependsOn(zioNio)
