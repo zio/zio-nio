@@ -43,7 +43,7 @@ lazy val zioNio = project
 lazy val docs = project
   .in(file("zio-nio-docs"))
   .settings(
-    moduleName     := "zio-nio-docs",
+    moduleName := "zio-nio-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion),
