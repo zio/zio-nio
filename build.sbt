@@ -47,11 +47,11 @@ lazy val docs = project
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
     libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion),
-    projectName       := "ZIO NIO",
-    mainModuleName    := (zioNio / moduleName).value,
-    projectStage      := ProjectStage.Development,
+    projectName                                := "ZIO NIO",
+    mainModuleName                             := (zioNio / moduleName).value,
+    projectStage                               := ProjectStage.Development,
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(zioNio),
-    docsPublishBranch := "master"
+    docsPublishBranch                          := "master"
   )
   .dependsOn(zioNio)
   .enablePlugins(WebsitePlugin)
