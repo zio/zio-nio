@@ -42,6 +42,8 @@ lazy val zioNio = project
 
 lazy val docs = project
   .in(file("zio-nio-docs"))
+  .settings(stdSettings("zio-nio-docs"))
+  .settings(dottySettings)
   .settings(
     moduleName := "zio-nio-docs",
     scalacOptions -= "-Yno-imports",
