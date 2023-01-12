@@ -23,6 +23,7 @@ val zioVersion = "1.0.16"
 
 lazy val root = project
   .in(file("."))
+  .settings(publish / skip := true)
   .aggregate(zioNio, examples, docs)
 
 lazy val zioNio = project
@@ -42,18 +43,17 @@ lazy val zioNio = project
 
 lazy val docs = project
   .in(file("zio-nio-docs"))
-  .settings(stdSettings("zio-nio-docs"))
-  .settings(dottySettings)
   .settings(
     moduleName := "zio-nio-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
+    crossScalaVersions := Seq(Scala212, Scala213, Scala3),
     libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion),
-    projectName                                := "ZIO NIO",
-    mainModuleName                             := (zioNio / moduleName).value,
-    projectStage                               := ProjectStage.Development,
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(zioNio),
-    docsPublishBranch                          := "master"
+    projectName       := "ZIO NIO",
+    mainModuleName    := (zioNio / moduleName).value,
+    projectStage      := ProjectStage.Development,
+    docsPublishBranch := "master",
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(zioNio)
   )
   .dependsOn(zioNio)
   .enablePlugins(WebsitePlugin)
