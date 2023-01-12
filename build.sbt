@@ -49,10 +49,10 @@ lazy val docs = project
     scalacOptions -= "-Xfatal-warnings",
     crossScalaVersions := Seq(Scala212, Scala213, Scala3),
     libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion),
-    projectName       := "ZIO NIO",
-    mainModuleName    := (zioNio / moduleName).value,
-    projectStage      := ProjectStage.Development,
-    docsPublishBranch := "master",
+    projectName                                := "ZIO NIO",
+    mainModuleName                             := (zioNio / moduleName).value,
+    projectStage                               := ProjectStage.Development,
+    docsPublishBranch                          := "master",
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(zioNio)
   )
   .dependsOn(zioNio)
