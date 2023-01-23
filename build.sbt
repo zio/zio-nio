@@ -53,7 +53,8 @@ lazy val docs = project
     mainModuleName                             := (zioNio / moduleName).value,
     projectStage                               := ProjectStage.Development,
     docsPublishBranch                          := "master",
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(zioNio)
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(zioNio),
+    checkArtifactBuildProcessWorkflowStep      := None
   )
   .dependsOn(zioNio)
   .enablePlugins(WebsitePlugin)
