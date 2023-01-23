@@ -57,6 +57,7 @@ lazy val docs = project
     ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(),
     checkArtifactBuildProcessWorkflowStep      := None
   )
+  .dependsOn(zioNio)
   .enablePlugins(WebsitePlugin)
 
 lazy val examples = project
