@@ -50,6 +50,7 @@ lazy val docs = project
     crossScalaVersions := Seq(Scala212, Scala213, Scala3),
     libraryDependencies ++= Seq("dev.zio" %% "zio" % zioVersion),
     test / skip                                := true,
+    update / skip                              := true,
     projectName                                := "ZIO NIO",
     mainModuleName                             := (zioNio / moduleName).value,
     projectStage                               := ProjectStage.Development,
