@@ -54,6 +54,7 @@ lazy val docs = project
     mainModuleName                             := (zioNio / moduleName).value,
     projectStage                               := ProjectStage.Development,
     docsPublishBranch                          := "master",
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(),
     checkArtifactBuildProcessWorkflowStep      := None
   )
   .dependsOn(zioNio)
