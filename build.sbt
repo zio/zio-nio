@@ -47,6 +47,7 @@ lazy val docs = project
     moduleName := "zio-nio-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
+    scalaVersion                               := Scala212,
     crossScalaVersions                         := Seq(Scala212, Scala213, Scala3),
     projectName                                := "ZIO NIO",
     mainModuleName                             := (zioNio / moduleName).value,
