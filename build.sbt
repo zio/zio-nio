@@ -24,7 +24,7 @@ val zioVersion = "1.0.16"
 lazy val root = project
   .in(file("."))
   .settings(publish / skip := true)
-  .aggregate(zioNio, examples, docs)
+  .aggregate(zioNio, examples)
 
 lazy val zioNio = project
   .in(file("nio"))
