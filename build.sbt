@@ -43,12 +43,12 @@ lazy val zioNio = project
 
 lazy val docs = project
   .in(file("zio-nio-docs"))
+  .settings(stdSettings("zio-nio-docs"))
   .settings(
-    moduleName := "zio-nio-docs",
+    publish / skip := true,
+    moduleName     := "zio-nio-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    scalaVersion                               := Scala212,
-    crossScalaVersions                         := Seq(Scala212, Scala213, Scala3),
     projectName                                := "ZIO NIO",
     mainModuleName                             := (zioNio / moduleName).value,
     projectStage                               := ProjectStage.Development,
