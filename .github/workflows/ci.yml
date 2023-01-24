@@ -62,7 +62,7 @@ jobs:
         uses: coursier/cache-action@v6
       - name: Test 2.x
         if: ${{ !startsWith(matrix.scala, '3.') }}
-        run: ./sbt ++${{ matrix.scala }} test
+        run: sbt ++${{ matrix.scala }} test
       - name: Test 3.x
         if: ${{ startsWith(matrix.scala, '3.') }}
         run: ./sbt ++${{ matrix.scala }} testDotty
