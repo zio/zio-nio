@@ -1,6 +1,6 @@
 ---
-id: essentials_sockets
-title:  "Socket Channel"
+id: sockets
+title: "Socket Channel"
 ---
 
 `AsynchronousSocketChannel` and `AsynchronousServerSocketChannel` provide methods for communicating with remote clients.
