@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.3.0
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
@@ -33,13 +33,13 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.3.0
       - name: Setup Scala and Java
         uses: olafurpg/setup-scala@v13
       - name: Cache scala dependencies
         uses: coursier/cache-action@v6
       - name: Check Document Generation
-        run: sbt docs/docusaurusCreateSite
+        run: sbt docs/compileDocs
 
   test:
     runs-on: ubuntu-20.04
@@ -51,7 +51,7 @@ jobs:
         scala: ['2.11.12', '2.12.15', '2.13.7', '3.1.1']
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.3.0
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
@@ -62,10 +62,10 @@ jobs:
         uses: coursier/cache-action@v6
       - name: Test 2.x
         if: ${{ !startsWith(matrix.scala, '3.') }}
-        run: ./sbt ++${{ matrix.scala }}! test
+        run: sbt ++${{ matrix.scala }} test
       - name: Test 3.x
         if: ${{ startsWith(matrix.scala, '3.') }}
-        run: ./sbt ++${{ matrix.scala }}! testDotty
+        run: ./sbt ++${{ matrix.scala }} testDotty
 
   testJvms:
     runs-on: ubuntu-20.04
@@ -76,7 +76,7 @@ jobs:
         java: ['11', '17']
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.3.0
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
@@ -102,7 +102,7 @@ jobs:
     if: github.event_name != 'pull_request'
     steps:
       - name: Checkout current branch
-        uses: actions/checkout@v3.1.0
+        uses: actions/checkout@v3.3.0
         with:
           fetch-depth: 0
       - name: Setup Scala and Java
