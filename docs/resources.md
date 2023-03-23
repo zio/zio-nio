@@ -1,6 +1,6 @@
 ---
-id: essentials_resources
-title:  "Resource Management"
+id: resources
+title: "Resource Management"
 ---
 
 NIO offers several objects, primarily channels, that consume resources (such as operating system file handles) that need to be released when no longer needed. If channels are not closed reliably, resource leaks can occur, causing a number of issues.
