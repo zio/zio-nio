@@ -1,6 +1,6 @@
 ---
-id: essentials_charsets
-title:  "Character Sets"
+id: charsets
+title: "Character Sets"
 ---
 
 The `zio.nio.charset` package offers an API for ZIO programs to work with character sets, using the Java NIO support for character sets. Any character set supported by your JVM can be used.
