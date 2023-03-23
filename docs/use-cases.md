@@ -1,6 +1,6 @@
 ---
-id: usecases_index
-title:  "Overview"
+id: use-cases
+title: "Use Cases"
 ---
 
 So now where to use it? Here you can find some examples to dive into:
