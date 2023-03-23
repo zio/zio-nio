@@ -3,7 +3,7 @@ import BuildHelper._
 inThisBuild(
   List(
     organization := "dev.zio",
-    homepage     := Some(url("https://github.com/zio/zio-nio/")),
+    homepage     := Some(url("https://zio.dev/zio-nio/")),
     licenses     := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     developers := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net"))
@@ -20,6 +20,11 @@ addCommandAlias(
 )
 
 val zioVersion = "2.0.1"
+
+lazy val root = project
+  .in(file("."))
+  .settings(publish / skip := true)
+  .aggregate(zioNio, examples)
 
 lazy val zioNio = project
   .in(file("nio"))
@@ -38,19 +43,22 @@ lazy val zioNio = project
 
 lazy val docs = project
   .in(file("zio-nio-docs"))
+  .settings(stdSettings("zio-nio-docs"))
   .settings(
     publish / skip := true,
     moduleName     := "zio-nio-docs",
     scalacOptions -= "-Yno-imports",
     scalacOptions -= "-Xfatal-warnings",
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(zioNio),
-    ScalaUnidoc / unidoc / target              := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
-    cleanFiles += (ScalaUnidoc / unidoc / target).value,
-    docusaurusCreateSite     := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
-    docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
+    crossScalaVersions -= Scala211,
+    projectName                                := "ZIO NIO",
+    mainModuleName                             := (zioNio / moduleName).value,
+    projectStage                               := ProjectStage.Development,
+    docsPublishBranch                          := "master",
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(),
+    checkArtifactBuildProcessWorkflowStep      := None
   )
   .dependsOn(zioNio)
-  .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
+  .enablePlugins(WebsitePlugin)
 
 lazy val examples = project
   .in(file("examples"))
