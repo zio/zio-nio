@@ -81,6 +81,17 @@ object FilesSpec extends BaseSpec {
           tmpFileExistsAfterUsage <- Files.exists(tmpFilePath)
         } yield assert(readBytes)(equalTo(sampleFileContent)) &&
           assert(tmpFileExistsAfterUsage)(isFalse)
+      },
+      test("deleteRecursive deletes subdirectories") {
+        for {
+          outerDir  <- Files.createTempDirectory(prefix = None, fileAttributes = Nil)
+          innerDir   = outerDir / "inner"
+          _         <- Files.createDirectory(innerDir)
+          innerDir  <- Files.writeLines(innerDir / "file.txt", "test" :: Nil)
+          _         <- Files.deleteRecursive(outerDir)
+          isDeleted <- Files.notExists(outerDir)
+        } yield assertTrue(isDeleted)
+
       }
     )
 
