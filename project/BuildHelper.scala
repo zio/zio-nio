@@ -22,11 +22,10 @@ object BuildHelper {
       val vs = v.split('.'); val init = vs.take(vs(0) match { case "2" => 2; case _ => 1 }); (init.mkString("."), v)
     }.toMap
   }
-  val Scala211: String = versions("2.11")
+  
   val Scala212: String = versions("2.12")
   val Scala213: String = versions("2.13")
   val Scala3: String   = versions("3")
-  val SilencerVersion  = "1.7.12"
 
   private val stdOptions = Seq(
     "-deprecation",
@@ -91,6 +90,27 @@ object BuildHelper {
       }
     }
   )
+
+    lazy val crossProjectSettings = Seq(
+    Compile / unmanagedSourceDirectories ++= {
+      crossPlatformSources(
+        scalaVersion.value,
+        crossProjectPlatform.value.identifier,
+        "main",
+        baseDirectory.value
+      )
+    },
+    Test / unmanagedSourceDirectories ++= {
+      crossPlatformSources(
+        scalaVersion.value,
+        crossProjectPlatform.value.identifier,
+        "test",
+        baseDirectory.value
+      )
+    }
+  )
+
+
 
   def makeReplSettings(initialCommandsStr: String) =
     Seq(
@@ -180,36 +200,15 @@ object BuildHelper {
     platformSpecificSources(platform, conf, baseDir)(versions: _*)
   }
 
+
   def stdSettings(prjName: String) =
     Seq(
       name                     := s"$prjName",
-      crossScalaVersions       := Seq(Scala211, Scala212, Scala213),
+      crossScalaVersions       := Seq(Scala212, Scala213),
       ThisBuild / scalaVersion := Scala213,
       scalacOptions            := stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
-      libraryDependencies ++= {
-        if (scalaVersion.value == Scala3)
-          Seq(
-            "com.github.ghik" % s"silencer-lib_$Scala213" % SilencerVersion % Provided
-          )
-        else
-          Seq(
-            ("com.github.ghik"                % "silencer-lib"    % SilencerVersion % Provided).cross(CrossVersion.full),
-            compilerPlugin(("com.github.ghik" % "silencer-plugin" % SilencerVersion).cross(CrossVersion.full)),
-            compilerPlugin(("org.typelevel"  %% "kind-projector"  % "0.13.2").cross(CrossVersion.full))
-          )
-      },
-      semanticdbEnabled := scalaVersion.value != Scala3, // enable SemanticDB
-      semanticdbOptions += "-P:semanticdb:synthetics:on",
-      semanticdbVersion                      := scalafixSemanticdb.revision, // use Scalafix compatible version
-      ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value),
-      ThisBuild / scalafixDependencies ++= List(
-        "com.github.liancheng" %% "organize-imports" % "0.6.0",
-        "com.github.vovapolu"  %% "scaluzzi"         % "0.1.20"
-      ),
       Test / parallelExecution := true,
       incOptions ~= (_.withLogRecompileOnMacro(false)),
-      autoAPIMappings := true,
-      unusedCompileDependenciesFilter -= moduleFilter("org.scala-js", "scalajs-library")
     )
 
   def welcomeMessage =
