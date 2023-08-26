@@ -46,8 +46,8 @@ ZIO NIO comes in two flavors:
 In order to use this library, we need to add one of the following lines in our `build.sbt` file:
 
 ```scala
-libraryDependencies += "dev.zio" %% "zio-nio-core" % "2.0.0"
-libraryDependencies += "dev.zio" %% "zio-nio"      % "2.0.0" 
+libraryDependencies += "dev.zio" %% "zio-nio-core" % "2.0.1"
+libraryDependencies += "dev.zio" %% "zio-nio"      % "2.0.1" 
 ```
 
 ## Example
