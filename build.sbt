@@ -8,7 +8,7 @@ inThisBuild(
     developers := List(
       Developer("jdegoes", "John De Goes", "john@degoes.net", url("http://degoes.net"))
     ),
-    scalaVersion := "2.13.11",
+    scalaVersion      := "2.13.11",
     semanticdbEnabled := true,
     semanticdbVersion := scalafixSemanticdb.revision
   )
@@ -53,7 +53,7 @@ lazy val zioNio = crossProject(JVMPlatform, NativePlatform)
       "org.scala-lang.modules" %%% "scala-collection-compat" % "2.11.0",
       "dev.zio"                %%% "zio-test"                % zioVersion % Test,
       "dev.zio"                %%% "zio-test-sbt"            % zioVersion % Test,
-      "io.github.cquiroz" %%% "scala-java-time" % "2.5.0"
+      "io.github.cquiroz"      %%% "scala-java-time"         % "2.5.0"
     ),
     testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
   )
@@ -74,7 +74,7 @@ lazy val docs = project
   .dependsOn(zioNio.jvm)
   .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
 
-  lazy val examples = crossProject(JVMPlatform, NativePlatform)
+lazy val examples = crossProject(JVMPlatform, NativePlatform)
   .in(file("examples"))
   .settings(stdSettings("examples"))
   .settings(

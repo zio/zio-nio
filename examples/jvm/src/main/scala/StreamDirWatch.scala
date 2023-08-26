@@ -2,7 +2,9 @@ package zio
 package nio
 package examples
 
-import zio.nio.file.{Path, WatchService}
+import zio.nio.file.Path
+import zio.nio.file.WatchService
+
 import zio.{Console, ZIOAppDefault}
 
 import java.nio.file.{StandardWatchEventKinds, WatchEvent}

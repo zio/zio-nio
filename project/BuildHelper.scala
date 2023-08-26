@@ -22,7 +22,7 @@ object BuildHelper {
       val vs = v.split('.'); val init = vs.take(vs(0) match { case "2" => 2; case _ => 1 }); (init.mkString("."), v)
     }.toMap
   }
-  
+
   val Scala212: String = versions("2.12")
   val Scala213: String = versions("2.13")
   val Scala3: String   = versions("3")
@@ -91,7 +91,7 @@ object BuildHelper {
     }
   )
 
-    lazy val crossProjectSettings = Seq(
+  lazy val crossProjectSettings = Seq(
     Compile / unmanagedSourceDirectories ++= {
       crossPlatformSources(
         scalaVersion.value,
@@ -109,8 +109,6 @@ object BuildHelper {
       )
     }
   )
-
-
 
   def makeReplSettings(initialCommandsStr: String) =
     Seq(
@@ -200,7 +198,6 @@ object BuildHelper {
     platformSpecificSources(platform, conf, baseDir)(versions: _*)
   }
 
-
   def stdSettings(prjName: String) =
     Seq(
       name                     := s"$prjName",
@@ -208,7 +205,7 @@ object BuildHelper {
       ThisBuild / scalaVersion := Scala213,
       scalacOptions            := stdOptions ++ extraOptions(scalaVersion.value, optimize = !isSnapshot.value),
       Test / parallelExecution := true,
-      incOptions ~= (_.withLogRecompileOnMacro(false)),
+      incOptions ~= (_.withLogRecompileOnMacro(false))
     )
 
   def welcomeMessage =

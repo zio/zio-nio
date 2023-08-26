@@ -1,10 +1,11 @@
 package zio.nio.file
 
-import zio.{Trace, ZIO}
-
+import java.nio.file.{Files => JFiles, SimpleFileVisitor, Path => JPath}
 import java.io.IOException
+import zio.{Trace, ZIO}
+import java.nio.file.FileVisitResult
 import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, FileVisitor, Files => JFiles, Path => JPath, SimpleFileVisitor}
+import java.nio.file.FileVisitor
 
 trait FilesPlatformSpecific {
 

@@ -1,10 +1,9 @@
 package zio.nio.file
 
-import zio.nio.IOCloseableManagement
-import zio.{Scope, Trace, ZIO}
-
+import zio.{Trace, ZIO, Scope}
 import java.io.IOException
 import java.nio.{file => jf}
+import zio.nio.IOCloseableManagement
 
 trait FileSystemPlatformSpecific { self =>
 

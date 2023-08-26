@@ -1,6 +1,6 @@
 package zio.nio
 
-import zio.{Trace, UIO, ZIO}
+import zio.{UIO, Trace, ZIO}
 
 import java.nio.{MappedByteBuffer => JMappedByteBuffer}
 

@@ -1,6 +1,7 @@
 package zio.nio
 package channels
 import zio._
+
 import zio.stream.{Stream, ZSink, ZStream}
 
 import java.io.{EOFException, IOException}

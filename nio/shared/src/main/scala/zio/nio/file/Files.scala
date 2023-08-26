@@ -1,8 +1,9 @@
 package zio.nio.file
 
 import zio.ZIO.attemptBlocking
-import zio.nio.ZStreamHelper
 import zio.nio.charset.Charset
+import zio.nio.ZStreamHelper
+
 import zio.stream.ZStream
 import zio.{Chunk, Scope, Trace, ZIO}
 

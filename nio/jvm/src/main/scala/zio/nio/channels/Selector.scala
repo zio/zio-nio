@@ -2,6 +2,7 @@ package zio.nio
 package channels
 
 import zio.nio.channels.spi.SelectorProvider
+
 import zio.{Duration, IO, Scope, Trace, UIO, ZIO}
 
 import java.io.IOException

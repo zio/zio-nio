@@ -1,9 +1,9 @@
 package zio.nio.file
 
-import zio.Scope
 import zio.nio.BaseSpec
 import zio.test.Assertion._
 import zio.test._
+import zio.Scope
 
 object PathSpec extends BaseSpec {
 

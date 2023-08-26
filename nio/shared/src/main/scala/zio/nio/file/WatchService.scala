@@ -2,6 +2,7 @@ package zio.nio.file
 
 import zio._
 import zio.nio.IOCloseable
+
 import zio.stream.ZStream
 
 import java.io.IOException
