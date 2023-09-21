@@ -22,7 +22,7 @@ addCommandAlias(
   ";zioNio/test;examples/test"
 )
 
-val zioVersion = "2.0.16"
+val zioVersion = "2.0.17"
 
 lazy val root = crossProject(JVMPlatform, NativePlatform)
   .in(file("."))
