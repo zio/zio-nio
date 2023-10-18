@@ -218,7 +218,7 @@ object Files {
 
   }
 
-  final case class Attributes(attributeNames: AttributeNames, viewName: String = "base") {
+  final case class Attributes(attributeNames: AttributeNames, viewName: String = "basic") {
     def toJava: String = s"$viewName:${attributeNames.toJava}"
   }
 
