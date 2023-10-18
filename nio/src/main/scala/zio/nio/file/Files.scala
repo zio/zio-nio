@@ -18,6 +18,7 @@ import java.nio.file.{
   Path => JPath
 }
 import java.util.function.BiPredicate
+import java.util.Comparator
 import scala.jdk.CollectionConverters._
 import scala.reflect._
 
@@ -124,8 +125,15 @@ object Files {
   def deleteIfExists(path: Path): ZIO[Blocking, IOException, Boolean] =
     effectBlocking(JFiles.deleteIfExists(path.javaPath)).refineToOrDie[IOException]
 
-  def deleteRecursive(path: Path): ZIO[Blocking, IOException, Long] =
-    newDirectoryStream(path).mapM(delete).run(ZSink.count) <* delete(path)
+  def deleteRecursive(path: Path): ZIO[Blocking, IOException, Long] = {
+    val managed = ZManaged.fromAutoCloseable(
+      effectBlocking(JFiles.walk(path.javaPath).sorted(Comparator.reverseOrder[java.nio.file.Path]()))
+        .refineToOrDie[IOException]
+    )
+    val stream  =
+      ZStream.managed(managed).mapM(dirStream => UIO(dirStream.iterator())).flatMap(fromJavaIterator).map(Path.fromJava)
+    stream.mapM(delete).run(ZSink.count)
+  }
 
   def copy(source: Path, target: Path, copyOptions: CopyOption*): ZIO[Blocking, IOException, Unit] =
     effectBlocking(JFiles.copy(source.javaPath, target.javaPath, copyOptions: _*)).unit
